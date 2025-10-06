@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Banking API Documentation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1, h2 { color: #333; }
+        .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-left: 4px solid #007cba; }
+        .method { font-weight: bold; color: #007cba; }
+        .url { font-family: monospace; background: #eee; padding: 2px 5px; }
+        .description { margin: 5px 0; }
+        .request-body { background: #fff; border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+        pre { background: #f8f8f8; padding: 10px; border: 1px solid #ddd; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Banking Courant API Documentation</h1>
+    <p>RESTful API for managing users, current accounts (compte courants), and transactions.</p>
+    <p><strong>Base URL:</strong> <span class="url">http://localhost:8080/api</span></p>
+
+    <h2>User Management</h2>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/users</div>
+        <div class="description">Get all users</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/users/{id}</div>
+        <div class="description">Get user by ID</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/users/email/{email}</div>
+        <div class="description">Get user by email</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">POST</div>
+        <div class="url">/api/users</div>
+        <div class="description">Create new user</div>
+        <div class="request-body">
+            <strong>Request Body:</strong>
+            <pre>{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "securepassword"
+}</pre>
+        </div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">PUT</div>
+        <div class="url">/api/users/{id}</div>
+        <div class="description">Update user</div>
+        <div class="request-body">
+            <strong>Request Body:</strong>
+            <pre>{
+  "name": "John Smith",
+  "email": "john.smith@example.com",
+  "password": "newsecurepassword"
+}</pre>
+        </div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">DELETE</div>
+        <div class="url">/api/users/{id}</div>
+        <div class="description">Delete user</div>
+    </div>
+
+    <h2>Account Management (Compte Courant)</h2>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/comptes</div>
+        <div class="description">Get all accounts</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/comptes/{id}</div>
+        <div class="description">Get account by ID</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/comptes/numero/{numeroCompte}</div>
+        <div class="description">Get account by account number</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/comptes/user/{userId}</div>
+        <div class="description">Get all accounts for a user</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">POST</div>
+        <div class="url">/api/comptes/user/{userId}</div>
+        <div class="description">Create new account for user</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">DELETE</div>
+        <div class="url">/api/comptes/{id}</div>
+        <div class="description">Delete account</div>
+    </div>
+
+    <h2>Transaction Management</h2>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/transactions</div>
+        <div class="description">Get all transactions</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/transactions/{id}</div>
+        <div class="description">Get transaction by ID</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">GET</div>
+        <div class="url">/api/transactions/compte/{compteId}</div>
+        <div class="description">Get all transactions for an account</div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">POST</div>
+        <div class="url">/api/transactions/depot</div>
+        <div class="description">Make a deposit</div>
+        <div class="request-body">
+            <strong>Request Body:</strong>
+            <pre>{
+  "numeroCompte": "1234567890",
+  "montant": 100.00,
+  "description": "Salary deposit"
+}</pre>
+        </div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">POST</div>
+        <div class="url">/api/transactions/retrait</div>
+        <div class="description">Make a withdrawal</div>
+        <div class="request-body">
+            <strong>Request Body:</strong>
+            <pre>{
+  "numeroCompte": "1234567890",
+  "montant": 50.00,
+  "description": "ATM withdrawal"
+}</pre>
+        </div>
+    </div>
+    
+    <div class="endpoint">
+        <div class="method">POST</div>
+        <div class="url">/api/transactions/transfert</div>
+        <div class="description">Transfer money between accounts</div>
+        <div class="request-body">
+            <strong>Request Body:</strong>
+            <pre>{
+  "numeroCompteSource": "1234567890",
+  "numeroCompteDestination": "0987654321",
+  "montant": 25.00,
+  "description": "Transfer to friend"
+}</pre>
+        </div>
+    </div>
+
+    <h2>Response Format</h2>
+    <p>All API responses use JSON format. Successful responses return the requested data or confirmation messages. Error responses include HTTP status codes and error messages.</p>
+    
+    <h3>Example Success Response:</h3>
+    <pre>{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john.doe@example.com"
+}</pre>
+    
+    <h3>Example Error Response:</h3>
+    <pre>{
+  "error": "User not found"
+}</pre>
+
+    <h2>HTTP Status Codes</h2>
+    <ul>
+        <li><strong>200 OK:</strong> Request successful</li>
+        <li><strong>201 Created:</strong> Resource created successfully</li>
+        <li><strong>204 No Content:</strong> Resource deleted successfully</li>
+        <li><strong>400 Bad Request:</strong> Invalid request data</li>
+        <li><strong>404 Not Found:</strong> Resource not found</li>
+        <li><strong>500 Internal Server Error:</strong> Server error</li>
+    </ul>
+</body>
+</html>

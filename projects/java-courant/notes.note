@@ -1,0 +1,24 @@
+Compte courants:
+  - Manao depot na retrait
+  - Mihena montant par mois
+
+Compte depot:
+  - Mametraka + mampiditra iany
+  - Misy taux + par mois
+
+Compte pret:
+  - Mangataka dia misy interet mipetraka
+  - Afaka mamerim-bola dia latsakin'ny tokony aloha par mois dia tsy mety
+  - Fa tsy maintsy mandoha >=
+  - Raha mihoatra dia mandoha tokony aloha par mois
+  - Raha mihoatra ny mois manaraka dia insert 0 fotsiny 
+  - Interface miteny fotsiny hoe efa voaloha ny mois fa manaraka ndray
+
+Remarks:
+  - Tout est variable au temps
+
+User:
+  - User manambatra anazy
+
+Admin:
+  - Login fixe

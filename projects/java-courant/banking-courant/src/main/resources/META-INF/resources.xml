@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+  <Resource id="mysqlDatabase" type="DataSource">
+    # MySQL DataSource configuration
+    JdbcDriver = com.mysql.cj.jdbc.Driver
+    JdbcUrl = jdbc:mysql://localhost:3306/s5_archlog_1_banking?useSSL=false&amp;serverTimezone=UTC
+    UserName = razherana
+    Password = 
+    JtaManaged = true
+    
+    # Connection pool settings
+    MaxActive = 20
+    MaxIdle = 10
+    MinIdle = 5
+    MaxWait = 10000
+    TestOnBorrow = true
+    TestWhileIdle = true
+    ValidationQuery = SELECT 1
+  </Resource>
+</resources>
