@@ -1,6 +1,7 @@
 package mg.razherana.banking.courant.api;
 
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -130,18 +131,21 @@ public class TransactionResource {
             return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(transactionDTO).build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid depot data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/transactions/depot");
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error processing depot: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/depot");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid depot data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/transactions/depot");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error processing depot: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/transactions/depot");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 
@@ -175,18 +179,21 @@ public class TransactionResource {
             return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(transactionDTO).build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid retrait data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/transactions/retrait");
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error processing retrait: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/retrait");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid retrait data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/transactions/retrait");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error processing retrait: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/transactions/retrait");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 
@@ -230,18 +237,21 @@ public class TransactionResource {
             return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(message).build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid transfert data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/transactions/transfert");
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error processing transfert: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/transfert");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid transfert data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/transactions/transfert");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error processing transfert: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/transactions/transfert");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 
@@ -282,18 +292,21 @@ public class TransactionResource {
             return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(transactionDTO).build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid pay tax data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/transactions/pay-tax");
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error processing tax payment: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/pay-tax");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid pay tax data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/transactions/pay-tax");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error processing tax payment: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/transactions/pay-tax");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 }

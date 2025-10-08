@@ -1,6 +1,7 @@
 package mg.razherana.banking.courant.api;
 
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -43,12 +44,21 @@ public class CompteCourantResource {
       return Response.ok(compteDTOs)
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (Exception e) {
-      LOG.severe("Error getting all comptes: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes");
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
+    } catch (EJBException e) {
+      if (e.getCausedByException() instanceof IllegalArgumentException) {
+        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+        LOG.warning("Invalid data from EJB: " + cause.getMessage());
+        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes");
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error getting all comptes: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes");
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     }
   }
 
@@ -125,18 +135,21 @@ public class CompteCourantResource {
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)
           .entity(compteDTO).build();
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid data: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/comptes/user/" + userId);
-      return Response.status(Response.Status.BAD_REQUEST)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Error creating compte: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/user/" + userId);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
+    } catch (EJBException e) {
+      if (e.getCausedByException() instanceof IllegalArgumentException) {
+        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+        LOG.warning("Invalid data from EJB: " + cause.getMessage());
+        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes/user/" + userId);
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error creating compte: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes/user/" + userId);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     }
   }
 
@@ -311,18 +324,21 @@ public class CompteCourantResource {
       return Response.ok("{\"message\": \"Tax updated successfully\", \"newTaxe\": " + request.getTaxe() + "}")
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid taxe update: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/comptes/" + id + "/taxe");
-      return Response.status(Response.Status.BAD_REQUEST)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Error updating taxe: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id + "/taxe");
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
+    } catch (EJBException e) {
+      if (e.getCausedByException() instanceof IllegalArgumentException) {
+        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+        LOG.warning("Invalid taxe update from EJB: " + cause.getMessage());
+        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes/" + id + "/taxe");
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error updating taxe: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes/" + id + "/taxe");
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     }
   }
 }
