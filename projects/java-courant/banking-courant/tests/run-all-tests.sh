@@ -93,6 +93,10 @@ track_result $?
 run_test "$TESTS_DIR/4-test-integration-scenarios/full-workflow-test.sh" "Integration Scenario Tests"
 track_result $?
 
+# Run Test Suite 5: Tax Functionality
+run_test "$TESTS_DIR/5-test-tax-functionality/tax-tests.sh" "Tax Functionality Tests"
+track_result $?
+
 # Test Results Summary
 echo "📊 TEST EXECUTION SUMMARY"
 echo "========================="

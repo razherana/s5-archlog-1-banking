@@ -1,6 +1,7 @@
 package mg.razherana.banking.courant.api;
 
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -98,18 +99,21 @@ public class UserResource {
             return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(user).build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid user data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/users");
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error creating user: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid user data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error creating user: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 
@@ -133,18 +137,21 @@ public class UserResource {
             return Response.ok(existingUser)
                 .type(MediaType.APPLICATION_JSON)
                 .build();
-        } catch (IllegalArgumentException e) {
-            LOG.warning("Invalid user data: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/users/" + id);
-            return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
-        } catch (Exception e) {
-            LOG.severe("Error updating user: " + e.getMessage());
-            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error).build();
+        } catch (EJBException e) {
+            if (e.getCausedByException() instanceof IllegalArgumentException) {
+                IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+                LOG.warning("Invalid user data from EJB: " + cause.getMessage());
+                ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/" + id);
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            } else {
+                LOG.severe("EJB error updating user: " + e.getMessage());
+                ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users/" + id);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
         }
     }
 

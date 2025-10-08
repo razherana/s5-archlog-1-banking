@@ -9,6 +9,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +26,17 @@ public class TransactionService {
   @EJB
   private CompteCourantService compteCourantService;
 
+  private void checkTaxesAndThrow(CompteCourant compte, LocalDateTime actionDateTime) {
+    if (!compteCourantService.isTaxPaid(compte, actionDateTime)) {
+      var amount = compteCourantService.getTaxToPay(compte, actionDateTime);
+
+      LOG.warning("Compte " + compte.getId() + " has unpaid taxes, amount: " + amount);
+
+      throw new IllegalArgumentException("Taxes must be paid before making a transaction, please pay the amount of "
+          + amount + " MGA");
+    }
+  }
+
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description) {
     LOG.info("Processing depot of " + montant + " for compte " + compte.getId());
@@ -33,11 +45,9 @@ public class TransactionService {
       throw new IllegalArgumentException("Montant must be positive");
     }
 
-    // For depot, we need a "system" compte or external source
-    // For now, we'll create a special system transaction where sender is null
-    // This represents money coming from outside the system
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(null); // System/external source
+    transaction.setSpecialAction(SpecialAction.DEPOSIT.getDatabaseName());
     transaction.setReceiver(compte);
     transaction.setMontant(montant);
     transaction.setDate(LocalDateTime.now());
@@ -49,10 +59,50 @@ public class TransactionService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description) {
+  public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
+      LocalDateTime actionDateTime) {
     LOG.info("Processing retrait of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new IllegalArgumentException("Montant must be positive");
+    }
+
+    // Check if compte has payed taxes for the current month
+    checkTaxesAndThrow(compte, actionDateTime);
+
+    // Check if compte has sufficient balance
+    BigDecimal currentSolde = compteCourantService.calculateSolde(compte);
+    if (currentSolde.compareTo(montant) < 0) {
+      throw new IllegalArgumentException("Solde insuffisant");
+    }
+
+    // For retrait, money goes to "system" (external destination)
+    TransactionCourant transaction = new TransactionCourant();
+    transaction.setSender(compte);
+    transaction.setSpecialAction(SpecialAction.WITHDRAWAL.getDatabaseName());
+    transaction.setReceiver(null); // System/external destination
+    transaction.setMontant(montant);
+    transaction.setDate(LocalDateTime.now());
+
+    entityManager.persist(transaction);
+    entityManager.flush();
+    LOG.info("Retrait processed successfully");
+    return transaction;
+  }
+
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  public TransactionCourant payTax(CompteCourant compte, String description,
+      LocalDateTime actionDateTime) {
+    BigDecimal montant = compteCourantService.getTaxToPay(compte, actionDateTime);
+
+    LOG.info("Processing tax payment of " + montant + " for compte " + compte.getId());
+
+    if (montant.equals(BigDecimal.ZERO)) {
+      LOG.info("No tax to pay for compte " + compte.getId());
+      return null; // No tax to pay
+    }
+
+    if (montant == null || montant.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException("Montant must be positive");
     }
 
@@ -65,19 +115,20 @@ public class TransactionService {
     // For retrait, money goes to "system" (external destination)
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compte);
+    transaction.setSpecialAction(SpecialAction.TAXE.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
     transaction.setMontant(montant);
     transaction.setDate(LocalDateTime.now());
 
     entityManager.persist(transaction);
     entityManager.flush();
-    LOG.info("Retrait processed successfully");
+    LOG.info("Tax payment processed successfully");
     return transaction;
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public void transfert(CompteCourant compteSource, CompteCourant compteDestination,
-      BigDecimal montant, String description) {
+      BigDecimal montant, String description, LocalDateTime actionDateTime) {
     LOG.info("Processing transfert of " + montant + " from compte " + compteSource.getId()
         + " to compte " + compteDestination.getId());
 
@@ -87,6 +138,9 @@ public class TransactionService {
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
       throw new IllegalArgumentException("Montant must be positive");
     }
+
+    // Check if source compte has payed taxes for the current month
+    checkTaxesAndThrow(compteSource, actionDateTime);
 
     // Check if source compte has sufficient balance
     BigDecimal currentSolde = compteCourantService.calculateSolde(compteSource);

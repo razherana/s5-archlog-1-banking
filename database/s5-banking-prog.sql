@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `compte_courants` (
 
 CREATE TABLE IF NOT EXISTS `transaction_courants` (
 	`id` INT NOT NULL AUTO_INCREMENT,
+  `special_action` VARCHAR(255) NULL,
 	`sender_id` INT NULL,
 	`receiver_id` INT NULL,
 	`montant` DECIMAL(15,2) NOT NULL,
