@@ -205,10 +205,98 @@ NEW_TAX_STATUS=$(curl -s "$BASE_URL/comptes/$ACCOUNT_ID_3/tax-status")
 echo "    New Tax Status: $NEW_TAX_STATUS"
 
 echo ""
+echo "12. Testing 1-month tax accumulation scenario..."
+echo "    Creating user who opens account with no money..."
+USER_ID_4=$(curl -s -X POST "$BASE_URL/users" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Broke Start User", 
+    "email": "broke.start@example.com", 
+    "password": "password123"
+  }' | jq -r '.id' 2>/dev/null || echo "4")
+
+echo "    User ID: $USER_ID_4"
+
+echo "    Creating account with no initial deposit (monthly tax: 30.00)..."
+ACCOUNT_ID_4=$(curl -s -X POST "$BASE_URL/comptes/user/$USER_ID_4?taxe=30.00" \
+  -H "Content-Type: application/json" | jq -r '.id' 2>/dev/null || echo "4")
+
+echo "    Account ID: $ACCOUNT_ID_4"
+echo "    Account starts with 0.00 balance and 30.00 monthly tax"
+
+echo "    Checking tax status immediately after account creation..."
+INITIAL_TAX_STATUS=$(curl -s "$BASE_URL/comptes/$ACCOUNT_ID_4/tax-status")
+echo "    Initial Tax Status: $INITIAL_TAX_STATUS"
+
+echo "    Checking tax amount to pay immediately..."
+INITIAL_TAX_TO_PAY=$(curl -s "$BASE_URL/comptes/$ACCOUNT_ID_4/tax-to-pay")
+echo "    Initial Tax To Pay: $INITIAL_TAX_TO_PAY"
+
+echo ""
+echo "    📅 SCENARIO: 1 month later..."
+echo "    User finally gets money and tries to send it without paying accumulated taxes"
+
+echo "    Making deposit after 1 month (enough to cover 2x tax + transfer)..."
+curl -s -X POST "$BASE_URL/transactions/depot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compteId": '"$ACCOUNT_ID_4"',
+    "montant": 200.00,
+    "description": "Finally got money after 1 month",
+    "actionDateTime": "2025-11-08T15:00:00"
+  }' >/dev/null
+
+echo "    ✅ Deposit completed (balance should be 200.00)"
+
+echo "    Checking total tax to pay after 1 month..."
+TWO_MONTHS_TAX_TO_PAY=$(curl -s "$BASE_URL/comptes/$ACCOUNT_ID_4/tax-to-pay?actionDateTime=2025-11-08T15:00:00")
+echo "    Tax To Pay after 1 month (should be ~60.00): $TWO_MONTHS_TAX_TO_PAY"
+
+echo "    Attempting to send money without paying 1 month of accumulated taxes..."
+BLOCKED_SEND_RESULT=$(curl -s -X POST "$BASE_URL/transactions/transfert" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compteSourceId": '"$ACCOUNT_ID_4"',
+    "compteDestinationId": '"$ACCOUNT_ID"',
+    "montant": 50.00,
+    "description": "Transfer attempt with 1 month unpaid taxes",
+    "actionDateTime": "2025-11-08T15:30:00"
+  }')
+echo "    ❌ Expected error - Must pay 1 month taxes first: $BLOCKED_SEND_RESULT"
+
+echo "    Now paying the accumulated taxes..."
+PAY_ACCUMULATED_TAX=$(curl -s -X POST "$BASE_URL/transactions/pay-tax" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compteId": '"$ACCOUNT_ID_4"',
+    "description": "Paying 1 month accumulated taxes",
+    "actionDateTime": "2025-11-08T16:00:00"
+  }')
+echo "    ✅ Accumulated Tax Payment: $PAY_ACCUMULATED_TAX"
+
+echo "    Checking tax status after payment..."
+AFTER_PAYMENT_TAX_STATUS=$(curl -s "$BASE_URL/comptes/$ACCOUNT_ID_4/tax-status")
+echo "    Tax Status after payment: $AFTER_PAYMENT_TAX_STATUS"
+
+echo "    Now attempting transfer after paying taxes..."
+SUCCESS_SEND_RESULT=$(curl -s -X POST "$BASE_URL/transactions/transfert" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compteSourceId": '"$ACCOUNT_ID_4"',
+    "compteDestinationId": '"$ACCOUNT_ID"',
+    "montant": 50.00,
+    "description": "Transfer after paying accumulated taxes",
+    "actionDateTime": "2025-11-08T16:30:00"
+  }')
+echo "    ✅ Transfer after tax payment: $SUCCESS_SEND_RESULT"
+
+echo ""
 echo "🎉 All tax functionality tests completed!"
 echo "✅ Basic tax operations"
 echo "❌ Insufficient funds for tax payment"
 echo "✅ Sufficient funds for tax payment" 
 echo "❌ Blocked operations when tax unpaid"
 echo "✅ Tax amount update via PUT endpoint"
+echo "❌ 1-month tax accumulation scenario - blocked transfer"
+echo "✅ 1-month tax accumulation scenario - successful after payment"
 echo "Check the results above to verify proper tax handling."
