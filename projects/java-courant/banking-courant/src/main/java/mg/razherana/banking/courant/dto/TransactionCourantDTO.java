@@ -10,6 +10,7 @@ public class TransactionCourantDTO {
     private Integer receiverId;
     private BigDecimal montant;
     private LocalDateTime date;
+    private String specialAction;
 
     public TransactionCourantDTO() {}
 
@@ -19,6 +20,7 @@ public class TransactionCourantDTO {
         this.receiverId = transaction.getReceiver() != null ? transaction.getReceiver().getId() : null;
         this.montant = transaction.getMontant();
         this.date = transaction.getDate();
+        this.specialAction = transaction.getSpecialAction();
     }
 
     // Getters and setters
@@ -60,5 +62,13 @@ public class TransactionCourantDTO {
 
     public void setDate(LocalDateTime date) {
         this.date = date;
+    }
+
+    public String getSpecialAction() {
+        return specialAction;
+    }
+
+    public void setSpecialAction(String specialAction) {
+        this.specialAction = specialAction;
     }
 }

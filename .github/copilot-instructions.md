@@ -16,6 +16,12 @@ This is a multi-project banking system with a **Java EE current account service*
 - **Deposits**: `sender = null` (external source), `receiver = account`
 - **Withdrawals**: `sender = account`, `receiver = null` (external destination)  
 - **Transfers**: `sender = sourceAccount`, `receiver = destinationAccount`
+- **Tax Payments**: `sender = account`, `receiver = null`, `specialAction = "taxe"`
+
+**Tax System**: Accounts have monthly taxes that must be paid before withdrawals/transfers:
+- Tax amounts are calculated based on account creation date and monthly tax rate
+- Use `CompteCourantService.getTaxToPay()` and `isTaxPaid()` for tax validation
+- Tax payments are tracked via `TransactionCourant.specialAction` field
 
 **Service Integration**: Services are EJB-managed with `@EJB` injection. All transaction operations use `@TransactionAttribute(REQUIRED)` for atomicity.
 
@@ -109,8 +115,10 @@ try {
 
 ### API Endpoint Patterns
 - Users: `/api/users`, `/api/users/{id}`, `/api/users/email/{email}`
-- Accounts: `/api/comptes`, `/api/comptes/{id}`, `/api/comptes/user/{userId}`  
-- Transactions: `/api/transactions`, `/api/transactions/depot`, `/api/transactions/retrait`, `/api/transactions/transfert`
+- Accounts: `/api/comptes`, `/api/comptes/{id}`, `/api/comptes/user/{userId}[?taxe=amount]`  
+- Transactions: `/api/transactions`, `/api/transactions/depot`, `/api/transactions/retrait`, `/api/transactions/transfert`, `/api/transactions/pay-tax`
+- Tax Info: `/api/comptes/{id}/tax-status`, `/api/comptes/{id}/tax-to-pay`, `/api/comptes/{id}/tax-paid`
+- Tax Management: `PUT /api/comptes/{id}/taxe` with UpdateTaxeRequest DTO
 
 ## Integration Points
 

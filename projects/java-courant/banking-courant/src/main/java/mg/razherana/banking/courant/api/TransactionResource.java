@@ -12,9 +12,11 @@ import mg.razherana.banking.courant.dto.TransactionCourantDTO;
 import mg.razherana.banking.courant.dto.requests.transactions.DepotRequest;
 import mg.razherana.banking.courant.dto.requests.transactions.RetraitRequest;
 import mg.razherana.banking.courant.dto.requests.transactions.TransfertRequest;
+import mg.razherana.banking.courant.dto.requests.transactions.PayTaxRequest;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -162,8 +164,12 @@ public class TransactionResource {
                     .entity(error).build();
             }
 
+            // Default to current time if actionDateTime is not provided
+            LocalDateTime actionDateTime = request.getActionDateTime() != null ? 
+                request.getActionDateTime() : LocalDateTime.now();
+
             TransactionCourant transaction = transactionService.retrait(
-                compte, request.getMontant(), request.getDescription());
+                compte, request.getMontant(), request.getDescription(), actionDateTime);
             
             TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
             return Response.status(Response.Status.CREATED)
@@ -191,7 +197,7 @@ public class TransactionResource {
             if (request.getCompteSourceId() == null || 
                 request.getCompteDestinationId() == null || 
                 request.getMontant() == null) {
-                ErrorDTO error = new ErrorDTO("Source account ID, destination account ID and montant are required", 400, "Bad Request", "/transactions/transfert");
+                ErrorDTO error = new ErrorDTO("Source account ID, destination account ID, and montant are required", 400, "Bad Request", "/transactions/transfert");
                 return Response.status(Response.Status.BAD_REQUEST)
                     .type(MediaType.APPLICATION_JSON)
                     .entity(error).build();
@@ -213,8 +219,12 @@ public class TransactionResource {
                     .entity(error).build();
             }
 
+            // Default to current time if actionDateTime is not provided
+            LocalDateTime actionDateTime = request.getActionDateTime() != null ? 
+                request.getActionDateTime() : LocalDateTime.now();
+
             transactionService.transfert(compteSource, compteDestination, 
-                request.getMontant(), request.getDescription());
+                request.getMontant(), request.getDescription(), actionDateTime);
             
             MessageDTO message = new MessageDTO("Transfer completed successfully");
             return Response.status(Response.Status.CREATED)
@@ -229,6 +239,58 @@ public class TransactionResource {
         } catch (Exception e) {
             LOG.severe("Error processing transfert: " + e.getMessage());
             ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/transfert");
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(error).build();
+        }
+    }
+
+    @POST
+    @Path("/pay-tax")
+    public Response payTax(PayTaxRequest request) {
+        try {
+            if (request.getCompteId() == null) {
+                ErrorDTO error = new ErrorDTO("Compte ID is required", 400, "Bad Request", "/transactions/pay-tax");
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
+
+            CompteCourant compte = compteCourantService.findById(request.getCompteId());
+            if (compte == null) {
+                ErrorDTO error = new ErrorDTO("Compte not found", 404, "Not Found", "/transactions/pay-tax");
+                return Response.status(Response.Status.NOT_FOUND)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error).build();
+            }
+
+            // Default to current time if actionDateTime is not provided
+            LocalDateTime actionDateTime = request.getActionDateTime() != null ? 
+                request.getActionDateTime() : LocalDateTime.now();
+
+            TransactionCourant transaction = transactionService.payTax(
+                compte, request.getDescription(), actionDateTime);
+            
+            if (transaction == null) {
+                MessageDTO message = new MessageDTO("No tax to pay");
+                return Response.ok(message)
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+            }
+
+            TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
+            return Response.status(Response.Status.CREATED)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(transactionDTO).build();
+        } catch (IllegalArgumentException e) {
+            LOG.warning("Invalid pay tax data: " + e.getMessage());
+            ErrorDTO error = new ErrorDTO("Invalid data: " + e.getMessage(), 400, "Bad Request", "/transactions/pay-tax");
+            return Response.status(Response.Status.BAD_REQUEST)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(error).build();
+        } catch (Exception e) {
+            LOG.severe("Error processing tax payment: " + e.getMessage());
+            ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/pay-tax");
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(error).build();
