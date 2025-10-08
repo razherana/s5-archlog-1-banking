@@ -6,7 +6,7 @@ This document describes the comprehensive test structure for the Banking Courant
 
 ## Project Structure
 
-```
+```txt
 banking-courant/
 ├── tests/
 │   ├── 1-test-user-management/
@@ -31,6 +31,7 @@ banking-courant/
 **Test Script**: `user-crud-tests.sh`
 
 **Test Cases Covered**:
+
 - ✅ Create new user (POST /api/users)
 - ✅ Get all users (GET /api/users)
 - ✅ Get user by ID (GET /api/users/{id})
@@ -40,6 +41,7 @@ banking-courant/
 - ✅ Test 400 error for invalid user data
 
 **Expected Outcomes**:
+
 - Valid user creation returns 201 status with user data
 - User retrieval operations return correct user information
 - Invalid operations return appropriate error codes (400, 404)
@@ -52,6 +54,7 @@ banking-courant/
 **Test Script**: `account-crud-tests.sh`
 
 **Test Cases Covered**:
+
 - ✅ Create account for existing user (POST /api/comptes/user/{userId})
 - ✅ Get all accounts (GET /api/comptes)
 - ✅ Get account by ID (GET /api/comptes/{id})
@@ -62,6 +65,7 @@ banking-courant/
 - ✅ Test 404 error for non-existent account
 
 **Expected Outcomes**:
+
 - Account creation generates unique account numbers
 - Initial account balance is 0.00
 - Accounts are properly linked to users
@@ -75,6 +79,7 @@ banking-courant/
 **Test Script**: `transaction-tests.sh`
 
 **Test Cases Covered**:
+
 - ✅ Make deposit (POST /api/transactions/depot)
 - ✅ Make withdrawal (POST /api/transactions/retrait)
 - ✅ Make transfer between accounts (POST /api/transactions/transfert)
@@ -85,6 +90,7 @@ banking-courant/
 - ✅ Test transaction on non-existent account (404)
 
 **Expected Outcomes**:
+
 - Deposits increase account balance correctly
 - Withdrawals decrease account balance correctly
 - Transfers move money between accounts atomically
@@ -99,6 +105,7 @@ banking-courant/
 **Test Script**: `full-workflow-test.sh`
 
 **Test Scenario**: Family Banking Setup
+
 - 👤 Create family members (father, mother, child)
 - 🏦 Create multiple accounts (personal, business, savings)
 - 💰 Perform realistic transaction sequence:
@@ -110,6 +117,7 @@ banking-courant/
 - 📊 Verify final balances and transaction integrity
 
 **Expected Outcomes**:
+
 - Complete workflow executes without errors
 - All balances sum correctly (conservation of money)
 - Transaction history is complete and accurate
@@ -120,12 +128,14 @@ banking-courant/
 ### Prerequisites
 
 1. **Server Running**: Ensure TomEE server is running with the banking application deployed
+
    ```bash
    cd banking-courant
    mvn tomee:run
    ```
 
 2. **Dependencies**: Tests require `curl` and optionally `jq` for JSON formatting
+
    ```bash
    # Install jq for better JSON output (optional)
    sudo apt-get install jq
@@ -158,6 +168,7 @@ chmod +x run-all-tests.sh
 ### Test Output Format
 
 Each test script provides:
+
 - 📋 Test description and purpose
 - 🔍 Server connectivity check
 - 📊 Step-by-step execution with clear labeling
@@ -168,11 +179,13 @@ Each test script provides:
 ## Test Data Management
 
 ### Data Isolation
+
 - Each test suite creates its own test data
 - Tests are designed to be independent and can run in any order
 - No cleanup is required between test runs (fresh data each time)
 
 ### Test Data Patterns
+
 - **Users**: Named with descriptive prefixes (e.g., "Transaction Test User")
 - **Emails**: Use distinct domains (e.g., `family.com`, `example.com`)
 - **Amounts**: Use realistic monetary values for better test readability
@@ -180,6 +193,7 @@ Each test script provides:
 ## Error Handling Testing
 
 ### HTTP Status Code Validation
+
 - **200 OK**: Successful GET requests
 - **201 Created**: Successful POST requests
 - **204 No Content**: Successful DELETE requests
@@ -188,6 +202,7 @@ Each test script provides:
 - **500 Internal Server Error**: Server-side errors
 
 ### Business Rule Testing
+
 - Insufficient funds for withdrawals
 - Negative amounts rejection
 - Invalid account numbers
@@ -205,6 +220,7 @@ Each test script provides:
 ### Test Script Best Practices
 
 1. **Consistent Structure**:
+
    - Header with test purpose
    - Server connectivity check
    - Clear step numbering
@@ -212,12 +228,14 @@ Each test script provides:
    - Results summary
 
 2. **Data Management**:
+
    - Create fresh test data
    - Use descriptive names
    - Extract IDs/numbers for reuse
    - Provide fallback values
 
 3. **Output Formatting**:
+
    - Use emojis for visual clarity
    - Include expected vs actual comparisons
    - Format JSON output when possible
@@ -232,6 +250,7 @@ Each test script provides:
 ## API Endpoints Reference
 
 ### User Management
+
 - `GET /api/users` - Get all users
 - `GET /api/users/{id}` - Get user by ID
 - `GET /api/users/email/{email}` - Get user by email
@@ -240,6 +259,7 @@ Each test script provides:
 - `DELETE /api/users/{id}` - Delete user
 
 ### Account Management
+
 - `GET /api/comptes` - Get all accounts
 - `GET /api/comptes/{id}` - Get account by ID
 - `GET /api/comptes/numero/{numeroCompte}` - Get account by number
@@ -248,6 +268,7 @@ Each test script provides:
 - `DELETE /api/comptes/{id}` - Delete account
 
 ### Transaction Management
+
 - `GET /api/transactions` - Get all transactions
 - `GET /api/transactions/{id}` - Get transaction by ID
 - `GET /api/transactions/compte/{compteId}` - Get transactions for account
@@ -260,14 +281,17 @@ Each test script provides:
 ### Common Issues
 
 1. **Server Not Running**
+
    - Error: "Server is not running or not accessible"
    - Solution: Start TomEE server with `mvn tomee:run`
 
 2. **Permission Denied**
+
    - Error: "Permission denied" when running scripts
    - Solution: Make scripts executable with `chmod +x script-name.sh`
 
 3. **JSON Parsing Errors**
+
    - Error: "jq: command not found"
    - Solution: Install jq or tests will fall back to raw JSON output
 
