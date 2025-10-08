@@ -15,6 +15,33 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
 
+/**
+ * Service class for managing current account (Compte Courant) operations.
+ * 
+ * <p>This service provides business logic for current account management including
+ * creation, balance calculation, tax management, and account operations. The service
+ * implements the core banking business rule where account balances are calculated
+ * dynamically by summing all related transactions.</p>
+ * 
+ * <p><strong>Key Features:</strong></p>
+ * <ul>
+ *   <li>Dynamic balance calculation (no stored balance field)</li>
+ *   <li>Monthly tax calculation and validation</li>
+ *   <li>Transaction-based account operations</li>
+ *   <li>Tax payment enforcement before withdrawals/transfers</li>
+ * </ul>
+ * 
+ * <p>This is a stateless EJB that can be injected into other components
+ * using the {@code @EJB} annotation.</p>
+ * 
+ * @author Banking System
+ * @version 1.0
+ * @since 1.0
+ * @see mg.razherana.banking.courant.entities.CompteCourant
+ * @see mg.razherana.banking.courant.entities.TransactionCourant
+ * @see mg.razherana.banking.courant.application.TransactionService
+ * @see mg.razherana.banking.courant.api.CompteCourantResource
+ */
 @Stateless
 public class CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());

@@ -4,17 +4,56 @@ import mg.razherana.banking.courant.entities.CompteCourant;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for current account (Compte Courant) information.
+ * 
+ * <p>This DTO provides a complete view of current account information including
+ * calculated balance and associated user details. Used for API responses to
+ * avoid exposing entity internals and include computed values.</p>
+ * 
+ * <p>The balance (solde) is calculated dynamically by summing all transactions
+ * and is not stored in the database.</p>
+ * 
+ * @author Banking System
+ * @version 1.0
+ * @since 1.0
+ * @see mg.razherana.banking.courant.entities.CompteCourant
+ * @see mg.razherana.banking.courant.api.CompteCourantResource
+ * @see mg.razherana.banking.courant.application.CompteCourantService
+ */
 public class CompteCourantDTO {
+    /** Unique identifier of the current account */
     private Integer id;
+    
+    /** Monthly tax amount for this account */
     private BigDecimal taxe;
+    
+    /** Timestamp when this account was created */
     private LocalDateTime createdAt;
+    
+    /** ID of the user who owns this account */
     private Integer userId;
+    
+    /** Name of the user who owns this account */
     private String userName;
+    
+    /** Email of the user who owns this account */
     private String userEmail;
+    
+    /** Calculated current balance of the account */
     private BigDecimal solde; // Calculated field
 
+    /**
+     * Default constructor.
+     */
     public CompteCourantDTO() {}
 
+    /**
+     * Constructor that creates a DTO from a CompteCourant entity and calculated balance.
+     * 
+     * @param compte the CompteCourant entity to convert
+     * @param solde the calculated balance for this account
+     */
     public CompteCourantDTO(CompteCourant compte, BigDecimal solde) {
         this.id = compte.getId();
         this.taxe = compte.getTaxe();
