@@ -1,59 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Banking Interface - Register</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="header">
-        <h1>Banking Interface System</h1>
+      <h1>Banking Interface System</h1>
     </div>
-    
+
     <div class="container">
-        <div class="card">
-            <h2 class="text-center">Create Account</h2>
-            
-            <!-- Error Messages -->
-            <script>
-                const urlParams = new URLSearchParams(window.location.search);
-                const error = urlParams.get('error');
-                
-                if (error === 'exists') {
-                    document.write('<div class="alert alert-error">Email already exists. Please use a different email or login.</div>');
-                } else if (error === 'failed') {
-                    document.write('<div class="alert alert-error">Registration failed. Please check your information.</div>');
-                } else if (error === 'system') {
-                    document.write('<div class="alert alert-error">System error. Please try again later.</div>');
-                }
-            </script>
-            
-            <form action="register" method="POST">
-                <div class="form-group">
-                    <label for="name">Full Name:</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary btn-full">Create Account</button>
-                </div>
-            </form>
-            
-            <div class="text-center mt-2">
-                <p>Already have an account? <a href="login.html" style="color: var(--accent-color);">Login here</a></p>
-            </div>
+      <div class="card">
+        <h2 class="text-center">Create Account</h2>
+
+        <!-- Error Messages -->
+        <script>
+          const urlParams = new URLSearchParams(window.location.search);
+          const error = urlParams.get("error");
+
+          if (error === "exists") {
+            document.write(
+              '<div class="alert alert-error">Email already exists. Please use a different email or login.</div>'
+            );
+          } else if (error === "failed") {
+            document.write(
+              '<div class="alert alert-error">Registration failed. Please check your information.</div>'
+            );
+          } else if (error === "system") {
+            document.write(
+              '<div class="alert alert-error">System error. Please try again later.</div>'
+            );
+          }
+        </script>
+
+        <form action="register" method="POST">
+          <div class="form-group">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-full">
+              Create Account
+            </button>
+          </div>
+        </form>
+
+        <div class="text-center mt-2">
+          <p>
+            Already have an account?
+            <a href="login.html" style="color: var(--accent-color)"
+              >Login here</a
+            >
+          </p>
         </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>

@@ -1,74 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Banking Interface - Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="header">
-        <h1>Banking Interface System</h1>
+      <h1>Banking Interface System</h1>
     </div>
-    
+
     <div class="container">
-        <!-- Success Messages -->
-        <script>
-            const urlParams = new URLSearchParams(window.location.search);
-            const success = urlParams.get('success');
-            
-            if (success === 'registered') {
-                document.write('<div class="alert alert-success">Account created successfully! Welcome to the Banking Interface System.</div>');
-            }
-        </script>
-        
-        <div class="user-info">
-            <span>Welcome, <strong id="userName">User</strong></span>
-            <a href="logout" class="logout-link">Logout</a>
-            <div style="clear: both;"></div>
-        </div>
-        
-        <div class="card">
-            <h2 class="text-center">Banking Services</h2>
-            <p class="text-center" style="margin-bottom: 2rem; color: var(--accent-color);">Choose a banking service below</p>
-            
-            <ul class="menu-list">
-                <li>
-                    <a href="http://localhost:8080" target="_blank">
-                        <strong>Comptes Courants</strong>
-                        <br>
-                        <small>Manage current accounts and transactions</small>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" style="opacity: 0.6; cursor: not-allowed;">
-                        <strong>Comptes Dépôts</strong>
-                        <br>
-                        <small>Manage deposit accounts (Coming Soon)</small>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" style="opacity: 0.6; cursor: not-allowed;">
-                        <strong>Comptes Prêts</strong>
-                        <br>
-                        <small>Manage loan accounts (Coming Soon)</small>
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="card">
-            <h3 class="text-center">User Management</h3>
-            <ul class="menu-list">
-                <li>
-                    <a href="users.html">
-                        <strong>Manage Users</strong>
-                        <br>
-                        <small>View and manage all users in the system</small>
-                    </a>
-                </li>
-            </ul>
-        </div>
+      <!-- Success Messages -->
+      <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const success = urlParams.get("success");
+
+        if (success === "registered") {
+          document.write(
+            '<div class="alert alert-success">Account created successfully! Welcome to the Banking Interface System.</div>'
+          );
+        }
+      </script>
+
+      <div class="user-info">
+        <span>Welcome, <strong id="userName">User</strong></span>
+        <a href="logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Banking Services</h2>
+        <p
+          class="text-center"
+          style="margin-bottom: 2rem; color: var(--accent-color)"
+        >
+          Choose a banking service below
+        </p>
+
+        <ul class="menu-list">
+          <li>
+            <a href="http://localhost:8080" target="_blank">
+              <strong>Comptes Courants</strong>
+              <br />
+              <small>Manage current accounts and transactions</small>
+            </a>
+          </li>
+          <li>
+            <a href="#" style="opacity: 0.6; cursor: not-allowed">
+              <strong>Comptes Dépôts</strong>
+              <br />
+              <small>Manage deposit accounts (Coming Soon)</small>
+            </a>
+          </li>
+          <li>
+            <a href="#" style="opacity: 0.6; cursor: not-allowed">
+              <strong>Comptes Prêts</strong>
+              <br />
+              <small>Manage loan accounts (Coming Soon)</small>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 class="text-center">User Management</h3>
+        <ul class="menu-list">
+          <li>
+            <a href="users.html">
+              <strong>Manage Users</strong>
+              <br />
+              <small>View and manage all users in the system</small>
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
-</body>
+  </body>
 </html>
