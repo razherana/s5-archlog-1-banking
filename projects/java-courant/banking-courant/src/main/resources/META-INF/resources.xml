@@ -3,7 +3,7 @@
   <Resource id="mysqlDatabase" type="DataSource">
     # MySQL DataSource configuration
     JdbcDriver = com.mysql.cj.jdbc.Driver
-    JdbcUrl = jdbc:mysql://localhost:3306/s5_archlog_1_banking?useSSL=false&amp;serverTimezone=UTC
+    JdbcUrl = jdbc:mysql://localhost:3306/s5_archlog_1_banking_courant?useSSL=false&amp;serverTimezone=UTC
     UserName = razherana
     Password = 
     JtaManaged = true

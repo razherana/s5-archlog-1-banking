@@ -15,62 +15,8 @@
 </head>
 <body>
     <h1>Banking Courant API Documentation</h1>
-    <p>RESTful API for managing users, current accounts (compte courants), and transactions.</p>
+    <p>RESTful API for managing current accounts (compte courants) and transactions.</p>
     <p><strong>Base URL:</strong> <span class="url">http://localhost:8080/api</span></p>
-
-    <h2>User Management</h2>
-    
-    <div class="endpoint">
-        <div class="method">GET</div>
-        <div class="url">/api/users</div>
-        <div class="description">Get all users</div>
-    </div>
-    
-    <div class="endpoint">
-        <div class="method">GET</div>
-        <div class="url">/api/users/{id}</div>
-        <div class="description">Get user by ID</div>
-    </div>
-    
-    <div class="endpoint">
-        <div class="method">GET</div>
-        <div class="url">/api/users/email/{email}</div>
-        <div class="description">Get user by email</div>
-    </div>
-    
-    <div class="endpoint">
-        <div class="method">POST</div>
-        <div class="url">/api/users</div>
-        <div class="description">Create new user</div>
-        <div class="request-body">
-            <strong>Request Body:</strong>
-            <pre>{
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "password": "securepassword"
-}</pre>
-        </div>
-    </div>
-    
-    <div class="endpoint">
-        <div class="method">PUT</div>
-        <div class="url">/api/users/{id}</div>
-        <div class="description">Update user</div>
-        <div class="request-body">
-            <strong>Request Body:</strong>
-            <pre>{
-  "name": "John Smith",
-  "email": "john.smith@example.com",
-  "password": "newsecurepassword"
-}</pre>
-        </div>
-    </div>
-    
-    <div class="endpoint">
-        <div class="method">DELETE</div>
-        <div class="url">/api/users/{id}</div>
-        <div class="description">Delete user</div>
-    </div>
 
     <h2>Account Management (Compte Courant)</h2>
     

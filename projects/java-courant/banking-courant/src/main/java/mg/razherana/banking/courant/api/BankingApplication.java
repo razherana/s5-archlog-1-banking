@@ -19,7 +19,6 @@ import jakarta.ws.rs.core.Application;
  * @author Banking System
  * @version 1.0
  * @since 1.0
- * @see mg.razherana.banking.courant.api.UserResource
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  * @see mg.razherana.banking.courant.api.TransactionResource
  */

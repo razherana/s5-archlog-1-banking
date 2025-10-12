@@ -6,7 +6,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import mg.razherana.banking.courant.application.CompteCourantService;
-import mg.razherana.banking.courant.application.UserService;
 import mg.razherana.banking.courant.dto.CompteCourantDTO;
 import mg.razherana.banking.courant.dto.ErrorDTO;
 import mg.razherana.banking.courant.dto.requests.UpdateTaxeRequest;
@@ -27,9 +26,6 @@ public class CompteCourantResource {
 
   @EJB
   private CompteCourantService compteCourantService;
-
-  @EJB
-  private UserService userService;
 
   @GET
   public Response getAllComptes() {
@@ -91,15 +87,9 @@ public class CompteCourantResource {
   @Path("/user/{userId}")
   public Response getComptesByUserId(@PathParam("userId") Integer userId) {
     try {
-      User user = userService.findById(userId);
-      if (user == null) {
-        ErrorDTO error = new ErrorDTO("User not found", 404, "Not Found", "/comptes/user/" + userId);
-        return Response.status(Response.Status.NOT_FOUND)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
-      }
-
-      List<CompteCourant> comptes = compteCourantService.getComptesByUser(user);
+      // Use service method to get User (assumes user exists in central service)
+      List<CompteCourant> comptes = compteCourantService.getComptesByUserId(userId);
+      
       List<CompteCourantDTO> compteDTOs = comptes.stream()
           .map(compte -> {
             BigDecimal solde = compteCourantService.calculateSolde(compte);
@@ -118,17 +108,13 @@ public class CompteCourantResource {
     }
   }
 
+
   @POST
   @Path("/user/{userId}")
   public Response createCompte(@PathParam("userId") Integer userId, @QueryParam("taxe") @DefaultValue("0") BigDecimal taxe) {
     try {
-      User user = userService.findById(userId);
-      if (user == null) {
-        ErrorDTO error = new ErrorDTO("User not found", 404, "Not Found", "/comptes/user/" + userId);
-        return Response.status(Response.Status.NOT_FOUND)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
-      }
+      // Use service method to find user (assumes user exists in central service)
+      User user = compteCourantService.findUser(userId);
 
       CompteCourant compte = compteCourantService.create(user, taxe);
       CompteCourantDTO compteDTO = new CompteCourantDTO(compte, compteCourantService.calculateSolde(compte));

@@ -49,6 +49,26 @@ public class CompteCourantService {
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
 
+  /**
+   * Find a user by ID. For now, creates a User object with just the ID.
+   * TODO: This will be updated to call the java-interface service for actual user data.
+   * 
+   * @param userId the user ID
+   * @return User object with the specified ID
+   * @throws IllegalArgumentException if userId is null
+   */
+  public User findUser(Integer userId) {
+    LOG.info("Finding user by ID: " + userId);
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+    
+    // For now, just create a User with the ID - assuming user exists in central service
+    User user = new User();
+    user.setId(userId);
+    return user;
+  }
+
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public CompteCourant create(User user, BigDecimal taxe) {
     LOG.info("Creating compte courant for user: " + user);
@@ -92,6 +112,17 @@ public class CompteCourantService {
     query.setParameter("user", user);
 
     return query.getResultList();
+  }
+
+  public List<CompteCourant> getComptesByUserId(Integer userId) {
+    LOG.info("Finding comptes for userId: " + userId);
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Use findUser method and delegate to existing method
+    User user = findUser(userId);
+    return getComptesByUser(user);
   }
 
   /**
