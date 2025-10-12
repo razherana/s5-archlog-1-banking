@@ -8,22 +8,9 @@ echo "=== $TEST_NAME ==="
 echo "Base URL: $BASE_URL"
 echo ""
 
-# First, ensure we have a user to work with
-echo "Setup: Creating a test user first..."
-USER_RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User For Accounts",
-    "email": "test.accounts@example.com",
-    "password": "testpassword"
-  }' \
-  "$BASE_URL/users")
-
-USER_ID=$(echo "$USER_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
-if [ -z "$USER_ID" ]; then
-    USER_ID=1  # Fallback ID
-fi
-echo "Test user created with ID: $USER_ID"
+# Use predefined test user (managed by java-interface service)
+USER_ID=1
+echo "Using test user ID: $USER_ID (assumes user exists in central user service)"
 echo ""
 
 # Test 1: Create an account for user
@@ -81,8 +68,8 @@ curl -s -X POST "$BASE_URL/comptes/user/$USER_ID" | jq '.' 2>/dev/null || curl -
 echo ""
 echo ""
 
-# Test 7: Try to create account for non-existent user (404 test)
-echo "7. Testing 404 - Creating account for non-existent user..."
+# Test 7: Create account for another user (should work - assumes user exists)
+echo "7. Creating account for another user ID (99999)..."
 echo "POST $BASE_URL/comptes/user/99999"
 curl -s -X POST "$BASE_URL/comptes/user/99999" | jq '.' 2>/dev/null || curl -s -X POST "$BASE_URL/comptes/user/99999"
 echo ""

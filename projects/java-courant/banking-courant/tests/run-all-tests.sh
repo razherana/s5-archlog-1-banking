@@ -15,7 +15,7 @@ echo ""
 
 # Check if server is running
 echo "🔍 Checking if server is running..."
-if ! curl -s -f "$BASE_URL/users" >/dev/null 2>&1; then
+if ! curl -s -f "$BASE_URL/comptes" >/dev/null 2>&1; then
     echo "❌ ERROR: Server is not running or not accessible at $BASE_URL"
     echo "Please start the TomEE server before running tests:"
     echo "   cd banking-courant && mvn tomee:run"
@@ -69,31 +69,27 @@ track_result() {
 }
 
 echo "📋 Test Execution Plan:"
-echo "1. User Management Tests"
-echo "2. Account Management Tests"  
-echo "3. Transaction Management Tests"
-echo "4. Integration Scenario Tests"
+echo "1. Account Management Tests"  
+echo "2. Transaction Management Tests"
+echo "3. Integration Scenario Tests"
+echo "4. Tax Functionality Tests"
 echo ""
 echo "🚀 Starting test execution..."
 echo ""
 
-# Run Test Suite 1: User Management
-run_test "$TESTS_DIR/1-test-user-management/user-crud-tests.sh" "User Management Tests"
-track_result $?
-
-# Run Test Suite 2: Account Management
+# Run Test Suite 1: Account Management
 run_test "$TESTS_DIR/2-test-account-management/account-crud-tests.sh" "Account Management Tests"
 track_result $?
 
-# Run Test Suite 3: Transaction Management
+# Run Test Suite 2: Transaction Management
 run_test "$TESTS_DIR/3-test-transaction-management/transaction-tests.sh" "Transaction Management Tests"
 track_result $?
 
-# Run Test Suite 4: Integration Scenarios
+# Run Test Suite 3: Integration Scenarios
 run_test "$TESTS_DIR/4-test-integration-scenarios/full-workflow-test.sh" "Integration Scenario Tests"
 track_result $?
 
-# Run Test Suite 5: Tax Functionality
+# Run Test Suite 4: Tax Functionality
 run_test "$TESTS_DIR/5-test-tax-functionality/tax-tests.sh" "Tax Functionality Tests"
 track_result $?
 

@@ -8,21 +8,9 @@ echo "=== $TEST_NAME ==="
 echo "Base URL: $BASE_URL"
 echo ""
 
-# Setup: Create test user and accounts
-echo "Setup: Creating test user and accounts..."
-USER_RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Transaction Test User",
-    "email": "transaction.test@example.com",
-    "password": "testpassword"
-  }' \
-  "$BASE_URL/users")
-
-USER_ID=$(echo "$USER_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
-if [ -z "$USER_ID" ]; then
-    USER_ID=1  # Fallback ID
-fi
+# Setup: Use fake user ID and create accounts
+echo "Setup: Using fake user ID and creating accounts..."
+USER_ID=5  # Assume user ID 5 exists in central service
 
 # Create first account
 ACCOUNT1_RESPONSE=$(curl -s -X POST "$BASE_URL/comptes/user/$USER_ID")

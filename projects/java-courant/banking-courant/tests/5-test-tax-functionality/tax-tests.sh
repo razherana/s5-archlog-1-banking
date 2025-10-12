@@ -8,7 +8,7 @@ echo "=============================="
 
 # Check if server is running
 echo "🔍 Checking if server is running..."
-if ! curl -s -f "$BASE_URL/users" >/dev/null 2>&1; then
+if ! curl -s -f "$BASE_URL/comptes" >/dev/null 2>&1; then
     echo "❌ ERROR: Server is not running or not accessible at $BASE_URL"
     echo "Please start the TomEE server before running tests:"
     echo "   cd banking-courant && mvn tomee:run"
@@ -21,15 +21,8 @@ echo "📋 Testing Tax-related endpoints..."
 echo ""
 
 # Test account creation for tax testing
-echo "1. Creating test user..."
-USER_ID=$(curl -s -X POST "$BASE_URL/users" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Tax Test User", 
-    "email": "tax.test@example.com", 
-    "password": "password123"
-  }' | jq -r '.id' 2>/dev/null || echo "1")
-
+echo "1. Using fake user ID for tax testing..."
+USER_ID=6  # Assume user ID 6 exists in central service
 echo "   User ID: $USER_ID"
 
 echo "2. Creating test account..."

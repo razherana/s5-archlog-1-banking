@@ -11,7 +11,7 @@ echo ""
 
 # Check if server is running
 echo "Checking if server is running..."
-if ! curl -s -f "$BASE_URL/users" >/dev/null 2>&1; then
+if ! curl -s -f "$BASE_URL/comptes" >/dev/null 2>&1; then
     echo "❌ ERROR: Server is not running or not accessible at $BASE_URL"
     echo "Please start the TomEE server before running this test."
     exit 1
@@ -19,53 +19,26 @@ fi
 echo "✅ Server is accessible"
 echo ""
 
-# Scenario: Create a family banking setup
+# Scenario: Create a family banking setup with fake user IDs
 echo "📋 SCENARIO: Creating a family banking setup"
-echo "1. Create family members (users)"
+echo "1. Use fake family member user IDs (assumes users exist in central service)"
 echo "2. Create accounts for each member"
 echo "3. Perform various transactions"
 echo "4. Verify final state"
 echo ""
 
-# Step 1: Create users
-echo "👤 Step 1: Creating family members..."
+# Step 1: Use fake user IDs (assume they exist in java-interface service)
+echo "👤 Step 1: Using fake family member user IDs..."
 echo ""
 
-echo "Creating father (John Doe)..."
-FATHER_RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john.doe@family.com",
-    "password": "securepassword"
-  }' \
-  "$BASE_URL/users")
-FATHER_ID=$(echo "$FATHER_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
-echo "Father created with ID: $FATHER_ID"
+echo "Using father user ID: 2 (John Doe)"
+FATHER_ID=2
 
-echo "Creating mother (Jane Doe)..."
-MOTHER_RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Jane Doe",
-    "email": "jane.doe@family.com",
-    "password": "securepassword"
-  }' \
-  "$BASE_URL/users")
-MOTHER_ID=$(echo "$MOTHER_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
-echo "Mother created with ID: $MOTHER_ID"
+echo "Using mother user ID: 3 (Jane Doe)"
+MOTHER_ID=3
 
-echo "Creating child (Alice Doe)..."
-CHILD_RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice Doe",
-    "email": "alice.doe@family.com",
-    "password": "securepassword"
-  }' \
-  "$BASE_URL/users")
-CHILD_ID=$(echo "$CHILD_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
-echo "Child created with ID: $CHILD_ID"
+echo "Using child user ID: 4 (Alice Doe)"
+CHILD_ID=4
 echo ""
 
 # Step 2: Create accounts
