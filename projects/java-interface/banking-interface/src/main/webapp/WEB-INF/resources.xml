@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- MySQL Database Configuration for Banking Interface -->
+    <Resource id="mysqlDatabase" type="DataSource">
+        JdbcDriver com.mysql.cj.jdbc.Driver
+        JdbcUrl jdbc:mysql://localhost:3306/s5_archlog_1_banking_interface?createDatabaseIfNotExist=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC
+        UserName razherana
+        Password 
+        JtaManaged true
+        InitialSize 5
+        MaxActive 20
+        MaxIdle 10
+        MinIdle 5
+        MaxWait 30000
+        ValidationQuery SELECT 1
+        TestOnBorrow true
+        TestWhileIdle true
+        TimeBetweenEvictionRunsMillis 300000
+        MinEvictableIdleTimeMillis 600000
+    </Resource>
+</resources>
