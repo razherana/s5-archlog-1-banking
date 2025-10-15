@@ -1,3 +1,3 @@
-DELETE FROM echeance;
+DELETE FROM echeances;
 
 DELETE FROM compte_prets;
