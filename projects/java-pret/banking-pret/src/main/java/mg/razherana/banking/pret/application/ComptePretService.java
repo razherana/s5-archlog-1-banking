@@ -116,6 +116,15 @@ public class ComptePretService {
   }
 
   /**
+   * Find all loans
+   */
+  public List<ComptePret> findAllLoans() {
+    TypedQuery<ComptePret> query = entityManager.createQuery(
+        "SELECT c FROM ComptePret c", ComptePret.class);
+    return query.getResultList();
+  }
+
+  /**
    * Gets all loan accounts for a user.
    */
   public List<ComptePret> getLoansByUserId(Integer userId) {

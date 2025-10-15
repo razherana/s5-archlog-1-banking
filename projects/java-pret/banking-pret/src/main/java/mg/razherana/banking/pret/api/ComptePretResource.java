@@ -7,6 +7,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import mg.razherana.banking.pret.application.ComptePretService;
 import mg.razherana.banking.pret.dto.*;
+import mg.razherana.banking.pret.dto.requests.CreateComptePretRequest;
+import mg.razherana.banking.pret.dto.requests.MakePaymentRequest;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
@@ -24,6 +26,22 @@ public class ComptePretResource {
 
   @EJB
   private ComptePretService comptePretService;
+
+  @GET
+  public Response getAllLoans() {
+    try {
+      List<ComptePret> loans = comptePretService.findAllLoans();
+      List<ComptePretDTO> loanDTOs = loans.stream()
+          .map(ComptePretDTO::new)
+          .collect(Collectors.toList());
+      return Response.ok(loanDTOs).build();
+
+    } catch (Exception e) {
+      LOG.severe("Unexpected error getting all loans: " + e.getMessage());
+      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret");
+      return Response.status(500).entity(error).build();
+    }
+  }
 
   /**
    * Creates a new loan account.

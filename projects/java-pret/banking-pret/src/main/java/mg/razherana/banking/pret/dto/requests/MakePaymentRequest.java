@@ -1,4 +1,4 @@
-package mg.razherana.banking.pret.dto;
+package mg.razherana.banking.pret.dto.requests;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

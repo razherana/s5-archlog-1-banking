@@ -13,17 +13,9 @@
     <properties>
       <!-- Hibernate Configuration -->
       <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
-      <property name="hibernate.hbm2ddl.auto" value="update"/>
+      <property name="hibernate.hbm2ddl.auto" value="none"/>
       <property name="hibernate.show_sql" value="true"/>
       <property name="hibernate.format_sql" value="true"/>
-
-      <!-- Connection Pool Configuration -->
-      <property name="hibernate.connection.pool_size" value="10"/>
-      <property name="hibernate.connection.autocommit" value="false"/>
-
-      <!-- Performance Settings -->
-      <property name="hibernate.cache.use_second_level_cache" value="false"/>
-      <property name="hibernate.cache.use_query_cache" value="false"/>
 
       <!-- SQL Generation Settings -->
       <property name="hibernate.id.new_generator_mappings" value="true"/>
