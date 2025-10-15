@@ -5,7 +5,7 @@ import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import mg.razherana.banking.courant.application.CompteCourantService;
+import mg.razherana.banking.courant.application.compteCourantService.CompteCourantService;
 import mg.razherana.banking.courant.dto.CompteCourantDTO;
 import mg.razherana.banking.courant.dto.ErrorDTO;
 import mg.razherana.banking.courant.dto.requests.UpdateTaxeRequest;
@@ -27,6 +27,26 @@ public class CompteCourantResource {
   @EJB
   private CompteCourantService compteCourantService;
 
+  /**
+   * Helper method to handle EJBException and extract the underlying cause.
+   * Returns true if the exception should be treated as a 400 Bad Request,
+   * false if it should be treated as a 500 Internal Server Error.
+   */
+  private boolean isClientError(EJBException ejbException) {
+    return ejbException.getCausedByException() instanceof IllegalArgumentException;
+  }
+
+  /**
+   * Helper method to extract error message from EJBException.
+   */
+  private String getErrorMessage(EJBException ejbException) {
+    if (isClientError(ejbException)) {
+      return "Invalid data: " + ejbException.getCausedByException().getMessage();
+    } else {
+      return "Internal server error";
+    }
+  }
+
   @GET
   public Response getAllComptes() {
     try {
@@ -41,20 +61,20 @@ public class CompteCourantResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes");
-        return Response.status(Response.Status.BAD_REQUEST)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
       } else {
         LOG.severe("EJB error getting all comptes: " + e.getMessage());
-        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes");
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
       }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     }
   }
 
@@ -73,6 +93,21 @@ public class CompteCourantResource {
       return Response.ok(compteDTO)
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error getting compte by ID: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id);
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     } catch (Exception e) {
       LOG.severe("Error getting compte by ID: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id);
@@ -82,14 +117,13 @@ public class CompteCourantResource {
     }
   }
 
-
   @GET
   @Path("/user/{userId}")
   public Response getComptesByUserId(@PathParam("userId") Integer userId) {
     try {
       // Use service method to get User (assumes user exists in central service)
       List<CompteCourant> comptes = compteCourantService.getComptesByUserId(userId);
-      
+
       List<CompteCourantDTO> compteDTOs = comptes.stream()
           .map(compte -> {
             BigDecimal solde = compteCourantService.calculateSolde(compte);
@@ -100,18 +134,27 @@ public class CompteCourantResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      LOG.severe("Error getting comptes by user ID: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getCause().getMessage(), 500, "Internal Server Error", "/comptes/user/" + userId);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error getting comptes by user ID: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/user/" + userId);
+      return Response.status(statusCode)
           .type(MediaType.APPLICATION_JSON)
           .entity(error).build();
     }
   }
 
-
   @POST
   @Path("/user/{userId}")
-  public Response createCompte(@PathParam("userId") Integer userId, @QueryParam("taxe") @DefaultValue("0") BigDecimal taxe) {
+  public Response createCompte(@PathParam("userId") Integer userId,
+      @QueryParam("taxe") @DefaultValue("0") BigDecimal taxe) {
     try {
       // Use service method to find user (assumes user exists in central service)
       User user = compteCourantService.findUser(userId);
@@ -122,20 +165,20 @@ public class CompteCourantResource {
           .type(MediaType.APPLICATION_JSON)
           .entity(compteDTO).build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes/user/" + userId);
-        return Response.status(Response.Status.BAD_REQUEST)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
       } else {
         LOG.severe("EJB error creating compte: " + e.getMessage());
-        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes/user/" + userId);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
       }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/user/" + userId);
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     }
   }
 
@@ -153,6 +196,21 @@ public class CompteCourantResource {
 
       compteCourantService.delete(id);
       return Response.noContent().build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error deleting compte: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id);
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     } catch (Exception e) {
       LOG.severe("Error deleting compte: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id);
@@ -181,7 +239,8 @@ public class CompteCourantResource {
         try {
           actionDateTime = LocalDateTime.parse(actionDateTimeStr);
         } catch (Exception e) {
-          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400, "Bad Request", "/comptes/" + id + "/tax-to-pay");
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400,
+              "Bad Request", "/comptes/" + id + "/tax-to-pay");
           return Response.status(Response.Status.BAD_REQUEST)
               .type(MediaType.APPLICATION_JSON)
               .entity(error).build();
@@ -192,6 +251,21 @@ public class CompteCourantResource {
       return Response.ok("{\"taxToPay\": " + taxToPay + "}")
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error getting tax to pay: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id + "/tax-to-pay");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     } catch (Exception e) {
       LOG.severe("Error getting tax to pay: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id + "/tax-to-pay");
@@ -221,7 +295,8 @@ public class CompteCourantResource {
           LocalDateTime actionDateTime = LocalDateTime.parse(actionDateTimeStr);
           taxPaid = compteCourantService.getTaxPaidDate(compte, actionDateTime);
         } catch (Exception e) {
-          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400, "Bad Request", "/comptes/" + id + "/tax-paid");
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400,
+              "Bad Request", "/comptes/" + id + "/tax-paid");
           return Response.status(Response.Status.BAD_REQUEST)
               .type(MediaType.APPLICATION_JSON)
               .entity(error).build();
@@ -231,6 +306,21 @@ public class CompteCourantResource {
       return Response.ok("{\"taxPaid\": " + taxPaid + "}")
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error getting tax paid: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id + "/tax-paid");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     } catch (Exception e) {
       LOG.severe("Error getting tax paid: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id + "/tax-paid");
@@ -259,7 +349,8 @@ public class CompteCourantResource {
         try {
           actionDateTime = LocalDateTime.parse(actionDateTimeStr);
         } catch (Exception e) {
-          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400, "Bad Request", "/comptes/" + id + "/tax-status");
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400,
+              "Bad Request", "/comptes/" + id + "/tax-status");
           return Response.status(Response.Status.BAD_REQUEST)
               .type(MediaType.APPLICATION_JSON)
               .entity(error).build();
@@ -271,6 +362,21 @@ public class CompteCourantResource {
       return Response.ok("{\"isPaid\": " + isTaxPaid + ", \"taxToPay\": " + taxToPay + "}")
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error getting tax status: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id + "/tax-status");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     } catch (Exception e) {
       LOG.severe("Error getting tax status: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/" + id + "/tax-status");
@@ -300,7 +406,8 @@ public class CompteCourantResource {
       }
 
       if (request.getTaxe().compareTo(BigDecimal.ZERO) < 0) {
-        ErrorDTO error = new ErrorDTO("Tax amount must be non-negative", 400, "Bad Request", "/comptes/" + id + "/taxe");
+        ErrorDTO error = new ErrorDTO("Tax amount must be non-negative", 400, "Bad Request",
+            "/comptes/" + id + "/taxe");
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -311,20 +418,20 @@ public class CompteCourantResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid taxe update from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes/" + id + "/taxe");
-        return Response.status(Response.Status.BAD_REQUEST)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid taxe update from EJB: " + e.getCausedByException().getMessage());
       } else {
         LOG.severe("EJB error updating taxe: " + e.getMessage());
-        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes/" + id + "/taxe");
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
       }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/" + id + "/taxe");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     }
   }
 }

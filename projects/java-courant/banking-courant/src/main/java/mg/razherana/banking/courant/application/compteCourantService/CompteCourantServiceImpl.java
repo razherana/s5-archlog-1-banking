@@ -1,4 +1,4 @@
-package mg.razherana.banking.courant.application;
+package mg.razherana.banking.courant.application.compteCourantService;
 
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -15,6 +15,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import java.io.StringReader;
+
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
@@ -56,13 +57,13 @@ import java.util.logging.Logger;
  * @since 1.0
  * @see mg.razherana.banking.courant.entities.CompteCourant
  * @see mg.razherana.banking.courant.entities.TransactionCourant
- * @see mg.razherana.banking.courant.application.TransactionService
+ * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
 @Stateless
-public class CompteCourantService {
+public class CompteCourantServiceImpl implements CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());
-  
+
   // Hardcoded URL for java-interface REST API
   private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
 
@@ -76,6 +77,7 @@ public class CompteCourantService {
    * @return User object with the specified ID
    * @throws IllegalArgumentException if userId is null or user not found
    */
+  @Override
   public User findUser(Integer userId) {
     LOG.info("Finding user by ID: " + userId);
     if (userId == null) {
@@ -86,24 +88,25 @@ public class CompteCourantService {
     try {
       WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
       Response response = target.request(MediaType.APPLICATION_JSON).get();
-      
+
       if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User entity
+        // java-interface returns UserDTO, so we need to parse it and map to our User
+        // entity
         String jsonResponse = response.readEntity(String.class);
         LOG.info("Received JSON response: " + jsonResponse);
-        
+
         // Parse the UserDTO JSON response
         JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
         JsonObject userDto = jsonReader.readObject();
         jsonReader.close();
-        
+
         // Map UserDTO fields to User entity
         User user = new User();
         user.setId(userDto.getInt("id"));
         user.setName(userDto.getString("name"));
         user.setEmail(userDto.getString("email"));
         user.setPassword(""); // Password not returned by UserDTO for security
-        
+
         LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
         return user;
       } else {
@@ -119,6 +122,7 @@ public class CompteCourantService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public CompteCourant create(User user, BigDecimal taxe) {
     LOG.info("Creating compte courant for user: " + user);
     if (user == null) {
@@ -136,6 +140,7 @@ public class CompteCourantService {
     return compte;
   }
 
+  @Override
   public List<CompteCourant> getComptes() {
     LOG.info("Retrieving all comptes courants");
     TypedQuery<CompteCourant> query = entityManager.createQuery(
@@ -145,6 +150,7 @@ public class CompteCourantService {
     return comptes;
   }
 
+  @Override
   public CompteCourant findById(Integer id) {
     LOG.info("Finding compte courant by ID: " + id);
     if (id == null) {
@@ -153,6 +159,7 @@ public class CompteCourantService {
     return entityManager.find(CompteCourant.class, id);
   }
 
+  @Override
   public List<CompteCourant> getComptesByUser(User user) {
     LOG.info("Finding comptes for user: " + user.getId());
 
@@ -163,6 +170,7 @@ public class CompteCourantService {
     return query.getResultList();
   }
 
+  @Override
   public List<CompteCourant> getComptesByUserId(Integer userId) {
     LOG.info("Finding comptes for userId: " + userId);
     if (userId == null) {
@@ -178,6 +186,7 @@ public class CompteCourantService {
    * Calculate the balance (solde) of a compte courant by summing transactions
    * Balance = (sum of received amounts) - (sum of sent amounts)
    */
+  @Override
   public BigDecimal calculateSolde(CompteCourant compte) {
     LOG.info("Calculating solde for compte ID: " + compte.getId());
 
@@ -201,6 +210,7 @@ public class CompteCourantService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe) {
     LOG.info("Updating taxe for compte " + compte.getId() + " to " + nouvelleTaxe);
     if (compte == null || compte.getId() == null) {
@@ -217,6 +227,7 @@ public class CompteCourantService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public void delete(Integer id) {
     LOG.info("Deleting compte courant with ID: " + id);
     if (id == null) {
@@ -233,6 +244,7 @@ public class CompteCourantService {
 
   // Taxes application logic
 
+  @Override
   public BigDecimal getTaxPaidTotal(CompteCourant compte) {
     if (compte == null) {
       throw new IllegalArgumentException("Compte cannot be null");
@@ -248,6 +260,7 @@ public class CompteCourantService {
     return query.getSingleResult();
   }
 
+  @Override
   public BigDecimal getTaxPaidDate(CompteCourant compte, LocalDateTime actionDateTime) {
     if (compte == null) {
       throw new IllegalArgumentException("Compte cannot be null");
@@ -268,6 +281,7 @@ public class CompteCourantService {
     return query.getSingleResult();
   }
 
+  @Override
   public boolean isTaxPaid(CompteCourant compte, LocalDateTime actionDateTime) {
     return getTaxToPay(compte, actionDateTime).compareTo(BigDecimal.ZERO) == 0;
   }
@@ -276,6 +290,7 @@ public class CompteCourantService {
   // If already paid, return 0
   // Sum up with old unpaid taxes if any in previous months
   // This is always superior or equal to 0
+  @Override
   public BigDecimal getTaxToPay(CompteCourant compte, LocalDateTime actionDateTime) {
     if (compte == null) {
       throw new IllegalArgumentException("Compte cannot be null");

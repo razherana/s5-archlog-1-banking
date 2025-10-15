@@ -37,6 +37,27 @@ public class UserResource {
   @EJB
   private UserService userService;
 
+  /**
+   * Helper method to handle EJBException and extract the underlying cause.
+   * Returns true if the exception should be treated as a 400 Bad Request,
+   * false if it should be treated as a 500 Internal Server Error.
+   */
+  private boolean isClientError(EJBException ejbException) {
+    Throwable cause = ejbException.getCause();
+    return cause instanceof IllegalArgumentException;
+  }
+
+  /**
+   * Helper method to get the appropriate error message from an EJBException.
+   */
+  private String getErrorMessage(EJBException ejbException) {
+    Throwable cause = ejbException.getCause();
+    if (cause instanceof IllegalArgumentException) {
+      return cause.getMessage();
+    }
+    return "Internal server error";
+  }
+
   @GET
   public Response getAllUsers() {
     try {
@@ -49,11 +70,19 @@ public class UserResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      LOG.severe("EJB error getting all users: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users");
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
+      if (isClientError(e)) {
+        LOG.warning("Client error getting all users: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users");
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error getting all users: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users");
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     }
   }
 
@@ -74,10 +103,9 @@ public class UserResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/" + id);
+      if (isClientError(e)) {
+        LOG.warning("Client error getting user by ID: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users/" + id);
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -88,12 +116,6 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
-    } catch (Exception e) {
-      LOG.severe("Error getting user by ID: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
     }
   }
 
@@ -114,10 +136,9 @@ public class UserResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/email/" + email);
+      if (isClientError(e)) {
+        LOG.warning("Client error getting user by email: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users/email/" + email);
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -128,12 +149,6 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
-    } catch (Exception e) {
-      LOG.severe("Error getting user by email: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/email/" + email);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
     }
   }
 
@@ -154,10 +169,9 @@ public class UserResource {
           .type(MediaType.APPLICATION_JSON)
           .entity(userDTO).build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users");
+      if (isClientError(e)) {
+        LOG.warning("Client error creating user: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users");
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -189,10 +203,9 @@ public class UserResource {
           .type(MediaType.APPLICATION_JSON)
           .build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/" + id);
+      if (isClientError(e)) {
+        LOG.warning("Client error updating user: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users/" + id);
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -203,12 +216,6 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
-    } catch (Exception e) {
-      LOG.severe("Error updating user: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
     }
   }
 
@@ -219,10 +226,9 @@ public class UserResource {
       userService.deleteUser(id);
       return Response.noContent().build();
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/" + id);
+      if (isClientError(e)) {
+        LOG.warning("Client error deleting user: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users/" + id);
         return Response.status(Response.Status.BAD_REQUEST)
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
@@ -233,12 +239,6 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
-    } catch (Exception e) {
-      LOG.severe("Error deleting user: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
     }
   }
 }

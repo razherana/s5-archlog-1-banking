@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+  <!-- MySQL Database Configuration for Pret Banking -->
+  <Resource id="pretDatabase" type="javax.sql.DataSource">
+    # MySQL Database Configuration
+    JdbcDriver = com.mysql.cj.jdbc.Driver
+    JdbcUrl = jdbc:mysql://localhost:3306/s5_archlog_1_banking_pret?useSSL=false&amp;serverTimezone=UTC&amp;allowPublicKeyRetrieval=true
+    UserName = razherana
+    Password = 
+    
+    # Connection Pool Settings
+    JtaManaged = true
+    MaxActive = 20
+    MaxIdle = 10
+    MinIdle = 5
+    InitialSize = 5
+    MaxWait = 30000
+    
+    # Connection Validation
+    TestOnBorrow = true
+    TestOnReturn = false
+    TestWhileIdle = true
+    ValidationQuery = SELECT 1
+    ValidationInterval = 30000
+    
+    # Connection Lifecycle
+    RemoveAbandonedOnBorrow = true
+    RemoveAbandonedOnMaintenance = true
+    RemoveAbandonedTimeout = 60
+    LogAbandoned = true
+    
+    # MySQL Specific Settings
+    DefaultAutoCommit = false
+    AccessToUnderlyingConnectionAllowed = true
+  </Resource>
+</resources>

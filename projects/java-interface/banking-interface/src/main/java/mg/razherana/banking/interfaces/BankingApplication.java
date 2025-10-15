@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.api;
+package mg.razherana.banking.interfaces;
 
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
