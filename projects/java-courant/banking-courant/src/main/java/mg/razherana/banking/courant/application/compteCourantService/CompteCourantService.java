@@ -1,8 +1,5 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
-import jakarta.ejb.Stateless;
-import jakarta.ejb.TransactionAttribute;
-import jakarta.ejb.TransactionAttributeType;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
 import java.math.BigDecimal;
@@ -44,7 +41,6 @@ import java.util.List;
  * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
-@Stateless
 public interface CompteCourantService {
   /**
    * Find a user by ID using REST API call to java-interface.
@@ -55,7 +51,6 @@ public interface CompteCourantService {
    */
   public User findUser(Integer userId);
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public CompteCourant create(User user, BigDecimal taxe);
 
   public List<CompteCourant> getComptes();
@@ -72,10 +67,8 @@ public interface CompteCourantService {
    */
   public BigDecimal calculateSolde(CompteCourant compte);
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe);
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public void delete(Integer id);
 
   // Taxes application logic
