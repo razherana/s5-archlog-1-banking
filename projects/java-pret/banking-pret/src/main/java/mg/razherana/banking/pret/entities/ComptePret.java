@@ -1,14 +1,16 @@
 package mg.razherana.banking.pret.entities;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * ComptePret entity representing loan accounts in the banking system.
  * 
  * <p>
- * This entity stores basic loan account information.
- * Loan accounts are linked to users through userId references.
+ * This entity stores loan account information including amount, type, and
+ * duration.
+ * Loan accounts are linked to users and loan types.
  * </p>
  * 
  * @author Banking System
@@ -35,10 +37,28 @@ public class ComptePret {
   private Integer userId;
 
   /**
-   * Timestamp when the loan account was created.
+   * Reference to the loan type.
    */
-  @Column(name = "created_at")
-  private LocalDateTime createdAt;
+  @Column(name = "type_compte_pret_id", nullable = false)
+  private Integer typeComptePretId;
+
+  /**
+   * Loan amount (principal).
+   */
+  @Column(name = "montant", nullable = false, precision = 15, scale = 2)
+  private BigDecimal montant;
+
+  /**
+   * Loan start date.
+   */
+  @Column(name = "date_debut", nullable = false)
+  private LocalDateTime dateDebut;
+
+  /**
+   * Loan end date.
+   */
+  @Column(name = "date_fin", nullable = false)
+  private LocalDateTime dateFin;
 
   /**
    * Default constructor for JPA.
@@ -47,13 +67,21 @@ public class ComptePret {
   }
 
   /**
-   * Constructor with userId.
+   * Constructor with basic loan information.
    * 
-   * @param userId the ID of the user who owns this loan account
+   * @param userId           the ID of the user who owns this loan account
+   * @param typeComptePretId the loan type ID
+   * @param montant          the loan amount
+   * @param dateDebut        the loan start date
+   * @param dateFin          the loan end date
    */
-  public ComptePret(Integer userId) {
+  public ComptePret(Integer userId, Integer typeComptePretId, BigDecimal montant,
+      LocalDateTime dateDebut, LocalDateTime dateFin) {
     this.userId = userId;
-    this.createdAt = LocalDateTime.now();
+    this.typeComptePretId = typeComptePretId;
+    this.montant = montant;
+    this.dateDebut = dateDebut;
+    this.dateFin = dateFin;
   }
 
   /**
@@ -93,44 +121,91 @@ public class ComptePret {
   }
 
   /**
-   * Gets the creation timestamp of the loan account.
+   * Gets the loan type ID.
    * 
-   * @return the creation timestamp
+   * @return the loan type ID
    */
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
+  public Integer getTypeComptePretId() {
+    return typeComptePretId;
   }
 
   /**
-   * Sets the creation timestamp of the loan account.
+   * Sets the loan type ID.
    * 
-   * @param createdAt the creation timestamp to set
+   * @param typeComptePretId the loan type ID to set
    */
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
+  public void setTypeComptePretId(Integer typeComptePretId) {
+    this.typeComptePretId = typeComptePretId;
   }
 
   /**
-   * Pre-persist callback to set creation timestamp.
+   * Gets the loan amount.
+   * 
+   * @return the loan amount
    */
-  @PrePersist
-  protected void onCreate() {
-    if (createdAt == null) {
-      createdAt = LocalDateTime.now();
-    }
+  public BigDecimal getMontant() {
+    return montant;
+  }
+
+  /**
+   * Sets the loan amount.
+   * 
+   * @param montant the loan amount to set
+   */
+  public void setMontant(BigDecimal montant) {
+    this.montant = montant;
+  }
+
+  /**
+   * Gets the loan start date.
+   * 
+   * @return the loan start date
+   */
+  public LocalDateTime getDateDebut() {
+    return dateDebut;
+  }
+
+  /**
+   * Sets the loan start date.
+   * 
+   * @param dateDebut the loan start date to set
+   */
+  public void setDateDebut(LocalDateTime dateDebut) {
+    this.dateDebut = dateDebut;
+  }
+
+  /**
+   * Gets the loan end date.
+   * 
+   * @return the loan end date
+   */
+  public LocalDateTime getDateFin() {
+    return dateFin;
+  }
+
+  /**
+   * Sets the loan end date.
+   * 
+   * @param dateFin the loan end date to set
+   */
+  public void setDateFin(LocalDateTime dateFin) {
+    this.dateFin = dateFin;
   }
 
   /**
    * Returns a string representation of the loan account.
    * 
-   * @return a string representation containing id, userId, and createdAt
+   * @return a string representation containing loan details
    */
   @Override
   public String toString() {
     return "ComptePret{" +
         "id=" + id +
         ", userId=" + userId +
-        ", createdAt=" + createdAt +
+        ", typeComptePretId=" + typeComptePretId +
+        ", montant=" + montant +
+        ", dateDebut=" + dateDebut +
+        ", dateFin=" + dateFin +
         '}';
   }
 }

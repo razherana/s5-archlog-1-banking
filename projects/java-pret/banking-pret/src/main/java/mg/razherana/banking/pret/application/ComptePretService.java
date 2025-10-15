@@ -6,18 +6,15 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import java.io.StringReader;
 import mg.razherana.banking.pret.entities.ComptePret;
-import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.pret.entities.TypeComptePret;
+import mg.razherana.banking.pret.entities.Echeance;
+import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -26,7 +23,7 @@ import java.util.logging.Logger;
  * 
  * <p>
  * This service provides business logic for loan account management including
- * creation, retrieval, and user integration with the java-interface service.
+ * creation, retrieval, payment processing, and amortization calculations.
  * </p>
  * 
  * @author Banking System
@@ -37,123 +34,275 @@ import java.util.logging.Logger;
 public class ComptePretService {
   private static final Logger LOG = Logger.getLogger(ComptePretService.class.getName());
 
-  // Hardcoded URL for java-interface REST API
-  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
-
   @PersistenceContext(unitName = "pretPU")
   private EntityManager entityManager;
 
   /**
-   * Find a user by ID using REST API call to java-interface.
+   * Creates a new loan account.
    * 
-   * @param userId the user ID
-   * @return User object with the specified ID
-   * @throws IllegalArgumentException if userId is null or user not found
+   * @param userId           the user ID
+   * @param typeComptePretId the loan type ID
+   * @param montant          the loan amount
+   * @param dateDebut        the loan start date
+   * @param dateFin          the loan end date
+   * @return the created loan account
    */
-  public User findUser(Integer userId) {
-    LOG.info("Finding user by ID: " + userId);
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  public ComptePret createLoan(Integer userId, Integer typeComptePretId, BigDecimal montant,
+      LocalDateTime dateDebut, LocalDateTime dateFin) {
+    LOG.info("Creating loan for user: " + userId);
+
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
-
-    Client client = ClientBuilder.newClient();
-    try {
-      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
-      Response response = target.request(MediaType.APPLICATION_JSON).get();
-
-      if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User
-        // entity
-        String jsonResponse = response.readEntity(String.class);
-        LOG.info("Received JSON response: " + jsonResponse);
-
-        // Parse the UserDTO JSON response
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
-        JsonObject userDto = jsonReader.readObject();
-        jsonReader.close();
-
-        // Map UserDTO fields to User entity
-        User user = new User();
-        user.setId(userDto.getInt("id"));
-        user.setName(userDto.getString("name"));
-        user.setEmail(userDto.getString("email"));
-        user.setPassword(""); // Password not returned by UserDTO for security
-
-        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
-        return user;
-      } else {
-        LOG.warning("User with ID " + userId + " not found. Response status: " + response.getStatus());
-        throw new IllegalArgumentException("User with ID " + userId + " not found");
-      }
-    } catch (Exception e) {
-      LOG.severe("Error calling REST UserService: " + e.getMessage());
-      throw new IllegalArgumentException("Error calling REST UserService: " + e.getMessage());
-    } finally {
-      client.close();
+    if (typeComptePretId == null) {
+      throw new IllegalArgumentException("Loan type ID cannot be null");
     }
-  }
-
-  @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public ComptePret create(User user) {
-    LOG.info("Creating compte pret for user: " + user);
-    if (user == null) {
-      throw new IllegalArgumentException("User cannot be null");
+    if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new IllegalArgumentException("Loan amount must be positive");
+    }
+    if (dateDebut == null) {
+      throw new IllegalArgumentException("Start date cannot be null");
+    }
+    if (dateFin == null) {
+      throw new IllegalArgumentException("End date cannot be null");
+    }
+    if (dateFin.isBefore(dateDebut)) {
+      throw new IllegalArgumentException("End date must be after start date");
     }
 
-    ComptePret compte = new ComptePret();
-    compte.setUserId(user.getId());
+    // Verify loan type exists
+    TypeComptePret loanType = findLoanTypeById(typeComptePretId);
+    if (loanType == null) {
+      throw new IllegalArgumentException("Loan type not found: " + typeComptePretId);
+    }
 
+    ComptePret compte = new ComptePret(userId, typeComptePretId, montant, dateDebut, dateFin);
     entityManager.persist(compte);
     entityManager.flush();
-    LOG.info("Compte pret created successfully with ID: " + compte.getId());
+
+    LOG.info("Loan created successfully with ID: " + compte.getId());
     return compte;
   }
 
-  public List<ComptePret> getComptes() {
-    LOG.info("Retrieving all comptes prets");
-    TypedQuery<ComptePret> query = entityManager.createQuery(
-        "SELECT c FROM ComptePret c", ComptePret.class);
-    List<ComptePret> comptes = query.getResultList();
-    LOG.info("Found " + comptes.size() + " comptes");
-    return comptes;
+  /**
+   * Finds a loan type by ID.
+   */
+  public TypeComptePret findLoanTypeById(Integer id) {
+    if (id == null) {
+      throw new IllegalArgumentException("Loan type ID cannot be null");
+    }
+    return entityManager.find(TypeComptePret.class, id);
   }
 
+  /**
+   * Gets all loan types.
+   */
+  public List<TypeComptePret> getAllLoanTypes() {
+    TypedQuery<TypeComptePret> query = entityManager.createQuery(
+        "SELECT t FROM TypeComptePret t", TypeComptePret.class);
+    return query.getResultList();
+  }
+
+  /**
+   * Finds a loan account by ID.
+   */
   public ComptePret findById(Integer id) {
-    LOG.info("Finding compte pret by ID: " + id);
+    LOG.info("Finding loan account by ID: " + id);
     if (id == null) {
-      throw new IllegalArgumentException("Compte ID cannot be null");
+      throw new IllegalArgumentException("Loan account ID cannot be null");
     }
     return entityManager.find(ComptePret.class, id);
   }
 
-  public List<ComptePret> getComptesByUserId(Integer userId) {
-    LOG.info("Finding comptes for userId: " + userId);
+  /**
+   * Gets all loan accounts for a user.
+   */
+  public List<ComptePret> getLoansByUserId(Integer userId) {
+    LOG.info("Finding loans for userId: " + userId);
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
-    // Verify user exists first
-    findUser(userId);
-
     TypedQuery<ComptePret> query = entityManager.createQuery(
         "SELECT c FROM ComptePret c WHERE c.userId = :userId", ComptePret.class);
     query.setParameter("userId", userId);
-
     return query.getResultList();
   }
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public void delete(Integer id) {
-    LOG.info("Deleting compte pret with ID: " + id);
-    if (id == null) {
-      throw new IllegalArgumentException("Compte ID cannot be null");
+  /**
+   * Calculates the monthly payment for a loan using amortization formula.
+   * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
+   * 
+   * @param loan the loan account
+   * @return the monthly payment amount
+   */
+  public BigDecimal calculateMonthlyPayment(ComptePret loan) {
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan cannot be null");
     }
 
-    ComptePret compte = entityManager.find(ComptePret.class, id);
-    if (compte != null) {
-      entityManager.remove(compte);
-      entityManager.flush();
-      LOG.info("Compte pret deleted successfully");
+    TypeComptePret loanType = findLoanTypeById(loan.getTypeComptePretId());
+    if (loanType == null) {
+      throw new IllegalArgumentException("Loan type not found");
     }
+
+    BigDecimal principal = loan.getMontant(); // C
+    BigDecimal annualRate = loanType.getInteret(); // Annual interest rate
+
+    // Calculate number of months between start and end date
+    long totalMonths = ChronoUnit.MONTHS.between(loan.getDateDebut(), loan.getDateFin());
+    if (totalMonths <= 0) {
+      throw new IllegalArgumentException("Invalid loan duration");
+    }
+
+    // Convert annual rate to monthly rate: i = annual/12
+    BigDecimal monthlyRate = annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
+
+    // If interest rate is 0, simple division
+    if (monthlyRate.compareTo(BigDecimal.ZERO) == 0) {
+      return principal.divide(BigDecimal.valueOf(totalMonths), 2, RoundingMode.HALF_UP);
+    }
+
+    // Calculate (1 + i)^(-n)
+    BigDecimal onePlusRate = BigDecimal.ONE.add(monthlyRate);
+    BigDecimal powerTerm = BigDecimal.ONE.divide(
+        onePlusRate.pow((int) totalMonths), 10, RoundingMode.HALF_UP);
+
+    // Calculate denominator: [1 - (1 + i)^(-n)]
+    BigDecimal denominator = BigDecimal.ONE.subtract(powerTerm);
+
+    // Calculate numerator: [C × i]
+    BigDecimal numerator = principal.multiply(monthlyRate);
+
+    // Final calculation: M = numerator / denominator
+    return numerator.divide(denominator, 2, RoundingMode.HALF_UP);
+  }
+
+  /**
+   * Gets all payments for a loan account.
+   */
+  public List<Echeance> getPaymentHistory(Integer compteId) {
+    if (compteId == null) {
+      throw new IllegalArgumentException("Loan account ID cannot be null");
+    }
+
+    TypedQuery<Echeance> query = entityManager.createQuery(
+        "SELECT e FROM Echeance e WHERE e.compteId = :compteId ORDER BY e.dateEcheance",
+        Echeance.class);
+    query.setParameter("compteId", compteId);
+    return query.getResultList();
+  }
+
+  /**
+   * Calculates total amount paid for a loan.
+   */
+  public BigDecimal calculateTotalPaid(Integer compteId) {
+    if (compteId == null) {
+      throw new IllegalArgumentException("Loan account ID cannot be null");
+    }
+
+    TypedQuery<BigDecimal> query = entityManager.createQuery(
+        "SELECT COALESCE(SUM(e.montant), 0) FROM Echeance e WHERE e.compteId = :compteId",
+        BigDecimal.class);
+    query.setParameter("compteId", compteId);
+
+    BigDecimal result = query.getSingleResult();
+    return result != null ? result : BigDecimal.ZERO;
+  }
+
+  /**
+   * Calculates the expected amount to be paid by a specific date.
+   */
+  public BigDecimal calculateExpectedPaidByDate(ComptePret loan, LocalDateTime actionDateTime) {
+    if (loan == null || actionDateTime == null) {
+      throw new IllegalArgumentException("Loan and action date cannot be null");
+    }
+
+    // If action date is before loan start, nothing is expected
+    if (actionDateTime.isBefore(loan.getDateDebut())) {
+      return BigDecimal.ZERO;
+    }
+
+    // If action date is after loan end, full loan amount is expected
+    if (actionDateTime.isAfter(loan.getDateFin())) {
+      return loan.getMontant();
+    }
+
+    // Calculate months elapsed since loan start
+    long monthsElapsed = ChronoUnit.MONTHS.between(loan.getDateDebut(), actionDateTime);
+    if (monthsElapsed < 0) {
+      monthsElapsed = 0;
+    }
+
+    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
+    return monthlyPayment.multiply(BigDecimal.valueOf(monthsElapsed));
+  }
+
+  /**
+   * Gets payment status for a loan at a specific date.
+   */
+  public PaymentStatusDTO getPaymentStatus(Integer compteId, LocalDateTime actionDateTime) {
+    if (compteId == null) {
+      throw new IllegalArgumentException("Loan account ID cannot be null");
+    }
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
+
+    ComptePret loan = findById(compteId);
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan account not found: " + compteId);
+    }
+
+    BigDecimal totalPaid = calculateTotalPaid(compteId);
+    BigDecimal totalExpected = calculateExpectedPaidByDate(loan, actionDateTime);
+    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
+
+    // Amount due is the difference between expected and paid
+    BigDecimal amountDue = totalExpected.subtract(totalPaid);
+    if (amountDue.compareTo(BigDecimal.ZERO) < 0) {
+      amountDue = BigDecimal.ZERO; // Can't have negative due amount
+    }
+
+    // Check if loan is fully paid
+    boolean isFullyPaid = totalPaid.compareTo(loan.getMontant()) >= 0;
+
+    return new PaymentStatusDTO(totalPaid, totalExpected, amountDue, isFullyPaid, monthlyPayment);
+  }
+
+  /**
+   * Makes a payment for a loan.
+   */
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  public Echeance makePayment(Integer compteId, BigDecimal amount, LocalDateTime actionDateTime) {
+    if (compteId == null) {
+      throw new IllegalArgumentException("Loan account ID cannot be null");
+    }
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new IllegalArgumentException("Payment amount must be positive");
+    }
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
+
+    ComptePret loan = findById(compteId);
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan account not found: " + compteId);
+    }
+
+    // Check if loan is already fully paid
+    PaymentStatusDTO status = getPaymentStatus(compteId, actionDateTime);
+    if (status.isFullyPaid()) {
+      throw new IllegalArgumentException("Loan is already fully paid");
+    }
+
+    // Create payment record
+    Echeance payment = new Echeance(compteId, amount, actionDateTime);
+    entityManager.persist(payment);
+    entityManager.flush();
+
+    LOG.info("Payment of " + amount + " made for loan " + compteId);
+    return payment;
   }
 }

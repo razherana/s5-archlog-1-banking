@@ -1,20 +1,13 @@
 package mg.razherana.banking.pret.dto;
 
-import mg.razherana.banking.pret.entities.ComptePret;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Data Transfer Object for ComptePret entity.
- * 
- * <p>
- * This DTO is used for transferring loan account data through REST API
- * endpoints.
- * </p>
+ * Request DTO for creating a new loan account.
  */
-public class ComptePretDTO {
+public class CreateComptePretRequest {
 
-  private Integer id;
   private Integer userId;
   private Integer typeComptePretId;
   private BigDecimal montant;
@@ -22,28 +15,10 @@ public class ComptePretDTO {
   private LocalDateTime dateFin;
 
   // Default constructor
-  public ComptePretDTO() {
-  }
-
-  // Constructor from ComptePret entity
-  public ComptePretDTO(ComptePret compte) {
-    this.id = compte.getId();
-    this.userId = compte.getUserId();
-    this.typeComptePretId = compte.getTypeComptePretId();
-    this.montant = compte.getMontant();
-    this.dateDebut = compte.getDateDebut();
-    this.dateFin = compte.getDateFin();
+  public CreateComptePretRequest() {
   }
 
   // Getters and setters
-  public Integer getId() {
-    return id;
-  }
-
-  public void setId(Integer id) {
-    this.id = id;
-  }
-
   public Integer getUserId() {
     return userId;
   }
@@ -86,9 +61,8 @@ public class ComptePretDTO {
 
   @Override
   public String toString() {
-    return "ComptePretDTO{" +
-        "id=" + id +
-        ", userId=" + userId +
+    return "CreateComptePretRequest{" +
+        "userId=" + userId +
         ", typeComptePretId=" + typeComptePretId +
         ", montant=" + montant +
         ", dateDebut=" + dateDebut +
