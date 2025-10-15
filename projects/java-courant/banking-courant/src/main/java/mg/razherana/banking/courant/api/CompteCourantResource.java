@@ -99,9 +99,9 @@ public class CompteCourantResource {
       return Response.ok(compteDTOs)
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (Exception e) {
+    } catch (EJBException e) {
       LOG.severe("Error getting comptes by user ID: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/user/" + userId);
+      ErrorDTO error = new ErrorDTO(e.getCause().getMessage(), 500, "Internal Server Error", "/comptes/user/" + userId);
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
           .type(MediaType.APPLICATION_JSON)
           .entity(error).build();

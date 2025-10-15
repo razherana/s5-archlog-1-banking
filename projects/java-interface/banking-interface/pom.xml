@@ -20,10 +20,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>mg.razherana.banking</groupId>
-  <artifactId>banking-courant</artifactId>
+  <artifactId>banking-interface</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
-  <name>banking-courant TomEE Webapp</name>
+  <name>banking-interface TomEE Webapp</name>
   <url>http://tomee.apache.org</url>
 
   <properties>
@@ -41,13 +41,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>openejb-client</artifactId>
-      <version>10.0.1</version>
-      <scope>runtime</scope>
-    </dependency>
-
     <!-- MySQL Connector -->
     <dependency>
       <groupId>mysql</groupId>
@@ -61,48 +54,6 @@
       <artifactId>hibernate-core</artifactId>
       <version>6.1.7.Final</version>
     </dependency>
-
-    <!-- to test with TomEE and Arquillian
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-tomee-remote</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
-
-    <!-- to test with OpenEJB embedded and Arquillian
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-openejb-embedded</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
   </dependencies>
 
   <build>
@@ -130,9 +81,15 @@
         <artifactId>tomee-maven-plugin</artifactId>
         <version>10.1.0</version>
         <configuration>
-          <config>src/main/tomee/conf</config>
           <context>ROOT</context>
-          <args>-Xmx512m</args>
+          <args>-Xmx512m -Dtomee.remote.support=true</args>
+          <config>src/main/tomee/conf</config>
+          <systemVariables>
+            <tomee.remote.support>true</tomee.remote.support>
+            <openejb.cdi.activated>true</openejb.cdi.activated>
+            <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+            <tomee.serialization.class.whitelist>org.apache.openejb.BeanContext$BusinessRemoteHome,org.apache.openejb.core.ivm.naming.BusinessRemoteReference,mg.razherana.banking.interfaces.application.userServices.UserServiceRemote,mg.razherana.banking.interfaces.application.userServices.UserServiceLocal,mg.razherana.banking.interfaces.application.userServices.UserServiceRemoteImpl,mg.razherana.banking.interfaces.application.userServices.UserServiceLocalImpl,mg.razherana.banking.interfaces.entities.User,[Ljava.net.URI;,java.net.URI,java.lang.String,java.util.ArrayList,java.util.HashMap,java.lang.Integer,java.math.BigDecimal</tomee.serialization.class.whitelist>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>
