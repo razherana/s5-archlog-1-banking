@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Banking Pret Service</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        color: #ecf0f1;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        background: rgba(52, 73, 94, 0.9);
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 600px;
+        width: 100%;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      h1 {
+        color: #3498db;
+        margin-bottom: 20px;
+        font-size: 2.5em;
+        font-weight: 300;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .subtitle {
+        color: #bdc3c7;
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        font-weight: 300;
+      }
+
+      .service-info {
+        background: rgba(41, 128, 185, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-left: 4px solid #3498db;
+      }
+
+      .api-info {
+        background: rgba(39, 174, 96, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #27ae60;
+        text-align: left;
+      }
+
+      .api-info h3 {
+        color: #27ae60;
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+
+      .endpoint {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin: 5px 0;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+        color: #ecf0f1;
+      }
+
+      .status {
+        color: #27ae60;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+
+      .footer {
+        margin-top: 30px;
+        color: #7f8c8d;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🏦 Banking Pret Service</h1>
+      <p class="subtitle">Loan Account Management System</p>
+
+      <div class="service-info">
+        <h2>Service Information</h2>
+        <p><strong>Service:</strong> java-pret</p>
+        <p><strong>Host:</strong> 127.0.0.3:8080</p>
+        <p><strong>Database:</strong> s5_banking_pret</p>
+        <p><strong>Purpose:</strong> Loan account creation and management</p>
+      </div>
+
+      <div class="api-info">
+        <h3>🔗 Available API Endpoints</h3>
+        <div class="endpoint">GET /api/comptes - List all loan accounts</div>
+        <div class="endpoint">
+          GET /api/comptes/{id} - Get loan account by ID
+        </div>
+        <div class="endpoint">
+          GET /api/comptes/user/{userId} - Get user's loan accounts
+        </div>
+        <div class="endpoint">
+          POST /api/comptes/user/{userId} - Create loan account for user
+        </div>
+        <div class="endpoint">
+          DELETE /api/comptes/{id} - Delete loan account
+        </div>
+      </div>
+
+      <div class="api-info">
+        <h3>🔄 Integration</h3>
+        <p>This service integrates with:</p>
+        <div class="endpoint">
+          java-interface (127.0.0.2:8080) - User management via REST
+        </div>
+      </div>
+
+      <p class="status">✅ Service is running and ready</p>
+
+      <div class="footer">
+        Banking System - Loan Management Module<br />
+        Version 1.0 | TomEE 10.1.0 | Java 17
+      </div>
+    </div>
+  </body>
+</html>
