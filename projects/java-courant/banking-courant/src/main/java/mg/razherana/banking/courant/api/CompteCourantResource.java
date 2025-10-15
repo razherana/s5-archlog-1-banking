@@ -154,12 +154,30 @@ public class CompteCourantResource {
   @POST
   @Path("/user/{userId}")
   public Response createCompte(@PathParam("userId") Integer userId,
-      @QueryParam("taxe") @DefaultValue("0") BigDecimal taxe) {
+      @QueryParam("taxe") @DefaultValue("0") BigDecimal taxe,
+      @QueryParam("actionDateTime") @DefaultValue("") String actionDateTimeString) {
     try {
       // Use service method to find user (assumes user exists in central service)
+      LocalDateTime actionDateTime = null;
+
+      actionDateTime = LocalDateTime.now();
+      if (actionDateTimeString != null && !actionDateTimeString.isBlank()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeString);
+        } catch (Exception e) {
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 400,
+              "Bad Request", "/comptes/user/" + userId);
+          return Response.status(Response.Status.BAD_REQUEST)
+              .type(MediaType.APPLICATION_JSON)
+              .entity(error).build();
+        }
+      }
+
       User user = compteCourantService.findUser(userId);
 
-      CompteCourant compte = compteCourantService.create(user, taxe);
+      LOG.info("Creating compte for user: " + user + " with taxe: " + taxe + " at " + actionDateTime);
+
+      CompteCourant compte = compteCourantService.create(user, taxe, actionDateTime);
       CompteCourantDTO compteDTO = new CompteCourantDTO(compte, compteCourantService.calculateSolde(compte));
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)

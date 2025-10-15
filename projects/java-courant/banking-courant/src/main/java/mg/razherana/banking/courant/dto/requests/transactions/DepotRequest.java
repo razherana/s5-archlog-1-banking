@@ -1,6 +1,7 @@
 package mg.razherana.banking.courant.dto.requests.transactions;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * Request DTO for deposit transactions.
@@ -28,6 +29,9 @@ public class DepotRequest {
 
   /** Optional description for the deposit */
   private String description;
+
+  /** Optional action date/time for the deposit (for backdating) */
+  private LocalDateTime actionDateTime;
 
   /**
    * Gets the ID of the account to receive the deposit.
@@ -66,5 +70,13 @@ public class DepotRequest {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  public LocalDateTime getActionDateTime() {
+    return actionDateTime;
+  }
+
+  public void setActionDateTime(LocalDateTime actionDateTime) {
+    this.actionDateTime = actionDateTime;
   }
 }

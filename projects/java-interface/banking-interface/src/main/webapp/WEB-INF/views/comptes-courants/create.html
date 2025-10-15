@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un Compte Courant - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Créer un Nouveau Compte Courant</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="../comptes-courants">← Retour à la liste des comptes</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- Success Message -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:if="${param.success[0] == 'account_created'}">
+            Compte créé avec succès!
+          </p>
+        </div>
+
+        <!-- Create Account Form -->
+        <form method="post" action="create" class="account-form">
+          <div class="form-group">
+            <label for="taxe"
+              >Taxe Mensuelle (MGA) <small>(optionnel)</small>:</label
+            >
+            <input
+              type="number"
+              id="taxe"
+              name="taxe"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              class="form-input"
+            />
+            <small class="form-help">
+              La taxe mensuelle sera appliquée à ce compte. Laissez vide pour
+              aucune taxe.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="actionDateTime"
+              >Date/Heure de création (optionnel):</label
+            >
+            <input
+              type="datetime-local"
+              id="actionDateTime"
+              name="actionDateTime"
+              class="form-input"
+            />
+            <small class="form-help">
+              Laissez vide pour utiliser l'heure actuelle. Utile pour les tests
+              et le backtracking.
+            </small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              Créer le Compte
+            </button>
+            <a href="../comptes-courants" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>Le numéro de compte sera généré automatiquement</li>
+            <li>Le solde initial sera de 0,00 MGA</li>
+            <li>
+              La taxe mensuelle (si définie) devra être payée avant les retraits
+            </li>
+            <li>Tous les comptes sont soumis aux réglementations bancaires</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -21,11 +21,11 @@ calculate_amortization_table() {
     echo "================================================"
     echo "TABLEAU D'AMORTISSEMENT"
     echo "================================================"
-    echo "Capital: $capital €"
+    echo "Capital: $capital MGA"
     echo "Taux annuel: $annual_rate%"
     echo "Taux mensuel: $(echo "scale=6; $monthly_rate * 100" | bc)%"
     echo "Durée: $months mois"
-    echo "Mensualité: $(echo "scale=2; $monthly_payment / 1" | bc) €"
+    echo "Mensualité: $(echo "scale=2; $monthly_payment / 1" | bc) MGA"
     echo "================================================"
     echo "Mois | Mensualité | Intérêts | Capital | Restant"
     echo "-----|------------|----------|---------|--------"
@@ -50,7 +50,7 @@ calculate_amortization_table() {
         new_capital_display=$(echo "scale=2; $new_capital / 1" | bc)
         monthly_payment_display=$(echo "scale=2; $monthly_payment / 1" | bc)
         
-        printf "%4d | %9.2f€ | %7.2f€ | %6.2f€ | %7.2f€\n" \
+        printf "%4d | %9.2fMGA | %7.2fMGA | %6.2fMGA | %7.2fMGA\n" \
             "$month" "$monthly_payment_display" "$interest_display" \
             "$capital_paid_display" "$new_capital_display"
         
@@ -66,13 +66,13 @@ calculate_amortization_table() {
     total_interest_display=$(echo "scale=2; $total_interest / 1" | bc)
     total_paid_display=$(echo "scale=2; $total_paid / 1" | bc)
     
-    echo "Total intérêts payés: $total_interest_display €"
-    echo "Total remboursé: $total_paid_display €"
-    echo "Vérification: Capital + Intérêts = $(echo "scale=2; $capital + $total_interest" | bc) €"
+    echo "Total intérêts payés: $total_interest_display MGA"
+    echo "Total remboursé: $total_paid_display MGA"
+    echo "Vérification: Capital + Intérêts = $(echo "scale=2; $capital + $total_interest" | bc) MGA"
 }
 
 # Vérification avec votre exemple
-echo "CALCUL DE VÉRIFICATION - PRÊT 6000€ À 5.5% SUR 11 MOIS"
+echo "CALCUL DE VÉRIFICATION - PRÊT 6000MGA À 5.5% SUR 11 MOIS"
 calculate_amortization_table 6000 5.5 12
 
 echo ""

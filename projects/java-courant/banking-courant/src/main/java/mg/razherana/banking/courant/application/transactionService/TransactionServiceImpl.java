@@ -40,23 +40,27 @@ public class TransactionServiceImpl implements TransactionService {
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description) {
+  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description, 
+      LocalDateTime actionDateTime) {
     LOG.info("Processing depot of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
       throw new IllegalArgumentException("Montant must be positive");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(null); // System/external source
     transaction.setSpecialAction(SpecialAction.DEPOSIT.getDatabaseName());
     transaction.setReceiver(compte);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
-    LOG.info("Depot processed successfully");
+    LOG.info("Depot processed successfully with date: " + transactionDateTime);
     return transaction;
   }
 
@@ -79,13 +83,16 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // For retrait, money goes to "system" (external destination)
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.WITHDRAWAL.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -116,13 +123,16 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // For retrait, money goes to "system" (external destination)
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.TAXE.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -153,12 +163,15 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // Create transfer transaction directly
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compteSource);
     transaction.setReceiver(compteDestination);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comptes Courants - Banking Interface</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Mes Comptes Courants</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="menu.html">← Retour au menu</a>
+        </p>
+
+        <!-- Success Messages -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:if="${param.success[0] == 'account_created'}">Compte créé avec succès!</p>
+        </div>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- Create Account Button -->
+        <div class="text-center" style="margin-bottom: 2rem;">
+          <a href="comptes-courants/create" class="btn btn-primary">
+            + Créer un Nouveau Compte
+          </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(accounts)}" class="alert alert-info">
+          <p>Aucun compte courant trouvé.</p>
+          <p class="text-center" style="margin-top: 1rem;">
+            <a href="comptes-courants/create" class="btn btn-primary">Créer votre premier compte</a>
+          </p>
+        </div>
+
+        <table th:if="${!#lists.isEmpty(accounts)}" class="accounts-table">
+          <thead>
+            <tr>
+              <th>Numéro de Compte</th>
+              <th>Solde</th>
+              <th>Date d'Ouverture</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="account : ${accounts}">
+              <td th:text="${account.numeroCompte}">12345</td>
+              <td
+                th:class="${account.solde >= 0} ? 'positive-balance' : 'negative-balance'"
+                th:text="${#numbers.formatDecimal(account.solde, 1, 2)} + ' MGA'"
+              >
+                0.00 MGA
+              </td>
+              <td
+                th:text="${account.dateOuverture != null} ? ${#temporals.format(account.dateOuverture, 'dd/MM/yyyy HH:mm')} : 'N/A'"
+              >
+                01/01/2024 10:00
+              </td>
+              <td>
+                <a th:href="@{comptes-courants/detail(id=${account.id})}" class="btn btn-primary btn-small">
+                  Gérer
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

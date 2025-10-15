@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TransactionService {
-  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description);
+  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description, LocalDateTime actionDateTime);
 
   public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
       LocalDateTime actionDateTime);

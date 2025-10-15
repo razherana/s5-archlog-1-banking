@@ -137,11 +137,11 @@ Where:
 
 ### Example Calculation
 
-For a €10,000 loan at 5.5% annual interest over 2 years:
+For a MGA10,000 loan at 5.5% annual interest over 2 years:
 
 - Monthly rate: 5.5% / 12 = 0.0045833
 - Number of payments: 24
-- Monthly payment: €448.07
+- Monthly payment: MGA448.07
 
 ## Rolling Credit System
 

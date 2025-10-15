@@ -70,7 +70,7 @@ echo ""
 echo "💰 Step 3: Performing banking transactions..."
 echo ""
 
-echo "Father receives salary (deposit 5000€)..."
+echo "Father receives salary (deposit 5000MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,7 +80,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/depot" >/dev/null
 
-echo "Mother receives salary (deposit 3500€)..."
+echo "Mother receives salary (deposit 3500MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -90,7 +90,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/depot" >/dev/null
 
-echo "Father transfers money to mother (1000€)..."
+echo "Father transfers money to mother (1000MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -101,7 +101,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/transfert" >/dev/null
 
-echo "Mother gives allowance to child (100€)..."
+echo "Mother gives allowance to child (100MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -112,7 +112,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/transfert" >/dev/null
 
-echo "Father transfers to business account (2000€)..."
+echo "Father transfers to business account (2000MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,7 +123,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/transfert" >/dev/null
 
-echo "Father withdraws cash (300€)..."
+echo "Father withdraws cash (300MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -133,7 +133,7 @@ curl -s -X POST \
   }' \
   "$BASE_URL/transactions/retrait" >/dev/null
 
-echo "Mother pays bills (500€)..."
+echo "Mother pays bills (500MGA)..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -151,29 +151,29 @@ echo ""
 echo "👨 Father's main account balance:"
 FATHER_BALANCE=$(curl -s -X GET "$BASE_URL/comptes/$FATHER_ACCOUNT_ID" | jq -r '.solde // "N/A"' 2>/dev/null)
 echo "   Account ID: $FATHER_ACCOUNT_ID"
-echo "   Balance: €$FATHER_BALANCE"
-echo "   Expected: €1700 (5000 - 1000 - 2000 - 300)"
+echo "   Balance: MGA$FATHER_BALANCE"
+echo "   Expected: MGA1700 (5000 - 1000 - 2000 - 300)"
 
 echo ""
 echo "👩 Mother's account balance:"
 MOTHER_BALANCE=$(curl -s -X GET "$BASE_URL/comptes/$MOTHER_ACCOUNT_ID" | jq -r '.solde // "N/A"' 2>/dev/null)
 echo "   Account ID: $MOTHER_ACCOUNT_ID"
-echo "   Balance: €$MOTHER_BALANCE"
-echo "   Expected: €3900 (3500 + 1000 - 100 - 500)"
+echo "   Balance: MGA$MOTHER_BALANCE"
+echo "   Expected: MGA3900 (3500 + 1000 - 100 - 500)"
 
 echo ""
 echo "👧 Child's account balance:"
 CHILD_BALANCE=$(curl -s -X GET "$BASE_URL/comptes/$CHILD_ACCOUNT_ID" | jq -r '.solde // "N/A"' 2>/dev/null)
 echo "   Account ID: $CHILD_ACCOUNT_ID"
-echo "   Balance: €$CHILD_BALANCE"
-echo "   Expected: €100 (0 + 100)"
+echo "   Balance: MGA$CHILD_BALANCE"
+echo "   Expected: MGA100 (0 + 100)"
 
 echo ""
 echo "💼 Father's business account balance:"
 BUSINESS_BALANCE=$(curl -s -X GET "$BASE_URL/comptes/$FATHER_BUSINESS_ID" | jq -r '.solde // "N/A"' 2>/dev/null)
 echo "   Account ID: $FATHER_BUSINESS_ID"
-echo "   Balance: €$BUSINESS_BALANCE"
-echo "   Expected: €2000 (0 + 2000)"
+echo "   Balance: MGA$BUSINESS_BALANCE"
+echo "   Expected: MGA2000 (0 + 2000)"
 echo ""
 
 # Step 5: Get transaction history
@@ -192,8 +192,8 @@ echo ""
 echo "✅ Step 6: Test Results Summary"
 echo ""
 TOTAL_BALANCE=$(echo "$FATHER_BALANCE + $MOTHER_BALANCE + $CHILD_BALANCE + $BUSINESS_BALANCE" | bc 2>/dev/null || echo "N/A")
-echo "Total money in system: €$TOTAL_BALANCE"
-echo "Expected total: €7800 (5000 + 3500 - 300 - 500 = 7700 + 100 fees tolerance)"
+echo "Total money in system: MGA$TOTAL_BALANCE"
+echo "Expected total: MGA7800 (5000 + 3500 - 300 - 500 = 7700 + 100 fees tolerance)"
 echo ""
 
 if [ "$FATHER_BALANCE" = "1700.00" ] && [ "$MOTHER_BALANCE" = "3900.00" ] && [ "$CHILD_BALANCE" = "100.00" ] && [ "$BUSINESS_BALANCE" = "2000.00" ]; then

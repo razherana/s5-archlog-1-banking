@@ -123,7 +123,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public CompteCourant create(User user, BigDecimal taxe) {
+  public CompteCourant create(User user, BigDecimal taxe, LocalDateTime actionDateTime) {
     LOG.info("Creating compte courant for user: " + user);
     if (user == null) {
       throw new IllegalArgumentException("User cannot be null");
@@ -131,8 +131,10 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     CompteCourant compte = new CompteCourant();
     compte.setUser(user);
-    compte.setTaxe(taxe); // Default taxe, can be updated later
-    compte.setCreatedAt(LocalDateTime.now());
+    compte.setUserId(user.getId());
+    compte.setTaxe(taxe);
+    compte.setCreatedAt(
+        actionDateTime != null ? actionDateTime : LocalDateTime.now()); // Use provided datetime or current time
 
     entityManager.persist(compte);
     entityManager.flush();
@@ -156,7 +158,22 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     if (id == null) {
       throw new IllegalArgumentException("Compte ID cannot be null");
     }
-    return entityManager.find(CompteCourant.class, id);
+    
+    CompteCourant compte = entityManager.find(CompteCourant.class, id);
+    
+    if (compte != null) {
+      // Fetch complete user information from the user service
+      try {
+        User completeUser = findUser(compte.getUserId());
+        compte.setUser(completeUser);
+        LOG.info("Successfully enriched compte with complete user information");
+      } catch (Exception e) {
+        LOG.warning("Could not fetch complete user information for compte " + id + ": " + e.getMessage());
+        // Continue with the existing user information from the entity
+      }
+    }
+    
+    return compte;
   }
 
   @Override
@@ -164,8 +181,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     LOG.info("Finding comptes for user: " + user.getId());
 
     TypedQuery<CompteCourant> query = entityManager.createQuery(
-        "SELECT c FROM CompteCourant c WHERE c.user = :user", CompteCourant.class);
-    query.setParameter("user", user);
+        "SELECT c FROM CompteCourant c WHERE c.userId = :userId", CompteCourant.class);
+    query.setParameter("userId", user.getId());
 
     return query.getResultList();
   }

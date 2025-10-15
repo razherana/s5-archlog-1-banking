@@ -63,14 +63,14 @@ public class CompteCourant {
   @Column(name = "taxe", nullable = false, precision = 10, scale = 2)
   private BigDecimal taxe;
 
+  @Column(name = "user_id")
+  private Integer userId;
+
   /**
    * The user who owns this current account.
-   * Many-to-one relationship - one user can have multiple accounts.
-   * Lazy fetched for performance optimization.
+   * User is not in the database so no foreign key constraint is enforced.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  private transient User user;
 
   /**
    * Timestamp when this account was created.
@@ -166,5 +166,13 @@ public class CompteCourant {
         ", taxe=" + taxe +
         ", createdAt=" + createdAt +
         '}';
+  }
+
+  public Integer getUserId() {
+    return userId;
+  }
+
+  public void setUserId(Integer userId) {
+    this.userId = userId;
   }
 }
