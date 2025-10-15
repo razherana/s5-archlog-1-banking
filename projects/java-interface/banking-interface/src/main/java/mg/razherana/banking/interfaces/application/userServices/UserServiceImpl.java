@@ -101,7 +101,7 @@ public class UserServiceImpl implements UserService {
     User user = new User();
     user.setName(name.trim());
     user.setEmail(email.trim().toLowerCase());
-    user.setPassword(password); // TODO: Hash password in production
+    user.setPassword(password); 
     user.setCreatedAt(LocalDateTime.now());
 
     entityManager.persist(user);
@@ -136,7 +136,7 @@ public class UserServiceImpl implements UserService {
     }
 
     if (password != null && !password.trim().isEmpty()) {
-      user.setPassword(password); // TODO: Hash password in production
+      user.setPassword(password); 
     }
 
     entityManager.merge(user);
