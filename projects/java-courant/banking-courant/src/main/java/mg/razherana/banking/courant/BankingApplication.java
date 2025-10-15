@@ -6,14 +6,18 @@ import jakarta.ws.rs.core.Application;
 /**
  * JAX-RS Application class for the Banking Current Account System.
  * 
- * <p>This class configures the REST API endpoints for the banking system.
- * All API endpoints are available under the "/api" path.</p>
+ * <p>
+ * This class configures the REST API endpoints for the banking system.
+ * All API endpoints are available under the "/api" path.
+ * </p>
  * 
- * <p><strong>Available Resources:</strong></p>
+ * <p>
+ * <strong>Available Resources:</strong>
+ * </p>
  * <ul>
- *   <li>/api/users - User management operations</li>
- *   <li>/api/comptes - Current account management</li>
- *   <li>/api/transactions - Transaction operations</li>
+ * <li>/api/users - User management operations</li>
+ * <li>/api/comptes - Current account management</li>
+ * <li>/api/transactions - Transaction operations</li>
  * </ul>
  * 
  * @author Banking System

@@ -5,7 +5,7 @@ import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import mg.razherana.banking.pret.application.ComptePretService;
+import mg.razherana.banking.pret.application.comptePretService.ComptePretService;
 import mg.razherana.banking.pret.dto.*;
 import mg.razherana.banking.pret.dto.requests.CreateComptePretRequest;
 import mg.razherana.banking.pret.dto.requests.MakePaymentRequest;
@@ -27,6 +27,27 @@ public class ComptePretResource {
   @EJB
   private ComptePretService comptePretService;
 
+  /**
+   * Helper method to handle EJBException and extract the underlying cause.
+   * Returns true if the exception should be treated as a 400 Bad Request,
+   * false if it should be treated as a 500 Internal Server Error.
+   */
+  private boolean isClientError(EJBException ejbException) {
+    Throwable cause = ejbException.getCause();
+    return cause instanceof IllegalArgumentException;
+  }
+
+  /**
+   * Helper method to get the appropriate error message from an EJBException.
+   */
+  private String getErrorMessage(EJBException ejbException) {
+    Throwable cause = ejbException.getCause();
+    if (cause instanceof IllegalArgumentException) {
+      return cause.getMessage();
+    }
+    return "Internal server error";
+  }
+
   @GET
   public Response getAllLoans() {
     try {
@@ -36,10 +57,16 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(loanDTOs).build();
 
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting all loans: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret");
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting all loans: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret");
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting all loans: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret");
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 
@@ -65,24 +92,15 @@ public class ComptePretResource {
       return Response.status(201).entity(loanDTO).build();
 
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/comptes-pret");
+      if (isClientError(e)) {
+        LOG.warning("Client error creating loan: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret");
         return Response.status(400).entity(error).build();
       } else {
         LOG.severe("EJB error creating loan: " + e.getMessage());
         ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret");
         return Response.status(500).entity(error).build();
       }
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret");
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error creating loan: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret");
-      return Response.status(500).entity(error).build();
     }
   }
 
@@ -102,14 +120,16 @@ public class ComptePretResource {
       ComptePretDTO loanDTO = new ComptePretDTO(loan);
       return Response.ok(loanDTO).build();
 
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret/" + id);
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting loan: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret/" + id);
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting loan: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id);
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting loan: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret/" + id);
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 
@@ -126,15 +146,17 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(loanDTOs).build();
 
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret/user/" + userId);
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting user loans: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
-          "/comptes-pret/user/" + userId);
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting user loans: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/user/" + userId);
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting user loans: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
+            "/comptes-pret/user/" + userId);
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 
@@ -160,15 +182,17 @@ public class ComptePretResource {
       PaymentStatusDTO status = comptePretService.getPaymentStatus(id, actionDateTime);
       return Response.ok(status).build();
 
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret/" + id + "/payment-status");
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting payment status: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
-          "/comptes-pret/" + id + "/payment-status");
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting payment status: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id + "/payment-status");
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting payment status: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
+            "/comptes-pret/" + id + "/payment-status");
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 
@@ -189,15 +213,17 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(paymentDTOs).build();
 
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret/" + id + "/payment-history");
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting payment history: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
-          "/comptes-pret/" + id + "/payment-history");
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting payment history: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id + "/payment-history");
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting payment history: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
+            "/comptes-pret/" + id + "/payment-history");
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 
@@ -226,11 +252,9 @@ public class ComptePretResource {
       return Response.status(201).entity(paymentDTO).build();
 
     } catch (EJBException e) {
-      if (e.getCausedByException() instanceof IllegalArgumentException) {
-        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
-        LOG.warning("Invalid data from EJB: " + cause.getMessage());
-        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request",
-            "/comptes-pret/make-payment");
+      if (isClientError(e)) {
+        LOG.warning("Client error making payment: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/make-payment");
         return Response.status(400).entity(error).build();
       } else {
         LOG.severe("EJB error making payment: " + e.getMessage());
@@ -238,15 +262,6 @@ public class ComptePretResource {
             "/comptes-pret/make-payment");
         return Response.status(500).entity(error).build();
       }
-    } catch (IllegalArgumentException e) {
-      LOG.warning("Invalid argument: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 400, "Bad Request", "/comptes-pret/make-payment");
-      return Response.status(400).entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Unexpected error making payment: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
-          "/comptes-pret/make-payment");
-      return Response.status(500).entity(error).build();
     }
   }
 
@@ -260,10 +275,16 @@ public class ComptePretResource {
       List<TypeComptePret> loanTypes = comptePretService.getAllLoanTypes();
       return Response.ok(loanTypes).build();
 
-    } catch (Exception e) {
-      LOG.severe("Unexpected error getting loan types: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret/types");
-      return Response.status(500).entity(error).build();
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error getting loan types: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/types");
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error getting loan types: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/comptes-pret/types");
+        return Response.status(500).entity(error).build();
+      }
     }
   }
 }

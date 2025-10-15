@@ -1,4 +1,4 @@
-package mg.razherana.banking.courant.application;
+package mg.razherana.banking.courant.application.transactionService;
 
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
@@ -7,6 +7,7 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import mg.razherana.banking.courant.application.compteCourantService.CompteCourantService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 @Stateless
-public class TransactionService {
+public class TransactionServiceImpl implements TransactionService {
   private static final Logger LOG = Logger.getLogger(TransactionService.class.getName());
 
   @PersistenceContext(unitName = "userPU")
@@ -38,6 +39,7 @@ public class TransactionService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description) {
     LOG.info("Processing depot of " + montant + " for compte " + compte.getId());
 
@@ -59,6 +61,7 @@ public class TransactionService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
       LocalDateTime actionDateTime) {
     LOG.info("Processing retrait of " + montant + " for compte " + compte.getId());
@@ -91,6 +94,7 @@ public class TransactionService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public TransactionCourant payTax(CompteCourant compte, String description,
       LocalDateTime actionDateTime) {
     BigDecimal montant = compteCourantService.getTaxToPay(compte, actionDateTime);
@@ -127,6 +131,7 @@ public class TransactionService {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
   public void transfert(CompteCourant compteSource, CompteCourant compteDestination,
       BigDecimal montant, String description, LocalDateTime actionDateTime) {
     LOG.info("Processing transfert of " + montant + " from compte " + compteSource.getId()
@@ -160,6 +165,7 @@ public class TransactionService {
     LOG.info("Transfert processed successfully");
   }
 
+  @Override
   public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte) {
     LOG.info("Getting transactions for compte " + compte.getId());
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
@@ -170,6 +176,7 @@ public class TransactionService {
     return query.getResultList();
   }
 
+  @Override
   public List<TransactionCourant> getAllTransactions() {
     LOG.info("Getting all transactions");
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
@@ -179,6 +186,7 @@ public class TransactionService {
     return query.getResultList();
   }
 
+  @Override
   public TransactionCourant findById(Integer id) {
     LOG.info("Finding transaction by ID: " + id);
     if (id == null) {

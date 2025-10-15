@@ -1,4 +1,4 @@
-package mg.razherana.banking.pret.application;
+package mg.razherana.banking.pret.application.comptePretService;
 
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -6,9 +6,19 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import java.io.StringReader;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
+import mg.razherana.banking.pret.entities.User;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
@@ -19,7 +29,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Service class for managing loan account (Compte Pret) operations.
+ * Implementation of the ComptePretService interface.
  * 
  * <p>
  * This service provides business logic for loan account management including
@@ -31,11 +41,63 @@ import java.util.logging.Logger;
  * @since 1.0
  */
 @Stateless
-public class ComptePretService {
-  private static final Logger LOG = Logger.getLogger(ComptePretService.class.getName());
+public class ComptePretServiceImpl implements ComptePretService {
+  private static final Logger LOG = Logger.getLogger(ComptePretServiceImpl.class.getName());
+  
+  // Hardcoded URL for java-interface REST API
+  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
 
   @PersistenceContext(unitName = "pretPU")
   private EntityManager entityManager;
+
+  /**
+   * Find a user by ID using REST API call to java-interface.
+   * 
+   * @param userId the user ID
+   * @return User object with the specified ID or null if not found
+   * @throws IllegalArgumentException if userId is null
+   */
+  @Override
+  public User findUser(Integer userId) {
+    LOG.info("Finding user by ID: " + userId);
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    Client client = ClientBuilder.newClient();
+    try {
+      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
+      Response response = target.request(MediaType.APPLICATION_JSON).get();
+      
+      if (response.getStatus() == 200) {
+        // java-interface returns UserDTO, so we need to parse it and map to our User entity
+        String jsonResponse = response.readEntity(String.class);
+        LOG.info("Received JSON response: " + jsonResponse);
+        
+        // Parse the UserDTO JSON response
+        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
+        JsonObject userDto = jsonReader.readObject();
+        jsonReader.close();
+        
+        // Map UserDTO fields to User entity
+        User user = new User();
+        user.setId(userDto.getInt("id"));
+        user.setName(userDto.getString("name"));
+        user.setEmail(userDto.getString("email"));
+        user.setPassword(""); // Password not returned by UserDTO for security
+        
+        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
+        return user;
+      } 
+
+      return null; // User not found
+    } catch (Exception e) {
+      LOG.severe("Error calling REST UserService: " + e.getMessage());
+      throw new IllegalArgumentException(e.getMessage());
+    } finally {
+      client.close();
+    }
+  }
 
   /**
    * Creates a new loan account.
@@ -47,6 +109,7 @@ public class ComptePretService {
    * @param dateFin          the loan end date
    * @return the created loan account
    */
+  @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public ComptePret createLoan(Integer userId, Integer typeComptePretId, BigDecimal montant,
       LocalDateTime dateDebut, LocalDateTime dateFin) {
@@ -71,6 +134,12 @@ public class ComptePretService {
       throw new IllegalArgumentException("End date must be after start date");
     }
 
+    // Verify user exists by calling the user service
+    User user = findUser(userId);
+    if (user == null) {
+      throw new IllegalArgumentException("User not found: " + userId);
+    }
+
     // Verify loan type exists
     TypeComptePret loanType = findLoanTypeById(typeComptePretId);
     if (loanType == null) {
@@ -88,6 +157,7 @@ public class ComptePretService {
   /**
    * Finds a loan type by ID.
    */
+  @Override
   public TypeComptePret findLoanTypeById(Integer id) {
     if (id == null) {
       throw new IllegalArgumentException("Loan type ID cannot be null");
@@ -96,8 +166,9 @@ public class ComptePretService {
   }
 
   /**
-   * Gets all loan types.
+   * Returns all available loan types.
    */
+  @Override
   public List<TypeComptePret> getAllLoanTypes() {
     TypedQuery<TypeComptePret> query = entityManager.createQuery(
         "SELECT t FROM TypeComptePret t", TypeComptePret.class);
@@ -107,6 +178,7 @@ public class ComptePretService {
   /**
    * Finds a loan account by ID.
    */
+  @Override
   public ComptePret findById(Integer id) {
     LOG.info("Finding loan account by ID: " + id);
     if (id == null) {
@@ -118,6 +190,7 @@ public class ComptePretService {
   /**
    * Find all loans
    */
+  @Override
   public List<ComptePret> findAllLoans() {
     TypedQuery<ComptePret> query = entityManager.createQuery(
         "SELECT c FROM ComptePret c", ComptePret.class);
@@ -127,10 +200,17 @@ public class ComptePretService {
   /**
    * Gets all loan accounts for a user.
    */
+  @Override
   public List<ComptePret> getLoansByUserId(Integer userId) {
     LOG.info("Finding loans for userId: " + userId);
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists by calling the user service
+    User user = findUser(userId);
+    if (user == null) {
+      throw new IllegalArgumentException("User not found: " + userId);
     }
 
     TypedQuery<ComptePret> query = entityManager.createQuery(
@@ -139,13 +219,14 @@ public class ComptePretService {
     return query.getResultList();
   }
 
-  /**
-   * Calculates the monthly payment for a loan using amortization formula.
+    /**
+   * Calculates the monthly payment for a loan using the standard amortization
+   * formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
-   * 
-   * @param loan the loan account
-   * @return the monthly payment amount
+   * Where: M = monthly payment, C = capital (amount), i = monthly interest rate,
+   * n = number of months
    */
+  @Override
   public BigDecimal calculateMonthlyPayment(ComptePret loan) {
     if (loan == null) {
       throw new IllegalArgumentException("Loan cannot be null");
@@ -191,6 +272,7 @@ public class ComptePretService {
   /**
    * Gets all payments for a loan account.
    */
+  @Override
   public List<Echeance> getPaymentHistory(Integer compteId) {
     if (compteId == null) {
       throw new IllegalArgumentException("Loan account ID cannot be null");
@@ -206,6 +288,7 @@ public class ComptePretService {
   /**
    * Calculates total amount paid for a loan.
    */
+  @Override
   public BigDecimal calculateTotalPaid(Integer compteId) {
     if (compteId == null) {
       throw new IllegalArgumentException("Loan account ID cannot be null");
@@ -223,6 +306,7 @@ public class ComptePretService {
   /**
    * Calculates the expected amount to be paid by a specific date.
    */
+  @Override
   public BigDecimal calculateExpectedPaidByDate(ComptePret loan, LocalDateTime actionDateTime) {
     if (loan == null || actionDateTime == null) {
       throw new IllegalArgumentException("Loan and action date cannot be null");
@@ -251,6 +335,7 @@ public class ComptePretService {
   /**
    * Gets payment status for a loan at a specific date.
    */
+  @Override
   public PaymentStatusDTO getPaymentStatus(Integer compteId, LocalDateTime actionDateTime) {
     if (compteId == null) {
       throw new IllegalArgumentException("Loan account ID cannot be null");
@@ -283,6 +368,7 @@ public class ComptePretService {
   /**
    * Makes a payment for a loan.
    */
+  @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public Echeance makePayment(Integer compteId, BigDecimal amount, LocalDateTime actionDateTime) {
     if (compteId == null) {

@@ -5,24 +5,32 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Transaction entity representing financial transactions in the current account system.
+ * Transaction entity representing financial transactions in the current account
+ * system.
  * 
- * <p>This entity implements a double-entry-like transaction system where:</p>
+ * <p>
+ * This entity implements a double-entry-like transaction system where:
+ * </p>
  * <ul>
- *   <li><strong>Deposits:</strong> sender = null, receiver = account</li>
- *   <li><strong>Withdrawals:</strong> sender = account, receiver = null</li>
- *   <li><strong>Transfers:</strong> sender = source account, receiver = destination account</li>
- *   <li><strong>Tax payments:</strong> sender = account, receiver = null, specialAction = "taxe"</li>
+ * <li><strong>Deposits:</strong> sender = null, receiver = account</li>
+ * <li><strong>Withdrawals:</strong> sender = account, receiver = null</li>
+ * <li><strong>Transfers:</strong> sender = source account, receiver =
+ * destination account</li>
+ * <li><strong>Tax payments:</strong> sender = account, receiver = null,
+ * specialAction = "taxe"</li>
  * </ul>
  * 
- * <p>Account balances are calculated by summing all transactions where the account
- * appears as receiver (+) minus all transactions where it appears as sender (-).</p>
+ * <p>
+ * Account balances are calculated by summing all transactions where the account
+ * appears as receiver (+) minus all transactions where it appears as sender
+ * (-).
+ * </p>
  * 
  * @author Banking System
  * @version 1.0
  * @since 1.0
  * @see mg.razherana.banking.courant.entities.CompteCourant
- * @see mg.razherana.banking.courant.application.TransactionService
+ * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.dto.TransactionCourantDTO
  */
 @Entity
@@ -31,28 +39,36 @@ public class TransactionCourant {
   /**
    * Enumeration defining special transaction types for the banking system.
    * 
-   * <p>This enum helps categorize transactions beyond the basic sender/receiver pattern:</p>
+   * <p>
+   * This enum helps categorize transactions beyond the basic sender/receiver
+   * pattern:
+   * </p>
    * <ul>
-   *   <li><strong>DEPOSIT:</strong> External money coming into an account</li>
-   *   <li><strong>WITHDRAWAL:</strong> Money leaving an account to external destination</li>
-   *   <li><strong>TAXE:</strong> Tax payment transactions</li>
+   * <li><strong>DEPOSIT:</strong> External money coming into an account</li>
+   * <li><strong>WITHDRAWAL:</strong> Money leaving an account to external
+   * destination</li>
+   * <li><strong>TAXE:</strong> Tax payment transactions</li>
    * </ul>
    */
   /**
    * Enumeration defining special transaction types for the banking system.
    * 
-   * <p>This enum helps categorize transactions beyond the basic sender/receiver pattern:</p>
+   * <p>
+   * This enum helps categorize transactions beyond the basic sender/receiver
+   * pattern:
+   * </p>
    * <ul>
-   *   <li><strong>DEPOSIT:</strong> External money coming into an account</li>
-   *   <li><strong>WITHDRAWAL:</strong> Money leaving an account to external destination</li>
-   *   <li><strong>TAXE:</strong> Tax payment transactions</li>
+   * <li><strong>DEPOSIT:</strong> External money coming into an account</li>
+   * <li><strong>WITHDRAWAL:</strong> Money leaving an account to external
+   * destination</li>
+   * <li><strong>TAXE:</strong> Tax payment transactions</li>
    * </ul>
    */
   public static enum SpecialAction {
     /** Represents deposit transactions from external sources */
-    DEPOSIT("deposit"), 
+    DEPOSIT("deposit"),
     /** Represents withdrawal transactions to external destinations */
-    WITHDRAWAL("withdrawal"), 
+    WITHDRAWAL("withdrawal"),
     /** Represents tax payment transactions */
     TAXE("taxe");
 

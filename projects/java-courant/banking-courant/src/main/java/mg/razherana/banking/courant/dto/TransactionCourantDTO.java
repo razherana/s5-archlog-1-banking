@@ -7,14 +7,22 @@ import java.time.LocalDateTime;
 /**
  * Data Transfer Object for transaction information.
  * 
- * <p>This DTO provides transaction details for API responses, including account IDs
- * instead of full account objects to avoid circular references and reduce payload size.</p>
+ * <p>
+ * This DTO provides transaction details for API responses, including account
+ * IDs
+ * instead of full account objects to avoid circular references and reduce
+ * payload size.
+ * </p>
  * 
- * <p>The sender and receiver IDs indicate the direction of money flow:</p>
+ * <p>
+ * The sender and receiver IDs indicate the direction of money flow:
+ * </p>
  * <ul>
- *   <li><strong>Deposits:</strong> senderId = null, receiverId = account ID</li>
- *   <li><strong>Withdrawals:</strong> senderId = account ID, receiverId = null</li>
- *   <li><strong>Transfers:</strong> senderId = source account ID, receiverId = destination account ID</li>
+ * <li><strong>Deposits:</strong> senderId = null, receiverId = account ID</li>
+ * <li><strong>Withdrawals:</strong> senderId = account ID, receiverId =
+ * null</li>
+ * <li><strong>Transfers:</strong> senderId = source account ID, receiverId =
+ * destination account ID</li>
  * </ul>
  * 
  * @author Banking System
@@ -22,92 +30,93 @@ import java.time.LocalDateTime;
  * @since 1.0
  * @see mg.razherana.banking.courant.entities.TransactionCourant
  * @see mg.razherana.banking.courant.api.TransactionResource
- * @see mg.razherana.banking.courant.application.TransactionService
+ * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  */
 public class TransactionCourantDTO {
-    /** Unique identifier of the transaction */
-    private Integer id;
-    
-    /** ID of the account sending money (null for deposits) */
-    private Integer senderId;
-    
-    /** ID of the account receiving money (null for withdrawals) */
-    private Integer receiverId;
-    
-    /** Monetary amount of the transaction */
-    private BigDecimal montant;
-    
-    /** Timestamp when the transaction occurred */
-    private LocalDateTime date;
-    
-    /** Special action type (e.g., "taxe" for tax payments) */
-    private String specialAction;
+  /** Unique identifier of the transaction */
+  private Integer id;
 
-    /**
-     * Default constructor.
-     */
-    public TransactionCourantDTO() {}
+  /** ID of the account sending money (null for deposits) */
+  private Integer senderId;
 
-    /**
-     * Constructor that creates a DTO from a TransactionCourant entity.
-     * 
-     * @param transaction the TransactionCourant entity to convert
-     */
-    public TransactionCourantDTO(TransactionCourant transaction) {
-        this.id = transaction.getId();
-        this.senderId = transaction.getSender() != null ? transaction.getSender().getId() : null;
-        this.receiverId = transaction.getReceiver() != null ? transaction.getReceiver().getId() : null;
-        this.montant = transaction.getMontant();
-        this.date = transaction.getDate();
-        this.specialAction = transaction.getSpecialAction();
-    }
+  /** ID of the account receiving money (null for withdrawals) */
+  private Integer receiverId;
 
-    // Getters and setters
-    public Integer getId() {
-        return id;
-    }
+  /** Monetary amount of the transaction */
+  private BigDecimal montant;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+  /** Timestamp when the transaction occurred */
+  private LocalDateTime date;
 
-    public Integer getSenderId() {
-        return senderId;
-    }
+  /** Special action type (e.g., "taxe" for tax payments) */
+  private String specialAction;
 
-    public void setSenderId(Integer senderId) {
-        this.senderId = senderId;
-    }
+  /**
+   * Default constructor.
+   */
+  public TransactionCourantDTO() {
+  }
 
-    public Integer getReceiverId() {
-        return receiverId;
-    }
+  /**
+   * Constructor that creates a DTO from a TransactionCourant entity.
+   * 
+   * @param transaction the TransactionCourant entity to convert
+   */
+  public TransactionCourantDTO(TransactionCourant transaction) {
+    this.id = transaction.getId();
+    this.senderId = transaction.getSender() != null ? transaction.getSender().getId() : null;
+    this.receiverId = transaction.getReceiver() != null ? transaction.getReceiver().getId() : null;
+    this.montant = transaction.getMontant();
+    this.date = transaction.getDate();
+    this.specialAction = transaction.getSpecialAction();
+  }
 
-    public void setReceiverId(Integer receiverId) {
-        this.receiverId = receiverId;
-    }
+  // Getters and setters
+  public Integer getId() {
+    return id;
+  }
 
-    public BigDecimal getMontant() {
-        return montant;
-    }
+  public void setId(Integer id) {
+    this.id = id;
+  }
 
-    public void setMontant(BigDecimal montant) {
-        this.montant = montant;
-    }
+  public Integer getSenderId() {
+    return senderId;
+  }
 
-    public LocalDateTime getDate() {
-        return date;
-    }
+  public void setSenderId(Integer senderId) {
+    this.senderId = senderId;
+  }
 
-    public void setDate(LocalDateTime date) {
-        this.date = date;
-    }
+  public Integer getReceiverId() {
+    return receiverId;
+  }
 
-    public String getSpecialAction() {
-        return specialAction;
-    }
+  public void setReceiverId(Integer receiverId) {
+    this.receiverId = receiverId;
+  }
 
-    public void setSpecialAction(String specialAction) {
-        this.specialAction = specialAction;
-    }
+  public BigDecimal getMontant() {
+    return montant;
+  }
+
+  public void setMontant(BigDecimal montant) {
+    this.montant = montant;
+  }
+
+  public LocalDateTime getDate() {
+    return date;
+  }
+
+  public void setDate(LocalDateTime date) {
+    this.date = date;
+  }
+
+  public String getSpecialAction() {
+    return specialAction;
+  }
+
+  public void setSpecialAction(String specialAction) {
+    this.specialAction = specialAction;
+  }
 }
