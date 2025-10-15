@@ -1,30 +1,29 @@
 package mg.razherana.banking.interfaces.application.userServices;
 
 import mg.razherana.banking.interfaces.entities.User;
-import jakarta.ejb.Remote;
+import jakarta.ejb.Local;
 import java.util.List;
 
 /**
- * Remote EJB interface for User management services.
+ * Local EJB interface for User management services.
  * 
  * <p>
- * This interface can be used by other Java services (like java-courant,
- * java-depot, java-pret) to access user data through EJB remote calls.
+ * This interface is used for local EJB calls within the same application
+ * (banking-interface). It provides access to user services for REST API
+ * endpoints and web controllers.
  * </p>
  * 
  * <p>
- * This provides a clean way for Java-to-Java communication between
- * different banking services without going through HTTP REST calls.
- * Remote interfaces require serialization and are used for inter-application
- * communication.
+ * Local interfaces are more efficient than remote interfaces as they
+ * don't require serialization and can pass objects by reference.
  * </p>
  * 
  * @author Banking System
  * @version 1.0
  * @since 1.0
  */
-@Remote
-public interface UserServiceRemote {
+@Local
+public interface UserService {
 
   /**
    * Find a user by ID.

@@ -82,7 +82,14 @@
         <version>10.1.0</version>
         <configuration>
           <context>ROOT</context>
-          <tomeeHttpPort>8081</tomeeHttpPort>
+          <args>-Xmx512m -Dtomee.remote.support=true</args>
+          <config>src/main/tomee/conf</config>
+          <systemVariables>
+            <tomee.remote.support>true</tomee.remote.support>
+            <openejb.cdi.activated>true</openejb.cdi.activated>
+            <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+            <tomee.serialization.class.whitelist>org.apache.openejb.BeanContext$BusinessRemoteHome,org.apache.openejb.core.ivm.naming.BusinessRemoteReference,mg.razherana.banking.interfaces.application.userServices.UserServiceRemote,mg.razherana.banking.interfaces.application.userServices.UserServiceLocal,mg.razherana.banking.interfaces.application.userServices.UserServiceRemoteImpl,mg.razherana.banking.interfaces.application.userServices.UserServiceLocalImpl,mg.razherana.banking.interfaces.entities.User,[Ljava.net.URI;,java.net.URI,java.lang.String,java.util.ArrayList,java.util.HashMap,java.lang.Integer,java.math.BigDecimal</tomee.serialization.class.whitelist>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>

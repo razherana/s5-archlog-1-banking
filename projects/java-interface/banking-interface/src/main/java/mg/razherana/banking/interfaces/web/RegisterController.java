@@ -1,6 +1,6 @@
 package mg.razherana.banking.interfaces.web;
 
-import mg.razherana.banking.interfaces.application.userServices.UserServiceLocal;
+import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.entities.User;
 
 import jakarta.ejb.EJB;
@@ -26,7 +26,7 @@ public class RegisterController extends HttpServlet {
   private static final Logger LOG = Logger.getLogger(RegisterController.class.getName());
 
   @EJB
-  private UserServiceLocal userService;
+  private UserService userService;
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)

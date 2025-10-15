@@ -6,6 +6,15 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import java.io.StringReader;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
@@ -18,21 +27,29 @@ import java.util.logging.Logger;
 /**
  * Service class for managing current account (Compte Courant) operations.
  * 
- * <p>This service provides business logic for current account management including
- * creation, balance calculation, tax management, and account operations. The service
- * implements the core banking business rule where account balances are calculated
- * dynamically by summing all related transactions.</p>
+ * <p>
+ * This service provides business logic for current account management including
+ * creation, balance calculation, tax management, and account operations. The
+ * service
+ * implements the core banking business rule where account balances are
+ * calculated
+ * dynamically by summing all related transactions.
+ * </p>
  * 
- * <p><strong>Key Features:</strong></p>
+ * <p>
+ * <strong>Key Features:</strong>
+ * </p>
  * <ul>
- *   <li>Dynamic balance calculation (no stored balance field)</li>
- *   <li>Monthly tax calculation and validation</li>
- *   <li>Transaction-based account operations</li>
- *   <li>Tax payment enforcement before withdrawals/transfers</li>
+ * <li>Dynamic balance calculation (no stored balance field)</li>
+ * <li>Monthly tax calculation and validation</li>
+ * <li>Transaction-based account operations</li>
+ * <li>Tax payment enforcement before withdrawals/transfers</li>
  * </ul>
  * 
- * <p>This is a stateless EJB that can be injected into other components
- * using the {@code @EJB} annotation.</p>
+ * <p>
+ * This is a stateless EJB that can be injected into other components
+ * using the {@code @EJB} annotation.
+ * </p>
  * 
  * @author Banking System
  * @version 1.0
@@ -45,28 +62,60 @@ import java.util.logging.Logger;
 @Stateless
 public class CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());
+  
+  // Hardcoded URL for java-interface REST API
+  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
 
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
 
   /**
-   * Find a user by ID. For now, creates a User object with just the ID.
-   * TODO: This will be updated to call the java-interface service for actual user data.
+   * Find a user by ID using REST API call to java-interface.
    * 
    * @param userId the user ID
    * @return User object with the specified ID
-   * @throws IllegalArgumentException if userId is null
+   * @throws IllegalArgumentException if userId is null or user not found
    */
   public User findUser(Integer userId) {
     LOG.info("Finding user by ID: " + userId);
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
-    
-    // For now, just create a User with the ID - assuming user exists in central service
-    User user = new User();
-    user.setId(userId);
-    return user;
+
+    Client client = ClientBuilder.newClient();
+    try {
+      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
+      Response response = target.request(MediaType.APPLICATION_JSON).get();
+      
+      if (response.getStatus() == 200) {
+        // java-interface returns UserDTO, so we need to parse it and map to our User entity
+        String jsonResponse = response.readEntity(String.class);
+        LOG.info("Received JSON response: " + jsonResponse);
+        
+        // Parse the UserDTO JSON response
+        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
+        JsonObject userDto = jsonReader.readObject();
+        jsonReader.close();
+        
+        // Map UserDTO fields to User entity
+        User user = new User();
+        user.setId(userDto.getInt("id"));
+        user.setName(userDto.getString("name"));
+        user.setEmail(userDto.getString("email"));
+        user.setPassword(""); // Password not returned by UserDTO for security
+        
+        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
+        return user;
+      } else {
+        LOG.warning("User with ID " + userId + " not found. Response status: " + response.getStatus());
+        throw new IllegalArgumentException("User with ID " + userId + " not found");
+      }
+    } catch (Exception e) {
+      LOG.severe("Error calling REST UserService: " + e.getMessage());
+      throw new IllegalArgumentException(e.getMessage());
+    } finally {
+      client.close();
+    }
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)

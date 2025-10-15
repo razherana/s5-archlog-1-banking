@@ -32,9 +32,9 @@ import java.util.logging.Logger;
  * @since 1.0
  */
 @Stateless
-public class UserServiceLocalImpl implements UserServiceLocal {
+public class UserServiceImpl implements UserService {
 
-  private static final Logger LOG = Logger.getLogger(UserServiceLocalImpl.class.getName());
+  private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
 
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;

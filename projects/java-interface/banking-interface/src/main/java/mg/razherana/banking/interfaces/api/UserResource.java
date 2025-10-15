@@ -1,6 +1,6 @@
 package mg.razherana.banking.interfaces.api;
 
-import mg.razherana.banking.interfaces.application.userServices.UserServiceLocal;
+import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.dto.UserDTO;
 import mg.razherana.banking.interfaces.dto.ErrorDTO;
 import mg.razherana.banking.interfaces.dto.requests.RegisterRequest;
@@ -35,7 +35,7 @@ public class UserResource {
   private static final Logger LOG = Logger.getLogger(UserResource.class.getName());
 
   @EJB
-  private UserServiceLocal userService;
+  private UserService userService;
 
   @GET
   public Response getAllUsers() {
@@ -73,6 +73,21 @@ public class UserResource {
       return Response.ok(userDTO)
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      if (e.getCausedByException() instanceof IllegalArgumentException) {
+        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+        LOG.warning("Invalid data from EJB: " + cause.getMessage());
+        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/" + id);
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error getting user by ID: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users/" + id);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     } catch (Exception e) {
       LOG.severe("Error getting user by ID: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
@@ -98,6 +113,21 @@ public class UserResource {
       return Response.ok(userDTO)
           .type(MediaType.APPLICATION_JSON)
           .build();
+    } catch (EJBException e) {
+      if (e.getCausedByException() instanceof IllegalArgumentException) {
+        IllegalArgumentException cause = (IllegalArgumentException) e.getCausedByException();
+        LOG.warning("Invalid data from EJB: " + cause.getMessage());
+        ErrorDTO error = new ErrorDTO("Invalid data: " + cause.getMessage(), 400, "Bad Request", "/users/email/" + email);
+        return Response.status(Response.Status.BAD_REQUEST)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      } else {
+        LOG.severe("EJB error getting user by email: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users/email/" + email);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(error).build();
+      }
     } catch (Exception e) {
       LOG.severe("Error getting user by email: " + e.getMessage());
       ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/email/" + email);
@@ -173,6 +203,12 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
+    } catch (Exception e) {
+      LOG.severe("Error updating user: " + e.getMessage());
+      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     }
   }
 
@@ -197,6 +233,12 @@ public class UserResource {
             .type(MediaType.APPLICATION_JSON)
             .entity(error).build();
       }
+    } catch (Exception e) {
+      LOG.severe("Error deleting user: " + e.getMessage());
+      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/users/" + id);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
     }
   }
 }
