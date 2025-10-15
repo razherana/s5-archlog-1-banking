@@ -10,24 +10,20 @@ echo "Base URL: $BASE_URL"
 echo "Java Service URL: $JAVA_SERVICE_URL"
 echo ""
 
-# Use predefined test users (must exist in Java service)
-USER_ID_1=1
-USER_ID_2=2
-USER_ID_3=3
-echo "Using test user IDs: $USER_ID_1, $USER_ID_2, $USER_ID_3 (assumes users exist in Java service)"
+# Use single test user (must exist in Java service)
+TEST_USER_ID=1
+echo "Using test user ID: $TEST_USER_ID (assumes user exists in Java service)"
 echo ""
 
-# Verify users exist in Java service
-echo "0. Verifying test users exist in Java service..."
-for USER_ID in $USER_ID_1 $USER_ID_2 $USER_ID_3; do
-    echo "Checking user $USER_ID..."
-    USER_CHECK=$(curl -s -X GET "$JAVA_SERVICE_URL/users/$USER_ID")
-    if echo "$USER_CHECK" | grep -q '"id"'; then
-        echo "✅ User $USER_ID exists"
-    else
-        echo "❌ User $USER_ID not found - this will cause test failures"
-    fi
-done
+# Verify user exists in Java service
+echo "0. Verifying test user exists in Java service..."
+echo "Checking user $TEST_USER_ID..."
+USER_CHECK=$(curl -s -X GET "$JAVA_SERVICE_URL/users/$TEST_USER_ID")
+if echo "$USER_CHECK" | grep -q '"id"'; then
+    echo "✅ User $TEST_USER_ID exists"
+else
+    echo "❌ User $TEST_USER_ID not found - this will cause test failures"
+fi
 echo ""
 
 # First, ensure we have account types to work with
@@ -59,14 +55,14 @@ echo ""
 # Test 2: Create deposit accounts
 echo "2. Creating deposit accounts..."
 
-# Account 1: 6-month term for user 1
+# Account 1: 6-month term for test user
 ACCOUNT_DATA_1='{
   "typeCompteDepotId": '$TYPE_1_ID',
-  "userId": '$USER_ID_1',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2025-04-15T10:00:00",
   "montant": 100000.00
 }'
-echo "Creating account for user $USER_ID_1..."
+echo "Creating account for user $TEST_USER_ID..."
 echo "POST $BASE_URL/comptesdepots"
 echo "Request: $ACCOUNT_DATA_1"
 ACCOUNT_1_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
@@ -76,37 +72,35 @@ echo "Response: $ACCOUNT_1_RESPONSE"
 ACCOUNT_1_ID=$(echo "$ACCOUNT_1_RESPONSE" | jq -r '.id // 1' 2>/dev/null || echo "1")
 echo ""
 
-# Account 2: 1-year term for user 2
+# Account 2: 1-year term for same test user
 ACCOUNT_DATA_2='{
   "typeCompteDepotId": '$TYPE_2_ID',
-  "userId": '$USER_ID_2',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2026-01-15T14:30:00",
   "montant": 250000.00
 }'
-echo "Creating account for user $USER_ID_2..."
+echo "Creating second account for user $TEST_USER_ID..."
 echo "Request: $ACCOUNT_DATA_2"
 ACCOUNT_2_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$ACCOUNT_DATA_2")
 echo "Response: $ACCOUNT_2_RESPONSE"
-# ACCOUNT_2_ID=$(echo "$ACCOUNT_2_RESPONSE" | jq -r '.id // 2' 2>/dev/null || echo "2")
 echo ""
 
 # Account 3: Already matured account for testing withdrawal
 ACCOUNT_DATA_3='{
   "typeCompteDepotId": '$TYPE_1_ID',
-  "userId": '$USER_ID_3',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2024-01-15T09:00:00",
   "montant": 50000.00,
   "actionDateTime": "2023-07-15T09:00:00"
 }'
-echo "Creating matured account for user $USER_ID_3 (with backtracking)..."
+echo "Creating matured account for user $TEST_USER_ID (with backtracking)..."
 echo "Request: $ACCOUNT_DATA_3"
 ACCOUNT_3_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$ACCOUNT_DATA_3")
 echo "Response: $ACCOUNT_3_RESPONSE"
-# ACCOUNT_3_ID=$(echo "$ACCOUNT_3_RESPONSE" | jq -r '.id // 3' 2>/dev/null || echo "3")
 echo ""
 
 # Test 3: Get all accounts
@@ -124,9 +118,9 @@ echo ""
 echo ""
 
 # Test 5: Get accounts by user ID
-echo "5. Getting accounts for user $USER_ID_1..."
-echo "GET $BASE_URL/comptesdepots/user/$USER_ID_1"
-USER_ACCOUNTS=$(curl -s -X GET "$BASE_URL/comptesdepots/user/$USER_ID_1")
+echo "5. Getting accounts for user $TEST_USER_ID..."
+echo "GET $BASE_URL/comptesdepots/user/$TEST_USER_ID"
+USER_ACCOUNTS=$(curl -s -X GET "$BASE_URL/comptesdepots/user/$TEST_USER_ID")
 echo "$USER_ACCOUNTS" | jq '.' 2>/dev/null || echo "$USER_ACCOUNTS"
 echo ""
 
@@ -152,7 +146,7 @@ echo ""
 echo "7. Testing account creation with invalid account type..."
 INVALID_TYPE_DATA='{
   "typeCompteDepotId": 999999,
-  "userId": '$USER_ID_1',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2025-06-15T10:00:00",
   "montant": 75000.00
 }'
@@ -169,7 +163,7 @@ echo ""
 echo "8. Testing account creation with past maturity date..."
 PAST_DATE_DATA='{
   "typeCompteDepotId": '$TYPE_1_ID',
-  "userId": '$USER_ID_1',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2020-01-15T10:00:00",
   "montant": 75000.00
 }'
@@ -186,7 +180,7 @@ echo ""
 echo "9. Testing account creation with invalid amount..."
 INVALID_AMOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_1_ID',
-  "userId": '$USER_ID_1',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2025-06-15T10:00:00",
   "montant": -1000.00
 }'
@@ -210,11 +204,11 @@ echo ""
 echo "11. Creating multiple accounts for same user..."
 MULTI_ACCOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_2_ID',
-  "userId": '$USER_ID_1',
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2025-12-15T16:45:00",
   "montant": 150000.00
 }'
-echo "Creating second account for user $USER_ID_1..."
+echo "Creating second account for user $TEST_USER_ID..."
 echo "Request: $MULTI_ACCOUNT_DATA"
 MULTI_ACCOUNT_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
@@ -224,11 +218,11 @@ echo ""
 
 # Verify user now has multiple accounts
 echo "12. Verifying user has multiple accounts..."
-echo "GET $BASE_URL/comptesdepots/user/$USER_ID_1"
-FINAL_USER_ACCOUNTS=$(curl -s -X GET "$BASE_URL/comptesdepots/user/$USER_ID_1")
+echo "GET $BASE_URL/comptesdepots/user/$TEST_USER_ID"
+FINAL_USER_ACCOUNTS=$(curl -s -X GET "$BASE_URL/comptesdepots/user/$TEST_USER_ID")
 echo "$FINAL_USER_ACCOUNTS" | jq '.' 2>/dev/null || echo "$FINAL_USER_ACCOUNTS"
 ACCOUNT_COUNT=$(echo "$FINAL_USER_ACCOUNTS" | jq 'length' 2>/dev/null || echo "unknown")
-echo "User $USER_ID_1 now has $ACCOUNT_COUNT accounts"
+echo "User $TEST_USER_ID now has $ACCOUNT_COUNT accounts"
 echo ""
 
 echo "=== Account Management Tests Completed ==="

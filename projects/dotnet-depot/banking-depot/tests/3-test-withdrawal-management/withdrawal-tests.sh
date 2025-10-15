@@ -8,6 +8,9 @@ echo "=== $TEST_NAME ==="
 echo "Base URL: $BASE_URL"
 echo ""
 
+# Test user ID (assuming this user exists in Java service)
+TEST_USER_ID=1
+
 # Setup: Create account types and accounts for testing
 echo "0. Setting up test data..."
 
@@ -19,13 +22,19 @@ TYPE_DATA='{
 TYPE_RESPONSE=$(curl -s -X POST "$BASE_URL/typecomptesdepots" \
   -H "Content-Type: application/json" \
   -d "$TYPE_DATA")
-TYPE_ID=$(echo "$TYPE_RESPONSE" | jq -r '.id // 1' 2>/dev/null || echo "1")
-echo "Created test type with ID: $TYPE_ID"
+TYPE_STATUS=$(echo "$TYPE_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$TYPE_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create account type"
+    echo "Response: $TYPE_RESPONSE"
+    exit 1
+fi
+TYPE_ID="$TYPE_STATUS"
+echo "✅ Created test type with ID: $TYPE_ID"
 
 # Create a matured account (can withdraw)
 MATURED_ACCOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_ID',
-  "userId": 1,
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2024-01-15T10:00:00",
   "montant": 100000.00,
   "actionDateTime": "2023-07-15T10:00:00"
@@ -33,21 +42,33 @@ MATURED_ACCOUNT_DATA='{
 MATURED_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$MATURED_ACCOUNT_DATA")
-MATURED_ACCOUNT_ID=$(echo "$MATURED_RESPONSE" | jq -r '.id // 1' 2>/dev/null || echo "1")
-echo "Created matured account with ID: $MATURED_ACCOUNT_ID"
+MATURED_STATUS=$(echo "$MATURED_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$MATURED_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create matured account"
+    echo "Response: $MATURED_RESPONSE"
+    exit 1
+fi
+MATURED_ACCOUNT_ID="$MATURED_STATUS"
+echo "✅ Created matured account with ID: $MATURED_ACCOUNT_ID"
 
 # Create a non-matured account (cannot withdraw)
 NON_MATURED_ACCOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_ID',
-  "userId": 2,
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2026-06-15T10:00:00",
   "montant": 75000.00
 }'
 NON_MATURED_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$NON_MATURED_ACCOUNT_DATA")
-NON_MATURED_ACCOUNT_ID=$(echo "$NON_MATURED_RESPONSE" | jq -r '.id // 2' 2>/dev/null || echo "2")
-echo "Created non-matured account with ID: $NON_MATURED_ACCOUNT_ID"
+NON_MATURED_STATUS=$(echo "$NON_MATURED_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$NON_MATURED_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create non-matured account"
+    echo "Response: $NON_MATURED_RESPONSE"
+    exit 1
+fi
+NON_MATURED_ACCOUNT_ID="$NON_MATURED_STATUS"
+echo "✅ Created non-matured account with ID: $NON_MATURED_ACCOUNT_ID"
 echo ""
 
 # Test 1: Preview interest calculation for matured account
@@ -113,7 +134,7 @@ echo ""
 echo "8. Creating account for backtracking withdrawal test..."
 BACKTRACK_ACCOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_ID',
-  "userId": 3,
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2024-06-15T10:00:00",
   "montant": 60000.00,
   "actionDateTime": "2023-12-15T10:00:00"
@@ -121,8 +142,14 @@ BACKTRACK_ACCOUNT_DATA='{
 BACKTRACK_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$BACKTRACK_ACCOUNT_DATA")
-BACKTRACK_ACCOUNT_ID=$(echo "$BACKTRACK_RESPONSE" | jq -r '.id // 3' 2>/dev/null || echo "3")
-echo "Created backtrack account with ID: $BACKTRACK_ACCOUNT_ID"
+BACKTRACK_STATUS=$(echo "$BACKTRACK_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$BACKTRACK_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create backtrack account"
+    echo "Response: $BACKTRACK_RESPONSE"
+    exit 1
+fi
+BACKTRACK_ACCOUNT_ID="$BACKTRACK_STATUS"
+echo "✅ Created backtrack account with ID: $BACKTRACK_ACCOUNT_ID"
 
 # Withdraw with specific action date
 echo "Withdrawing with specific action date..."
@@ -148,22 +175,28 @@ echo ""
 echo "10. Testing immediate withdrawal scenario..."
 IMMEDIATE_ACCOUNT_DATA='{
   "typeCompteDepotId": '$TYPE_ID',
-  "userId": 1,
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2025-01-01T00:00:00",
   "montant": 25000.00
 }'
 IMMEDIATE_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$IMMEDIATE_ACCOUNT_DATA")
-IMMEDIATE_ACCOUNT_ID=$(echo "$IMMEDIATE_RESPONSE" | jq -r '.id // 4' 2>/dev/null || echo "4")
-echo "Created immediate account with ID: $IMMEDIATE_ACCOUNT_ID"
+IMMEDIATE_STATUS=$(echo "$IMMEDIATE_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$IMMEDIATE_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create immediate account"
+    echo "Response: $IMMEDIATE_RESPONSE"
+else
+    IMMEDIATE_ACCOUNT_ID="$IMMEDIATE_STATUS"
+    echo "✅ Created immediate account with ID: $IMMEDIATE_ACCOUNT_ID"
 
-# Try immediate withdrawal (should work since maturity is in past relative to now)
-echo "Attempting immediate withdrawal..."
-IMMEDIATE_WITHDRAWAL=$(curl -s -X POST "$BASE_URL/comptesdepots/$IMMEDIATE_ACCOUNT_ID/withdraw" \
-  -H "Content-Type: application/json" \
-  -d "$WITHDRAWAL_DATA")
-echo "Response: $IMMEDIATE_WITHDRAWAL"
+    # Try immediate withdrawal (should work since maturity is in past relative to now)
+    echo "Attempting immediate withdrawal..."
+    IMMEDIATE_WITHDRAWAL=$(curl -s -X POST "$BASE_URL/comptesdepots/$IMMEDIATE_ACCOUNT_ID/withdraw" \
+      -H "Content-Type: application/json" \
+      -d "$WITHDRAWAL_DATA")
+    echo "Response: $IMMEDIATE_WITHDRAWAL"
+fi
 echo ""
 
 # Test 11: Summary of all accounts and their status

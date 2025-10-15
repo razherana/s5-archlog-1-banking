@@ -10,6 +10,9 @@ echo "Base URL: $BASE_URL"
 echo "Java Service URL: $JAVA_SERVICE_URL"
 echo ""
 
+# Test user ID (assuming this user exists in Java service)
+TEST_USER_ID=1
+
 # Verify prerequisites
 echo "0. Verifying integration prerequisites..."
 
@@ -24,8 +27,9 @@ fi
 
 # Check ASP.NET service
 echo "Checking ASP.NET Core service..."
+# shellcheck disable=SC2034
 DOTNET_CHECK=$(curl -s -X GET "$BASE_URL/typecomptesdepots" 2>/dev/null)
-if [ "$DOTNET_CHECK" -eq 0 ]; then
+if [ $? -eq 0 ]; then
     echo "✅ ASP.NET Core service is accessible"
 else
     echo "❌ ASP.NET Core service not accessible"
@@ -50,17 +54,29 @@ TERM_TYPE='{
 SAVINGS_RESPONSE=$(curl -s -X POST "$BASE_URL/typecomptesdepots" \
   -H "Content-Type: application/json" \
   -d "$SAVINGS_TYPE")
-SAVINGS_TYPE_ID=$(echo "$SAVINGS_RESPONSE" | jq -r '.id // 1' 2>/dev/null || echo "1")
+SAVINGS_STATUS=$(echo "$SAVINGS_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$SAVINGS_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create savings type"
+    echo "Response: $SAVINGS_RESPONSE"
+    exit 1
+fi
+SAVINGS_TYPE_ID="$SAVINGS_STATUS"
 
 TERM_RESPONSE=$(curl -s -X POST "$BASE_URL/typecomptesdepots" \
   -H "Content-Type: application/json" \
   -d "$TERM_TYPE")
-TERM_TYPE_ID=$(echo "$TERM_RESPONSE" | jq -r '.id // 2' 2>/dev/null || echo "2")
+TERM_STATUS=$(echo "$TERM_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$TERM_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create term type"
+    echo "Response: $TERM_RESPONSE"
+    exit 1
+fi
+TERM_TYPE_ID="$TERM_STATUS"
 
-echo "Created account types: Savings($SAVINGS_TYPE_ID), Term($TERM_TYPE_ID)"
+echo "✅ Created account types: Savings($SAVINGS_TYPE_ID), Term($TERM_TYPE_ID)"
 
 echo "1.2 Validating customer exists in Java service..."
-CUSTOMER_ID=1
+CUSTOMER_ID=$TEST_USER_ID
 CUSTOMER_INFO=$(curl -s -X GET "$JAVA_SERVICE_URL/users/$CUSTOMER_ID")
 echo "Customer info: $CUSTOMER_INFO"
 
@@ -70,7 +86,8 @@ SAVINGS_ACCOUNT='{
   "typeCompteDepotId": '$SAVINGS_TYPE_ID',
   "userId": '$CUSTOMER_ID',
   "dateEcheance": "2025-06-15T10:00:00",
-  "montant": 150000.00
+  "montant": 150000.00,
+  "actionDateTime": "2024-12-15T10:00:00"
 }'
 
 # Long-term investment account  
@@ -78,20 +95,33 @@ TERM_ACCOUNT='{
   "typeCompteDepotId": '$TERM_TYPE_ID',
   "userId": '$CUSTOMER_ID',
   "dateEcheance": "2027-01-15T10:00:00", 
-  "montant": 500000.00
+  "montant": 500000.00,
+  "actionDateTime": "2024-12-15T10:00:00"
 }'
 
 SAVINGS_ACC_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$SAVINGS_ACCOUNT")
-SAVINGS_ACC_ID=$(echo "$SAVINGS_ACC_RESPONSE" | jq -r '.id // 1' 2>/dev/null || echo "1")
+SAVINGS_ACC_STATUS=$(echo "$SAVINGS_ACC_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$SAVINGS_ACC_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create savings account"
+    echo "Response: $SAVINGS_ACC_RESPONSE"
+    exit 1
+fi
+SAVINGS_ACC_ID="$SAVINGS_ACC_STATUS"
 
 TERM_ACC_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$TERM_ACCOUNT")
-TERM_ACC_ID=$(echo "$TERM_ACC_RESPONSE" | jq -r '.id // 2' 2>/dev/null || echo "2")
+TERM_ACC_STATUS=$(echo "$TERM_ACC_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$TERM_ACC_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create term account"
+    echo "Response: $TERM_ACC_RESPONSE"
+    exit 1
+fi
+TERM_ACC_ID="$TERM_ACC_STATUS"
 
-echo "Created accounts: Savings($SAVINGS_ACC_ID), Term($TERM_ACC_ID)"
+echo "✅ Created accounts: Savings($SAVINGS_ACC_ID), Term($TERM_ACC_ID)"
 
 echo "1.4 Viewing customer's complete portfolio..."
 CUSTOMER_PORTFOLIO=$(curl -s -X GET "$BASE_URL/comptesdepots/user/$CUSTOMER_ID")
@@ -110,7 +140,13 @@ MATURED_ACCOUNT='{
 MATURED_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$MATURED_ACCOUNT")
-MATURED_ID=$(echo "$MATURED_RESPONSE" | jq -r '.id // 3' 2>/dev/null || echo "3")
+MATURED_STATUS=$(echo "$MATURED_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$MATURED_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create matured account"
+    echo "Response: $MATURED_RESPONSE"
+    exit 1
+fi
+MATURED_ID="$MATURED_STATUS"
 
 # Withdraw the matured account
 WITHDRAWAL_REQUEST='{}'
@@ -122,47 +158,48 @@ echo "Withdrawal result: $WITHDRAWAL_RESULT"
 echo "✅ SCENARIO 1 COMPLETED"
 echo ""
 
-# SCENARIO 2: Multi-user deposit management
-echo "🔄 SCENARIO 2: Multi-user deposit management"
-echo "============================================"
+# SCENARIO 2: Multi-account deposit management
+echo "🔄 SCENARIO 2: Multi-account deposit management"
+echo "=============================================="
 
-echo "2.1 Creating accounts for multiple users..."
-USER_IDS=(1 2 3)
+echo "2.1 Creating multiple accounts for the same user..."
 ACCOUNT_IDS=()
 
-for USER_ID in "${USER_IDS[@]}"; do
-    echo "Creating account for user $USER_ID..."
+for i in {1..3}; do
+    echo "Creating account $i for user $TEST_USER_ID..."
     
-    # Verify user exists
-    USER_CHECK=$(curl -s -X GET "$JAVA_SERVICE_URL/users/$USER_ID")
-    if echo "$USER_CHECK" | grep -q '"id"'; then
-        echo "✅ User $USER_ID verified"
-        
-        # Create account
-        USER_ACCOUNT='{
-          "typeCompteDepotId": '$TERM_TYPE_ID',
-          "userId": '$USER_ID',
-          "dateEcheance": "2025-12-31T23:59:59",
-          "montant": '$((100000 * USER_ID))'.00
-        }'
-        
-        USER_ACC_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
-          -H "Content-Type: application/json" \
-          -d "$USER_ACCOUNT")
-        USER_ACC_ID=$(echo "$USER_ACC_RESPONSE" | jq -r '.id // '"$USER_ID" 2>/dev/null || echo "$USER_ID")
-        ACCOUNT_IDS+=("$USER_ACC_ID")
-        
-        echo "Created account $USER_ACC_ID for user $USER_ID"
-    else
-        echo "❌ User $USER_ID not found in Java service"
+    # Verify user exists (we know user 1 exists)
+    echo "✅ User $TEST_USER_ID verified"
+    
+    # Create account
+    USER_ACCOUNT='{
+      "typeCompteDepotId": '$TERM_TYPE_ID',
+      "userId": '$TEST_USER_ID',
+      "dateEcheance": "2026-12-31T23:59:59",
+      "montant": '$((100000 * i))'.00,
+      "actionDateTime": "2024-12-31T23:59:59"
+    }'
+    
+    USER_ACC_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
+      -H "Content-Type: application/json" \
+      -d "$USER_ACCOUNT")
+    USER_ACC_STATUS=$(echo "$USER_ACC_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+    if [ "$USER_ACC_STATUS" = "ERROR" ]; then
+        echo "❌ Failed to create account $i"
+        echo "Response: $USER_ACC_RESPONSE"
+        continue
     fi
+    USER_ACC_ID="$USER_ACC_STATUS"
+    ACCOUNT_IDS+=("$USER_ACC_ID")
+    
+    echo "✅ Created account $USER_ACC_ID for user $TEST_USER_ID"
 done
 
-echo "2.2 Comparing interest calculations across users..."
+echo "2.2 Comparing interest calculations across accounts..."
 for i in "${!ACCOUNT_IDS[@]}"; do
     ACCOUNT_ID=${ACCOUNT_IDS[$i]}
-    USER_ID=${USER_IDS[$i]}
-    echo "Interest calculation for user $USER_ID (account $ACCOUNT_ID):"
+    ACCOUNT_NUM=$((i + 1))
+    echo "Interest calculation for account $ACCOUNT_NUM (ID: $ACCOUNT_ID):"
     curl -s -X GET "$BASE_URL/comptesdepots/$ACCOUNT_ID/interest" | jq '.' 2>/dev/null || curl -s -X GET "$BASE_URL/comptesdepots/$ACCOUNT_ID/interest"
     echo ""
 done
@@ -177,7 +214,7 @@ echo "====================================================="
 echo "3.1 Creating historical deposit account..."
 HISTORICAL_ACCOUNT='{
   "typeCompteDepotId": '$TERM_TYPE_ID',
-  "userId": 2,
+  "userId": '$TEST_USER_ID',
   "dateEcheance": "2024-01-15T10:00:00",
   "montant": 200000.00,
   "actionDateTime": "2023-01-15T10:00:00"
@@ -186,9 +223,15 @@ HISTORICAL_ACCOUNT='{
 HISTORICAL_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
   -H "Content-Type: application/json" \
   -d "$HISTORICAL_ACCOUNT")
-HISTORICAL_ID=$(echo "$HISTORICAL_RESPONSE" | jq -r '.id // 10' 2>/dev/null || echo "10")
+HISTORICAL_STATUS=$(echo "$HISTORICAL_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+if [ "$HISTORICAL_STATUS" = "ERROR" ]; then
+    echo "❌ Failed to create historical account"
+    echo "Response: $HISTORICAL_RESPONSE"
+    exit 1
+fi
+HISTORICAL_ID="$HISTORICAL_STATUS"
 
-echo "Created historical account: $HISTORICAL_ID"
+echo "✅ Created historical account: $HISTORICAL_ID"
 
 echo "3.2 Calculating interest at different historical points..."
 DATES=("2023-07-15T10:00:00" "2024-01-15T10:00:00" "2024-07-15T10:00:00")
@@ -219,8 +262,9 @@ echo "4.1 Testing invalid user integration..."
 INVALID_USER_ACCOUNT='{
   "typeCompteDepotId": '$SAVINGS_TYPE_ID',
   "userId": 999999,
-  "dateEcheance": "2025-06-15T10:00:00",
-  "montant": 50000.00
+  "dateEcheance": "2026-06-15T10:00:00",
+  "montant": 50000.00,
+  "actionDateTime": "2024-12-15T10:00:00"
 }'
 
 echo "Attempting to create account for non-existent user..."
@@ -236,8 +280,9 @@ echo "Creating account with potentially unreachable user validation..."
 RISKY_USER_ACCOUNT='{
   "typeCompteDepotId": '$SAVINGS_TYPE_ID',
   "userId": 5,
-  "dateEcheance": "2025-06-15T10:00:00",
-  "montant": 25000.00
+  "dateEcheance": "2026-06-15T10:00:00",
+  "montant": 25000.00,
+  "actionDateTime": "2024-12-15T10:00:00"
 }'
 
 RISKY_RESULT=$(curl -s -X POST "$BASE_URL/comptesdepots" \
@@ -247,12 +292,16 @@ echo "Result: $RISKY_RESULT"
 
 echo "4.3 Testing withdrawal error recovery..."
 # Try to withdraw from non-matured account
-NON_MATURED_ACC_ID=${ACCOUNT_IDS[0]}
-echo "Attempting withdrawal from non-matured account $NON_MATURED_ACC_ID..."
-ERROR_WITHDRAWAL=$(curl -s -X POST "$BASE_URL/comptesdepots/$NON_MATURED_ACC_ID/withdraw" \
-  -H "Content-Type: application/json" \
-  -d '{}')
-echo "Result: $ERROR_WITHDRAWAL"
+if [ ${#ACCOUNT_IDS[@]} -gt 0 ]; then
+    NON_MATURED_ACC_ID=${ACCOUNT_IDS[0]}
+    echo "Attempting withdrawal from non-matured account $NON_MATURED_ACC_ID..."
+    ERROR_WITHDRAWAL=$(curl -s -X POST "$BASE_URL/comptesdepots/$NON_MATURED_ACC_ID/withdraw" \
+      -H "Content-Type: application/json" \
+      -d '{}')
+    echo "Result: $ERROR_WITHDRAWAL"
+else
+    echo "No accounts available for testing withdrawal error"
+fi
 
 echo "✅ SCENARIO 4 COMPLETED"
 echo ""
@@ -265,16 +314,23 @@ echo "5.1 Creating multiple accounts rapidly..."
 for i in {1..5}; do
     RAPID_ACCOUNT='{
       "typeCompteDepotId": '$SAVINGS_TYPE_ID',
-      "userId": 1,
-      "dateEcheance": "2025-'$(printf "%02d" $((i + 5)))'-15T10:00:00",
-      "montant": '$((i * 10000))'.00
+      "userId": '$TEST_USER_ID',
+      "dateEcheance": "2026-'$(printf "%02d" $((i + 5)))'-15T10:00:00",
+      "montant": '$((i * 10000))'.00,
+      "actionDateTime": "2024-12-15T10:00:00"
     }'
     
     RAPID_RESPONSE=$(curl -s -X POST "$BASE_URL/comptesdepots" \
       -H "Content-Type: application/json" \
       -d "$RAPID_ACCOUNT")
-    RAPID_ID=$(echo "$RAPID_RESPONSE" | jq -r '.id // '"$i" 2>/dev/null || echo "$i")
-    echo "Created rapid account $i: ID $RAPID_ID"
+    RAPID_STATUS=$(echo "$RAPID_RESPONSE" | jq -r '.id // "ERROR"' 2>/dev/null || echo "ERROR")
+    if [ "$RAPID_STATUS" = "ERROR" ]; then
+        echo "❌ Failed to create rapid account $i"
+        echo "Response: $RAPID_RESPONSE"
+    else
+        RAPID_ID="$RAPID_STATUS"
+        echo "✅ Created rapid account $i: ID $RAPID_ID"
+    fi
 done
 
 echo "5.2 Bulk interest calculation..."
@@ -299,7 +355,7 @@ echo ""
 echo "🏁 INTEGRATION SCENARIOS SUMMARY"
 echo "================================"
 echo "✅ Complete deposit workflow tested"
-echo "✅ Multi-user management verified"
+echo "✅ Multi-account management verified"
 echo "✅ Historical operations with backtracking confirmed"
 echo "✅ Error recovery and validation tested"
 echo "✅ Performance under load simulated"

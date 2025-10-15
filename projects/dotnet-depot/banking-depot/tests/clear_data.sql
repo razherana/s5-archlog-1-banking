@@ -3,3 +3,9 @@
 
 -- Clear deposit accounts
 DELETE FROM `compte_depots`;
+
+DELETE FROM `type_compte_depots`;
+
+ALTER TABLE `compte_depots` AUTO_INCREMENT = 1;
+
+ALTER TABLE `type_compte_depots` AUTO_INCREMENT = 1;
