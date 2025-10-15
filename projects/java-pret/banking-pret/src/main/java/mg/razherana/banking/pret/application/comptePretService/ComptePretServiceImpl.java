@@ -43,7 +43,7 @@ import java.util.logging.Logger;
 @Stateless
 public class ComptePretServiceImpl implements ComptePretService {
   private static final Logger LOG = Logger.getLogger(ComptePretServiceImpl.class.getName());
-  
+
   // Hardcoded URL for java-interface REST API
   private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
 
@@ -68,27 +68,28 @@ public class ComptePretServiceImpl implements ComptePretService {
     try {
       WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
       Response response = target.request(MediaType.APPLICATION_JSON).get();
-      
+
       if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User entity
+        // java-interface returns UserDTO, so we need to parse it and map to our User
+        // entity
         String jsonResponse = response.readEntity(String.class);
         LOG.info("Received JSON response: " + jsonResponse);
-        
+
         // Parse the UserDTO JSON response
         JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
         JsonObject userDto = jsonReader.readObject();
         jsonReader.close();
-        
+
         // Map UserDTO fields to User entity
         User user = new User();
         user.setId(userDto.getInt("id"));
         user.setName(userDto.getString("name"));
         user.setEmail(userDto.getString("email"));
         user.setPassword(""); // Password not returned by UserDTO for security
-        
+
         LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
         return user;
-      } 
+      }
 
       return null; // User not found
     } catch (Exception e) {
@@ -219,7 +220,7 @@ public class ComptePretServiceImpl implements ComptePretService {
     return query.getResultList();
   }
 
-    /**
+  /**
    * Calculates the monthly payment for a loan using the standard amortization
    * formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
@@ -241,7 +242,8 @@ public class ComptePretServiceImpl implements ComptePretService {
     BigDecimal annualRate = loanType.getInteret(); // Annual interest rate
 
     // Calculate number of months between start and end date
-    long totalMonths = ChronoUnit.MONTHS.between(loan.getDateDebut(), loan.getDateFin());
+    // Add 1 to include the starting month
+    long totalMonths = loan.getDateDebut().until(loan.getDateFin(), ChronoUnit.MONTHS) + 1;
     if (totalMonths <= 0) {
       throw new IllegalArgumentException("Invalid loan duration");
     }
@@ -265,8 +267,29 @@ public class ComptePretServiceImpl implements ComptePretService {
     // Calculate numerator: [C × i]
     BigDecimal numerator = principal.multiply(monthlyRate);
 
+    System.out.println("-------------- Variables calculateMonthlyPayment: -----------------------");
+    
+    System.out.println("Principal (C): " + principal);
+    System.out.println("Annual Rate: " + annualRate);
+    System.out.println("Monthly Rate (i): " + monthlyRate);
+    System.out.println("Total Months (n): " + totalMonths);
+
+    System.out.println("Date debut: " + loan.getDateDebut());
+    System.out.println("Date fin: " + loan.getDateFin());
+
+    System.out.println("C * i: " + numerator);
+    System.out.println("1 + i: " + onePlusRate);
+
+    System.out.println("(1 + i) ^ -n: " + powerTerm);
+
+    System.out.println("1 - (1 + i) ^ -n: " + denominator);
+
+    System.out.println("M = C * i / [1 - (1 + i) ^ -n] : " + numerator.divide(denominator, 6, RoundingMode.HALF_UP));
+
+    System.out.println("---------------- End Variables -----------------------");
+
     // Final calculation: M = numerator / denominator
-    return numerator.divide(denominator, 2, RoundingMode.HALF_UP);
+    return numerator.divide(denominator, 6, RoundingMode.HALF_UP);
   }
 
   /**
