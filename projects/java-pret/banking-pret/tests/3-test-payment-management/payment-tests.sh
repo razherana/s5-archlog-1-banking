@@ -3,7 +3,7 @@
 # Payment Management Tests
 echo "=== Payment Management Tests ==="
 
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://127.0.0.3:8080/api"
 
 # Colors for output
 RED='\033[0;31m'
@@ -35,33 +35,28 @@ echo "============================"
 
 # Try to get loan ID from previous test
 TEST_LOAN_ID=""
-if [ -f "/tmp/test_loan_id.txt" ]; then
-    TEST_LOAN_ID=$(cat /tmp/test_loan_id.txt)
-    echo "Using loan ID from previous test: $TEST_LOAN_ID"
+echo "No loan ID found from previous test, creating a new loan..."
+
+# Create a test loan
+response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "typeComptePretId": 1,
+    "montant": 12000.00,
+    "dateDebut": "2025-01-01T00:00:00",
+    "dateFin": "2026-01-01T00:00:00"
+  }')
+
+status_code="${response: -3}"
+response_body="${response%???}"
+
+if [ "$status_code" -eq 201 ]; then
+    TEST_LOAN_ID=$(echo "$response_body" | jq -r '.id' 2>/dev/null)
+    echo "Created test loan with ID: $TEST_LOAN_ID"
 else
-    echo "No loan ID found from previous test, creating a new loan..."
-    
-    # Create a test loan
-    response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "userId": 1,
-        "typeComptePretId": 1,
-        "montant": 12000.00,
-        "dateDebut": "2025-01-01T00:00:00",
-        "dateFin": "2026-01-01T00:00:00"
-      }')
-    
-    status_code="${response: -3}"
-    response_body="${response%???}"
-    
-    if [ "$status_code" -eq 201 ]; then
-        TEST_LOAN_ID=$(echo "$response_body" | jq -r '.id' 2>/dev/null)
-        echo "Created test loan with ID: $TEST_LOAN_ID"
-    else
-        echo -e "${RED}❌ FAIL${NC}: Could not create test loan"
-        exit 1
-    fi
+    echo -e "${RED}❌ FAIL${NC}: Could not create test loan"
+    exit 1
 fi
 
 echo ""

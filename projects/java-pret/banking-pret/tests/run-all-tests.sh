@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-BASE_URL="http://localhost:8081/banking-pret/api"
+BASE_URL="http://127.0.0.3:8080/api"
 TEST_DIR="$(dirname "$0")"
 PASSED=0
 FAILED=0
@@ -157,12 +157,6 @@ main() {
         log_info "  tail -f target/apache-tomee/logs/catalina.out"
         exit 1
     fi
-}
-
-# Cleanup function for interrupted tests
-cleanup() {
-    log_info "Test execution interrupted. Cleaning up..."
-    rm -f /tmp/test_output_$$.log
 }
 
 # Set up signal handlers

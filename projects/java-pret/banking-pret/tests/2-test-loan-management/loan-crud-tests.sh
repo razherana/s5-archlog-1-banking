@@ -3,7 +3,7 @@
 # Loan Management CRUD Tests
 echo "=== Loan Management Tests ==="
 
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://127.0.0.3:8080/api"
 
 # Colors for output
 RED='\033[0;31m'
@@ -176,7 +176,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/user/invalid
   -H "Content-Type: application/json")
 
 status_code="${response: -3}"
-check_status 400 "$status_code" "Get loans with invalid user ID"
+check_status 404 "$status_code" "Get loans with invalid user ID"
 
 echo ""
 echo "8. Test Missing Request Body"

@@ -3,7 +3,7 @@
 # Loan Types Management Tests
 echo "=== Loan Types Tests ==="
 
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://127.0.0.3:8080/api"
 
 # Colors for output
 RED='\033[0;31m'

@@ -3,7 +3,7 @@
 # Full Loan Workflow Integration Tests
 echo "=== Full Loan Workflow Integration Tests ==="
 
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://127.0.0.3:8080/api"
 
 # Colors for output
 RED='\033[0;31m'
@@ -20,6 +20,11 @@ check_status() {
     local expected=$1
     local actual=$2
     local test_name=$3
+    local response_body=$4
+    
+    echo "Response Code: $actual"
+    echo "Response Body: $response_body"
+    echo ""
     
     if [ "$actual" -eq "$expected" ]; then
         echo -e "${GREEN}✅ PASS${NC}: $test_name (Status: $actual)"
@@ -50,7 +55,7 @@ response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 201 "$status_code" "Create student loan"
+check_status 201 "$status_code" "Create student loan" "$response_body"
 
 STUDENT_LOAN_ID=""
 if [ "$status_code" -eq 201 ]; then
@@ -67,7 +72,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/$STUDENT_LOA
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 200 "$status_code" "Get initial payment status"
+check_status 200 "$status_code" "Get initial payment status" "$response_body"
 
 if [ "$status_code" -eq 200 ]; then
     monthly_payment=$(echo "$response_body" | jq -r '.monthlyPayment' 2>/dev/null)
@@ -79,8 +84,10 @@ echo ""
 echo "1.3 Making regular monthly payments..."
 
 for month in {1..6}; do
-    date="2025-0${month}-15T10:00:00"
-    if [ $month -gt 9 ]; then
+    # Fix date formatting to ensure zero-padding
+    if [ "$month" -lt 10 ]; then
+        date="2025-0${month}-15T10:00:00"
+    else
         date="2025-${month}-15T10:00:00"
     fi
     
@@ -93,7 +100,7 @@ for month in {1..6}; do
       }")
     
     status_code="${response: -3}"
-    check_status 201 "$status_code" "Monthly payment $month"
+    check_status 201 "$status_code" "Monthly payment $month" "${response%???}"
 done
 
 # 1.4 Check payment status after 6 months
@@ -105,7 +112,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/$STUDENT_LOA
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 200 "$status_code" "Payment status after 6 months"
+check_status 200 "$status_code" "Payment status after 6 months" "$response_body"
 
 if [ "$status_code" -eq 200 ]; then
     echo "Payment status after 6 months:"
@@ -127,7 +134,7 @@ response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret/make-paymen
   }")
 
 status_code="${response: -3}"
-check_status 201 "$status_code" "Large completion payment"
+check_status 201 "$status_code" "Large completion payment" "${response%???}"
 
 # 1.6 Verify loan is fully paid
 echo ""
@@ -138,7 +145,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/$STUDENT_LOA
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 200 "$status_code" "Final payment status"
+check_status 200 "$status_code" "Final payment status" "$response_body"
 
 if [ "$status_code" -eq 200 ]; then
     is_fully_paid=$(echo "$response_body" | jq -r '.isFullyPaid' 2>/dev/null)
@@ -171,7 +178,7 @@ response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 201 "$status_code" "Create test loan for multiple payments"
+check_status 201 "$status_code" "Create test loan for multiple payments" "$response_body"
 
 MULTI_PAYMENT_LOAN_ID=""
 if [ "$status_code" -eq 201 ]; then
@@ -186,6 +193,13 @@ echo "2.2 Making multiple payments in January..."
 payment_amounts=(200 150 300 250 100)
 for i in "${!payment_amounts[@]}"; do
     day=$((5 + i * 5))
+    # Fix day formatting to ensure zero-padding
+    if [ $day -lt 10 ]; then
+        formatted_day="0${day}"
+    else
+        formatted_day="$day"
+    fi
+    
     amount=${payment_amounts[$i]}
     
     response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret/make-payment" \
@@ -193,11 +207,11 @@ for i in "${!payment_amounts[@]}"; do
       -d "{
         \"compteId\": $MULTI_PAYMENT_LOAN_ID,
         \"montant\": $amount.00,
-        \"actionDateTime\": \"2025-01-${day}T10:00:00\"
+        \"actionDateTime\": \"2025-01-${formatted_day}T10:00:00\"
       }")
     
     status_code="${response: -3}"
-    check_status 201 "$status_code" "Multiple payment $((i+1)) ($amount)"
+    check_status 201 "$status_code" "Multiple payment $((i+1)) ($amount)" "${response%???}"
 done
 
 # 2.3 Check payment history
@@ -209,7 +223,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/$MULTI_PAYME
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 200 "$status_code" "Get payment history for multiple payments"
+check_status 200 "$status_code" "Get payment history for multiple payments" "$response_body"
 
 if [ "$status_code" -eq 200 ]; then
     payment_count=$(echo "$response_body" | jq 'length' 2>/dev/null || echo 0)
@@ -232,7 +246,7 @@ echo "3.1 Creating personal loan (higher interest)..."
 response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": 2,
+    "userId": 1,
     "typeComptePretId": 3,
     "montant": 10000.00,
     "dateDebut": "2025-01-01T00:00:00",
@@ -242,7 +256,7 @@ response=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/comptes-pret" \
 status_code="${response: -3}"
 response_body="${response%???}"
 
-check_status 201 "$status_code" "Create personal loan"
+check_status 201 "$status_code" "Create personal loan" "$response_body"
 
 PERSONAL_LOAN_ID=""
 if [ "$status_code" -eq 201 ]; then
@@ -293,7 +307,7 @@ if [ -n "$STUDENT_LOAN_ID" ]; then
       }")
     
     status_code="${response: -3}"
-    check_status 400 "$status_code" "Payment on fully paid loan"
+    check_status 400 "$status_code" "Payment on fully paid loan" "${response%???}"
 fi
 
 # 4.2 Test invalid date formats
@@ -303,7 +317,7 @@ response=$(curl -s -w "%{http_code}" -X GET "$BASE_URL/comptes-pret/$PERSONAL_LO
   -H "Content-Type: application/json")
 
 status_code="${response: -3}"
-check_status 400 "$status_code" "Invalid date format"
+check_status 400 "$status_code" "Invalid date format" "${response%???}"
 
 echo ""
 echo "=== Integration Test Summary ==="
