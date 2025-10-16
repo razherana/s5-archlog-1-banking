@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web;
+package mg.razherana.banking.interfaces.web.controllers;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

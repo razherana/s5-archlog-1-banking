@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web.compteDepot;
+package mg.razherana.banking.interfaces.web.controllers.compteDepot;
 
 import mg.razherana.banking.interfaces.application.compteDepotServices.CompteDepotService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;

@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web;
+package mg.razherana.banking.interfaces.web.controllers;
 
 import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.entities.User;
@@ -14,16 +14,16 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * Web Controller for user authentication (login).
+ * Web Controller for user registration.
  * 
  * <p>
- * Handles login form submission and session management.
+ * Handles user registration form submission.
  * </p>
  */
-@WebServlet("/login")
-public class LoginController extends HttpServlet {
+@WebServlet("/register")
+public class RegisterController extends HttpServlet {
 
-  private static final Logger LOG = Logger.getLogger(LoginController.class.getName());
+  private static final Logger LOG = Logger.getLogger(RegisterController.class.getName());
 
   @EJB
   private UserService userService;
@@ -32,39 +32,42 @@ public class LoginController extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
+    String name = request.getParameter("name");
     String email = request.getParameter("email");
     String password = request.getParameter("password");
 
-    LOG.info("Login attempt for email: " + email);
+    LOG.info("Registration attempt for email: " + email);
 
     try {
-      User user = userService.authenticateUser(email, password);
-
+      User user = userService.createUser(name, email, password);
       if (user != null) {
-        // Login successful - create session
+        // Registration successful - auto-login
         HttpSession session = request.getSession();
         session.setAttribute("user", user);
         session.setAttribute("userId", user.getId());
         session.setAttribute("userName", user.getName());
 
-        LOG.info("Login successful for user: " + email);
-        response.sendRedirect("menu.html");
+        LOG.info("Registration and auto-login successful for user: " + email);
+        response.sendRedirect("menu.html?success=registered");
       } else {
-        // Login failed
-        LOG.info("Login failed for user: " + email);
-        response.sendRedirect("login.html?error=invalid");
+        LOG.warning("Registration failed for user: " + email);
+        response.sendRedirect("register.html?error=failed");
       }
 
     } catch (Exception e) {
-      LOG.severe("Error during login: " + e.getMessage());
-      response.sendRedirect("login.html?error=system");
+      LOG.severe("Error during registration: " + e.getMessage());
+      if (e.getMessage().contains("already exists")) {
+        response.sendRedirect("register.html?error=exists");
+      } else {
+        response.sendRedirect("register.html?error=system");
+      }
     }
   }
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    // Redirect GET requests to login page
-    response.sendRedirect("login.html");
+    // Redirect GET requests to register page
+    response.sendRedirect("register.html");
   }
 }

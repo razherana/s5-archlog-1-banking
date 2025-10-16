@@ -25,7 +25,7 @@
       </script>
 
       <div class="user-info">
-        <span>Welcome, <strong id="userName">User</strong></span>
+        <span>Welcome, <strong id="userName" th:text="${user.name}"></strong></span>
         <a href="logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -68,7 +68,7 @@
         <h3 class="text-center">User Management</h3>
         <ul class="menu-list">
           <li>
-            <a href="users.html">
+            <a href="users">
               <strong>Manage Users</strong>
               <br />
               <small>View and manage all users in the system</small>

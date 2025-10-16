@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web.compteCourant;
+package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;

@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web;
+package mg.razherana.banking.interfaces.web.controllers;
 
 import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.entities.User;
@@ -14,16 +14,16 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * Web Controller for user registration.
+ * Web Controller for user authentication (login).
  * 
  * <p>
- * Handles user registration form submission.
+ * Handles login form submission and session management.
  * </p>
  */
-@WebServlet("/register")
-public class RegisterController extends HttpServlet {
+@WebServlet("/login")
+public class LoginController extends HttpServlet {
 
-  private static final Logger LOG = Logger.getLogger(RegisterController.class.getName());
+  private static final Logger LOG = Logger.getLogger(LoginController.class.getName());
 
   @EJB
   private UserService userService;
@@ -32,42 +32,39 @@ public class RegisterController extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String name = request.getParameter("name");
     String email = request.getParameter("email");
     String password = request.getParameter("password");
 
-    LOG.info("Registration attempt for email: " + email);
+    LOG.info("Login attempt for email: " + email);
 
     try {
-      User user = userService.createUser(name, email, password);
+      User user = userService.authenticateUser(email, password);
+
       if (user != null) {
-        // Registration successful - auto-login
+        // Login successful - create session
         HttpSession session = request.getSession();
         session.setAttribute("user", user);
         session.setAttribute("userId", user.getId());
         session.setAttribute("userName", user.getName());
 
-        LOG.info("Registration and auto-login successful for user: " + email);
-        response.sendRedirect("menu.html?success=registered");
+        LOG.info("Login successful for user: " + email);
+        response.sendRedirect("menu.html");
       } else {
-        LOG.warning("Registration failed for user: " + email);
-        response.sendRedirect("register.html?error=failed");
+        // Login failed
+        LOG.info("Login failed for user: " + email);
+        response.sendRedirect("login.html?error=invalid");
       }
 
     } catch (Exception e) {
-      LOG.severe("Error during registration: " + e.getMessage());
-      if (e.getMessage().contains("already exists")) {
-        response.sendRedirect("register.html?error=exists");
-      } else {
-        response.sendRedirect("register.html?error=system");
-      }
+      LOG.severe("Error during login: " + e.getMessage());
+      response.sendRedirect("login.html?error=system");
     }
   }
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    // Redirect GET requests to register page
-    response.sendRedirect("register.html");
+    // Redirect GET requests to login page
+    response.sendRedirect("login.html");
   }
 }

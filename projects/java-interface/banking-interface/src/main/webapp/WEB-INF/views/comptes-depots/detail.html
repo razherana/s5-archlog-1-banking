@@ -58,7 +58,7 @@
               <span class="label">Montant déposé:</span>
               <span
                 class="value positive-balance"
-                th:text="${#numbers.formatCurrency(account.montant)}"
+                th:text="${${account.montant} + ' MGA'}"
                 >1000.00 MGA</span
               >
             </div>
@@ -90,7 +90,7 @@
               <span class="label">Intérêt calculé:</span>
               <span
                 class="value positive-balance"
-                th:text="${#numbers.formatCurrency(account.interetCalcule)}"
+                th:text="${account.interetCalcule + ' MGA'}"
                 >50.00 MGA</span
               >
             </div>
@@ -98,7 +98,7 @@
               <span class="label">Montant total:</span>
               <span
                 class="value positive-balance"
-                th:text="${#numbers.formatCurrency(account.montantTotal)}"
+                th:text="${account.montantTotal + ' MGA'}"
                 >1050.00 MGA</span
               >
             </div>
@@ -156,7 +156,7 @@
                   <option
                     th:each="currentAccount : ${currentAccounts}"
                     th:value="${currentAccount.id}"
-                    th:text="|Compte #${currentAccount.id} - Solde: ${#numbers.formatCurrency(currentAccount.solde)}|"
+                    th:text="|Compte #${currentAccount.id} - Solde: ${currentAccount.solde + ' MGA'}|"
                   >
                     Compte #123 - Solde: 1000.00 MGA
                   </option>
