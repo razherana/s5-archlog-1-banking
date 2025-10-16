@@ -158,9 +158,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     if (id == null) {
       throw new IllegalArgumentException("Compte ID cannot be null");
     }
-    
+
     CompteCourant compte = entityManager.find(CompteCourant.class, id);
-    
+
     if (compte != null) {
       // Fetch complete user information from the user service
       try {
@@ -172,7 +172,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         // Continue with the existing user information from the entity
       }
     }
-    
+
     return compte;
   }
 

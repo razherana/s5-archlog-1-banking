@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Statut des Paiements - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Statut des Paiements</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a th:href="@{detail(id=${loan.id})}">← Retour au détail du prêt</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- Success Messages -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:text="${param.success[0]}">Succès</p>
+        </div>
+
+        <!-- Loan Basic Information -->
+        <div class="account-info-section">
+          <h3>Informations du Prêt</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">ID Prêt:</span>
+              <span class="value" th:text="${loan.id}">1</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Montant du Prêt:</span>
+              <span class="value" th:text="${loan.formattedMontant}"
+                >10000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Mensualité:</span>
+              <span class="value" th:text="${loan.formattedMonthlyPayment}"
+                >850.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date de Vérification:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(actionDateTime, 'dd/MM/yyyy')}"
+                >17/10/2025</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Status at Selected Date -->
+        <div class="account-info-section">
+          <h3>Statut à la Date Sélectionnée</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">Montant Restant à Payer (Total):</span>
+              <span
+                class="value"
+                th:class="${remainingToPay.compareTo(BD_ZERO) > 0} ? 'negative-balance' : 'positive-balance'"
+              >
+                <span
+                  th:text="${#numbers.formatDecimal(remainingToPay, 1, 2)} + ' MGA'"
+                  >5000.00 MGA</span
+                >
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">À Payer ce Mois:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatDecimal(toPayThisMonth, 1, 2)} + ' MGA'"
+                >850.00 MGA</span
+              >
+            </div>
+            <!-- <div class="detail-row">
+              <span class="label">Restant à Payer ce Mois:</span>
+              <span
+                class="value"
+                th:class="${remainingThisMonth.compareTo(BD_ZERO) > 0} ? 'negative-balance' : 'positive-balance'"
+              >
+                <span
+                  th:text="${#numbers.formatDecimal(remainingThisMonth, 1, 2)} + ' MGA'"
+                  >850.00 MGA</span
+                >
+              </span>
+            </div> -->
+            <div class="detail-row" th:if="${paymentStatus != null}">
+              <span class="label">Total Payé:</span>
+              <span
+                class="value positive-balance"
+                th:text="${paymentStatus.formattedTotalPaid}"
+                >2500.00 MGA</span
+              >
+            </div>
+            <!-- <div class="detail-row" th:if="${expectedByDate != null}">
+              <span class="label">Attendu à cette Date:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatDecimal(expectedByDate, 1, 2)} + ' MGA'"
+                >4250.00 MGA</span
+              >
+            </div> -->
+          </div>
+        </div>
+
+        <!-- Payment History -->
+        <div
+          th:if="${paymentHistory != null and !#lists.isEmpty(paymentHistory)}"
+          class="transaction-history"
+        >
+          <h3>Historique des Paiements</h3>
+          <table class="accounts-table">
+            <thead>
+              <tr>
+                <th>ID Paiement</th>
+                <th>Montant</th>
+                <th>Date de Paiement</th>
+                <th>Mois</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="payment : ${paymentHistory}">
+                <td th:text="${payment.id}">1</td>
+                <td th:text="${payment.formattedMontant}">500.00 MGA</td>
+                <td
+                  th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                >
+                  01/01/2025 10:00
+                </td>
+                <td
+                  th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'MM/yyyy') : 'N/A'}"
+                >
+                  01/2025
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          th:if="${paymentHistory == null or #lists.isEmpty(paymentHistory)}"
+          class="alert alert-info"
+        >
+          <p>Aucun paiement effectué pour ce prêt.</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions" style="margin-top: 2rem">
+          <a th:href="@{detail(id=${loan.id})}" class="btn btn-primary">
+            Retour au Détail
+          </a>
+          <a th:href="@{../comptes-prets}" class="btn btn-secondary">
+            Liste des Prêts
+          </a>
+        </div>
+
+        <!-- Information Section -->
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>
+              <strong>Montant Restant à Payer</strong>: Le solde total restant
+              sur le prêt
+            </li>
+            <li>
+              <strong>À Payer ce Mois</strong>: La mensualité prévue pour le
+              mois sélectionné
+            </li>
+            <li>
+              <strong>Restant à Payer ce Mois</strong>: Ce qui reste à payer
+              pour le mois courant
+            </li>
+            <li>
+              <strong>Attendu à cette Date</strong>: Le montant total qui
+              devrait être payé à la date sélectionnée
+            </li>
+            <li>
+              Les calculs sont basés sur la date de vérification que vous avez
+              sélectionnée
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

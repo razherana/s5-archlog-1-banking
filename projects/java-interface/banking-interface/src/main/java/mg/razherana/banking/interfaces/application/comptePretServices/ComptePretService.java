@@ -57,6 +57,15 @@ public interface ComptePretService {
   PaymentStatusDTO getPaymentStatus(Integer loanId);
 
   /**
+   * Gets the payment status for a loan at a specific date/time.
+   * 
+   * @param loanId The loan ID
+   * @param actionDateTime The date/time to calculate status for
+   * @return The payment status or null if not found
+   */
+  PaymentStatusDTO getPaymentStatus(Integer loanId, java.time.LocalDateTime actionDateTime);
+
+  /**
    * Gets the payment history for a loan.
    * 
    * @param loanId The loan ID

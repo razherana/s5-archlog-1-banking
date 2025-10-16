@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -224,16 +225,21 @@ public class ComptePretServiceImpl implements ComptePretService {
 
       if (response.statusCode() == 201) {
         return objectMapper.readValue(response.body(), EcheanceDTO.class);
-      } else {
+      } else if (response.statusCode() != 500) {
         LOG.warning("Failed to make payment. Status: " + response.statusCode() +
             ", Body: " + response.body());
-        return null;
+
+        String errorMessage = objectMapper.readTree(response.body()).get("message").asText();
+
+        throw new IllegalStateException(errorMessage);
       }
 
-    } catch (IOException | InterruptedException e) {
+    } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making payment", e);
-      return null;
+      throw new IllegalStateException(e.getMessage());
     }
+
+    return null;
   }
 
   @Override
@@ -262,6 +268,39 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     } catch (IOException | InterruptedException e) {
       LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId, e);
+      return null;
+    }
+  }
+
+  @Override
+  public PaymentStatusDTO getPaymentStatus(Integer loanId, LocalDateTime actionDateTime) {
+    try {
+      String url = BANKING_PRET_BASE_URL + "/comptes-pret/" + loanId + "/payment-status";
+      if (actionDateTime != null) {
+        url += "?actionDateTime=" + actionDateTime.toString();
+      }
+
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create(url))
+          .header("Accept", "application/json")
+          .GET()
+          .build();
+
+      LOG.info("Fetching payment status for loan " + loanId + " at " + actionDateTime + " from: " + url);
+
+      HttpResponse<String> response = httpClient.send(request,
+          HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        return objectMapper.readValue(response.body(), PaymentStatusDTO.class);
+      } else {
+        LOG.warning("Failed to fetch payment status. Status: " + response.statusCode() +
+            ", Body: " + response.body());
+        return null;
+      }
+
+    } catch (IOException | InterruptedException e) {
+      LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId + " at " + actionDateTime, e);
       return null;
     }
   }

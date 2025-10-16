@@ -109,43 +109,32 @@
           </div>
         </div>
 
-        <!-- Payment Status -->
-        <div th:if="${paymentStatus != null}" class="account-info-section">
-          <h3>Statut des Paiements</h3>
-          <div class="account-details">
-            <div class="detail-row">
-              <span class="label">Total Payé:</span>
-              <span
-                class="value positive-balance"
-                th:text="${paymentStatus.formattedTotalPaid}"
-                >2500.00 MGA</span
-              >
-            </div>
-            <div class="detail-row">
-              <span class="label">Total Attendu:</span>
-              <span
-                class="value"
-                th:text="${paymentStatus.formattedTotalExpected}"
-                >5000.00 MGA</span
-              >
-            </div>
-            <div class="detail-row">
-              <span class="label">Montant Dû:</span>
-              <span
-                class="value"
-                th:class="${paymentStatus.hasAmountDue()} ? 'negative-balance' : 'positive-balance'"
-                th:text="${paymentStatus.formattedAmountDue}"
-                >2500.00 MGA</span
-              >
-            </div>
-            <div class="detail-row">
-              <span class="label">Progression:</span>
-              <span
-                class="value"
-                th:text="${#numbers.formatDecimal(paymentStatus.completionPercentage, 1, 1)} + '%'"
-                >50.0%</span
-              >
-            </div>
+        <!-- Payment Status Form -->
+        <div class="account-info-section">
+          <h3>Vérifier le Statut des Paiements</h3>
+          <div class="transaction-form">
+            <form method="post" action="payment-status" class="action-form">
+              <input type="hidden" name="loanId" th:value="${loan.id}" />
+
+              <div class="form-group">
+                <label for="status-date">Date de Vérification:</label>
+                <input
+                  type="date"
+                  id="status-date"
+                  name="actionDateTime"
+                  class="form-input"
+                  required
+                />
+                <small class="form-help">
+                  Sélectionnez une date pour voir le statut des paiements à
+                  cette date
+                </small>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                Vérifier le Statut
+              </button>
+            </form>
           </div>
         </div>
 

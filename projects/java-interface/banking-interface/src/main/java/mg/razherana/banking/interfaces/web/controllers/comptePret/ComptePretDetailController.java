@@ -9,6 +9,7 @@ import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,6 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -83,7 +86,7 @@ public class ComptePretDetailController extends HttpServlet {
       context.setVariable("paymentHistory", paymentHistory);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
-      
+
       // Add BigDecimal ZERO for Thymeleaf comparisons
       context.setVariable("ZERO", BigDecimal.ZERO);
 
@@ -184,6 +187,20 @@ public class ComptePretDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       response.sendRedirect("detail?id=" + loanId + "&error=invalid_amount_format");
+    } catch (EJBException e) {
+      LOG.severe("Error processing payment: " + e.getMessage());
+      String str;
+      if (e.getCause() != null) {
+        str = e.getCause().getMessage();
+        str = URLEncoder.encode(str, StandardCharsets.UTF_8);
+
+        response.sendRedirect("detail?id=" + loanId + "&error=" + str);
+      } else {
+        str = e.getMessage();
+        str = URLEncoder.encode(str, StandardCharsets.UTF_8);
+        
+        response.sendRedirect("detail?id=" + loanId + "&error=" + str);
+      }
     }
   }
 }

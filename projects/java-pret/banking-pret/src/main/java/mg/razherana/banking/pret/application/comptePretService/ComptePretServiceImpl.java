@@ -24,7 +24,6 @@ import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -243,7 +242,7 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     // Calculate number of months between start and end date
     // Add 1 to include the starting month
-    long totalMonths = loan.getDateDebut().until(loan.getDateFin(), ChronoUnit.MONTHS) + 1;
+    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
     if (totalMonths <= 0) {
       throw new IllegalArgumentException("Invalid loan duration");
     }
@@ -268,7 +267,7 @@ public class ComptePretServiceImpl implements ComptePretService {
     BigDecimal numerator = principal.multiply(monthlyRate);
 
     System.out.println("-------------- Variables calculateMonthlyPayment: -----------------------");
-    
+
     System.out.println("Principal (C): " + principal);
     System.out.println("Annual Rate: " + annualRate);
     System.out.println("Monthly Rate (i): " + monthlyRate);
@@ -327,6 +326,25 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   /**
+   * Calculates the total expected amount to be paid over the life of the loan.
+   */
+  private BigDecimal getExpectedTotal(ComptePret loan) {
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan cannot be null");
+    }
+
+    // Calculate number of months between start and end date
+    // Add 1 to include the starting month
+    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
+    if (totalMonths <= 0) {
+      throw new IllegalArgumentException("Invalid loan duration");
+    }
+
+    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
+    return monthlyPayment.multiply(BigDecimal.valueOf(totalMonths));
+  }
+
+  /**
    * Calculates the expected amount to be paid by a specific date.
    */
   @Override
@@ -342,17 +360,33 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     // If action date is after loan end, full loan amount is expected
     if (actionDateTime.isAfter(loan.getDateFin())) {
-      return loan.getMontant();
+      return getExpectedTotal(loan);
     }
 
     // Calculate months elapsed since loan start
-    long monthsElapsed = ChronoUnit.MONTHS.between(loan.getDateDebut(), actionDateTime);
+    long monthsElapsed = monthPassed(loan.getDateDebut(), actionDateTime) + 1;
     if (monthsElapsed < 0) {
       monthsElapsed = 0;
     }
 
     BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
     return monthlyPayment.multiply(BigDecimal.valueOf(monthsElapsed));
+  }
+
+  private long monthPassed(LocalDateTime start, LocalDateTime end) {
+    if (start == null || end == null) {
+      throw new IllegalArgumentException("Start and end date cannot be null");
+    }
+
+    // If end date is before start, return 0
+    if (end.isBefore(start)) {
+      return 0;
+    }
+
+    // Calculate months elapsed since start
+    long calendarMonths = (end.getYear() - start.getYear()) * 12 +
+        (end.getMonthValue() - start.getMonthValue());
+    return calendarMonths < 0 ? 0 : calendarMonths;
   }
 
   /**
@@ -394,15 +428,12 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public Echeance makePayment(Integer compteId, BigDecimal amount, LocalDateTime actionDateTime) {
-    if (compteId == null) {
+    if (compteId == null)
       throw new IllegalArgumentException("Loan account ID cannot be null");
-    }
-    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
       throw new IllegalArgumentException("Payment amount must be positive");
-    }
-    if (actionDateTime == null) {
+    if (actionDateTime == null)
       actionDateTime = LocalDateTime.now();
-    }
 
     ComptePret loan = findById(compteId);
     if (loan == null) {
@@ -411,33 +442,32 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     // Get current payment status
     PaymentStatusDTO status = getPaymentStatus(compteId, actionDateTime);
-    
+
     // Check if loan is already fully paid
     if (status.isFullyPaid()) {
       throw new IllegalArgumentException("Loan is already fully paid");
     }
 
     // Calculate total amount that would be paid after this payment
-    BigDecimal currentTotalPaid = status.getTotalPaid();
+    BigDecimal currentTotalPaid = calculateTotalPaid(compteId);
     BigDecimal totalAfterPayment = currentTotalPaid.add(amount);
-    BigDecimal loanAmount = loan.getMontant();
+    BigDecimal loanAmount = getExpectedTotal(loan);
 
     // Check for overpayment
     if (totalAfterPayment.compareTo(loanAmount) > 0) {
       BigDecimal maxPossiblePayment = loanAmount.subtract(currentTotalPaid);
       BigDecimal excessAmount = amount.subtract(maxPossiblePayment);
-      
+
       String errorMessage = String.format(
           "Payment exceeds remaining loan balance. " +
-          "Reason: Overpayment detected. " +
-          "Amount attempted: %s MGA. " +
-          "Maximum possible payment: %s MGA. " +
-          "Excess amount: %s MGA.",
+              "Reason: Overpayment detected. " +
+              "Amount attempted: %s MGA. " +
+              "Maximum possible payment: %s MGA. " +
+              "Excess amount: %s MGA.",
           amount.toString(),
           maxPossiblePayment.toString(),
-          excessAmount.toString()
-      );
-      
+          excessAmount.toString());
+
       throw new IllegalArgumentException(errorMessage);
     }
 
