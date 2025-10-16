@@ -409,10 +409,36 @@ public class ComptePretServiceImpl implements ComptePretService {
       throw new IllegalArgumentException("Loan account not found: " + compteId);
     }
 
-    // Check if loan is already fully paid
+    // Get current payment status
     PaymentStatusDTO status = getPaymentStatus(compteId, actionDateTime);
+    
+    // Check if loan is already fully paid
     if (status.isFullyPaid()) {
       throw new IllegalArgumentException("Loan is already fully paid");
+    }
+
+    // Calculate total amount that would be paid after this payment
+    BigDecimal currentTotalPaid = status.getTotalPaid();
+    BigDecimal totalAfterPayment = currentTotalPaid.add(amount);
+    BigDecimal loanAmount = loan.getMontant();
+
+    // Check for overpayment
+    if (totalAfterPayment.compareTo(loanAmount) > 0) {
+      BigDecimal maxPossiblePayment = loanAmount.subtract(currentTotalPaid);
+      BigDecimal excessAmount = amount.subtract(maxPossiblePayment);
+      
+      String errorMessage = String.format(
+          "Payment exceeds remaining loan balance. " +
+          "Reason: Overpayment detected. " +
+          "Amount attempted: %s MGA. " +
+          "Maximum possible payment: %s MGA. " +
+          "Excess amount: %s MGA.",
+          amount.toString(),
+          maxPossiblePayment.toString(),
+          excessAmount.toString()
+      );
+      
+      throw new IllegalArgumentException(errorMessage);
     }
 
     // Create payment record
