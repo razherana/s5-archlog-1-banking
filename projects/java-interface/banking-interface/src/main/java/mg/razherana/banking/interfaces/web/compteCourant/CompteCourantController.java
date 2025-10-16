@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.web;
+package mg.razherana.banking.interfaces.web.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
@@ -60,6 +60,7 @@ public class CompteCourantController extends HttpServlet {
 
     // Process template and write response
     response.setContentType("text/html;charset=UTF-8");
-    thymeleafService.getTemplateEngine(getServletContext()).process("comptes-courants/list", context, response.getWriter());
+    thymeleafService.getTemplateEngine(getServletContext()).process("comptes-courants/list", context,
+        response.getWriter());
   }
 }

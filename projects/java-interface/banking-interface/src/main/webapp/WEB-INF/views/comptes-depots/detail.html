@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Détail du Compte Dépôt - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${user.name}">User</strong></span>
+        <a href="/logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Détail du Compte Dépôt</h2>
+
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="/comptes-depots">← Retour à la liste</a>
+        </p>
+
+        <!-- Success/Error messages -->
+        <div
+          th:if="${success}"
+          class="alert alert-success"
+          th:text="${success}"
+        ></div>
+        <div
+          th:if="${error}"
+          class="alert alert-error"
+          th:text="${error}"
+        ></div>
+
+        <!-- Account Information -->
+        <div class="account-info-section">
+          <h3 th:text="${account.typeCompteDepotNom}">Type de Compte Dépôt</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">ID du compte:</span>
+              <span class="value" th:text="${account.id}">123</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Statut:</span>
+              <span
+                class="value"
+                th:class="${account.estRetire} ? 'negative-balance' : 'positive-balance'"
+                th:text="${account.estRetire} ? 'Retiré' : 'Actif'"
+                >Statut</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Montant déposé:</span>
+              <span
+                class="value positive-balance"
+                th:text="${#numbers.formatCurrency(account.montant)}"
+                >1000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Taux d'intérêt:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatPercent(account.tauxInteret, 1, 2)}"
+                >2.5%</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date d'ouverture:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(account.dateOuverture, 'dd/MM/yyyy HH:mm')}"
+                >01/01/2024 10:30</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date d'échéance:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(account.dateEcheance, 'dd/MM/yyyy')}"
+                >01/01/2025</span
+              >
+            </div>
+            <div th:if="${account.interetCalcule != null}" class="detail-row">
+              <span class="label">Intérêt calculé:</span>
+              <span
+                class="value positive-balance"
+                th:text="${#numbers.formatCurrency(account.interetCalcule)}"
+                >50.00 MGA</span
+              >
+            </div>
+            <div th:if="${account.montantTotal != null}" class="detail-row">
+              <span class="label">Montant total:</span>
+              <span
+                class="value positive-balance"
+                th:text="${#numbers.formatCurrency(account.montantTotal)}"
+                >1050.00 MGA</span
+              >
+            </div>
+            <div th:if="${account.dateRetire != null}" class="detail-row">
+              <span class="label">Date de retrait:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(account.dateRetire, 'dd/MM/yyyy HH:mm')}"
+                >01/01/2025 14:30</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction Actions -->
+        <div class="transaction-actions">
+          <h3>Actions</h3>
+
+          <!-- Withdrawal Form -->
+          <div th:if="${account.estRetire}" class="alert alert-info">
+            <strong>Compte déjà retiré</strong><br />
+            Ce compte a déjà été retiré le
+            <span
+              th:text="${#temporals.format(account.dateRetire, 'dd/MM/yyyy HH:mm')}"
+            ></span
+            >.
+          </div>
+
+          <div th:unless="${account.estRetire}" class="alert alert-info">
+            <strong>Attention:</strong> Cette action est irréversible. Une fois
+            le retrait effectué, le compte sera fermé définitivement. Les
+            intérêts seront calculés automatiquement selon la durée de
+            placement. Si vous sélectionnez un compte courant, les fonds seront
+            automatiquement transférés dans ce compte.
+          </div>
+
+          <div th:unless="${account.estRetire}" class="transaction-form">
+            <h4>Retirer le Dépôt</h4>
+            <form method="post" class="action-form">
+              <input type="hidden" name="accountId" th:value="${account.id}" />
+              <input type="hidden" name="action" value="withdraw" />
+
+              <div class="form-group">
+                <label for="targetAccountId"
+                  >Déposer dans le compte courant (optionnel):</label
+                >
+                <select
+                  id="targetAccountId"
+                  name="targetAccountId"
+                  class="form-input"
+                >
+                  <option value="">
+                    Sélectionner un compte courant (optionnel)
+                  </option>
+                  <option
+                    th:each="currentAccount : ${currentAccounts}"
+                    th:value="${currentAccount.id}"
+                    th:text="|Compte #${currentAccount.id} - Solde: ${#numbers.formatCurrency(currentAccount.solde)}|"
+                  >
+                    Compte #123 - Solde: 1000.00 MGA
+                  </option>
+                </select>
+                <small class="form-help">
+                  Si vous sélectionnez un compte courant, le montant total du
+                  retrait sera automatiquement déposé dans ce compte.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="actionDateTime"
+                  >Date et heure du retrait (optionnel):</label
+                >
+                <input
+                  type="datetime-local"
+                  id="actionDateTime"
+                  name="actionDateTime"
+                  class="form-input"
+                  title="Laissez vide pour utiliser la date/heure actuelle"
+                />
+                <small class="form-help">
+                  Laissez vide pour utiliser la date et l'heure actuelles.
+                  Utilisé principalement pour les tests et la rétroactivité.
+                </small>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="btn btn-warning"
+                  onclick="return confirm('Êtes-vous sûr de vouloir retirer ce dépôt ? Cette action est irréversible. Si vous avez sélectionné un compte courant, les fonds seront automatiquement transférés.')"
+                >
+                  Retirer le Dépôt
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

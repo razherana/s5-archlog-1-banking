@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un Compte Dépôt - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <script>
+      function showTypeInfo() {
+        const select = document.getElementById("typeCompteDepotId");
+        const infos = document.querySelectorAll(".type-info");
+
+        // Hide all info boxes
+        infos.forEach((info) => (info.style.display = "none"));
+
+        // Show selected type info
+        if (select.value) {
+          const selectedInfo = document.getElementById(
+            "type-info-" + select.value
+          );
+          if (selectedInfo) {
+            selectedInfo.style.display = "block";
+          }
+        }
+      }
+
+      function setMinDate() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const dateInput = document.getElementById("dateEcheance");
+        dateInput.min = tomorrow.toISOString().split("T")[0];
+      }
+
+      window.onload = function () {
+        setMinDate();
+        showTypeInfo();
+      };
+    </script>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${user.name}">User</strong></span>
+        <a href="/logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Créer un Compte Dépôt</h2>
+
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="/comptes-depots">← Retour à la liste</a>
+        </p>
+
+        <!-- Success/Error messages -->
+        <div
+          th:if="${success}"
+          class="alert alert-success"
+          th:text="${success}"
+        ></div>
+        <div
+          th:if="${error}"
+          class="alert alert-error"
+          th:text="${error}"
+        ></div>
+
+        <div class="alert alert-info">
+          <strong>Information:</strong> Un compte dépôt est un placement à terme
+          fixe. Une fois créé, vous ne pourrez retirer les fonds qu'à la date
+          d'échéance. Les intérêts seront calculés automatiquement selon le taux
+          et la durée de placement.
+        </div>
+
+        <!-- Create Account Form -->
+        <form method="post" class="account-form">
+          <div class="form-group">
+            <label for="typeCompteDepotId"
+              >Type de compte dépôt
+              <span style="color: var(--error-color)">*</span></label
+            >
+            <select
+              id="typeCompteDepotId"
+              name="typeCompteDepotId"
+              required
+              onchange="showTypeInfo()"
+              class="form-input"
+            >
+              <option value="">-- Sélectionnez un type --</option>
+              <option
+                th:each="type : ${depositTypes}"
+                th:value="${type.id}"
+                th:text="${type.nom} + ' - ' + ${#numbers.formatPercent(type.tauxInteret, 1, 2)}"
+              >
+                Type - 2.5%
+              </option>
+            </select>
+
+            <!-- Type information boxes -->
+            <div
+              th:each="type : ${depositTypes}"
+              th:id="'type-info-' + ${type.id}"
+              class="type-info alert alert-info"
+              style="display: none; margin-top: 10px"
+            >
+              <strong th:text="${type.nom}">Type de compte</strong><br />
+              Taux d'intérêt:
+              <strong
+                th:text="${#numbers.formatPercent(type.tauxInteret, 1, 2)}"
+                >2.5%</strong
+              ><br />
+              <small
+                >Les intérêts sont calculés selon la durée de placement jusqu'à
+                la date d'échéance.</small
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="montant"
+              >Montant à déposer
+              <span style="color: var(--error-color)">*</span></label
+            >
+            <input
+              type="number"
+              id="montant"
+              name="montant"
+              step="0.01"
+              min="0.01"
+              required
+              placeholder="Ex: 1000.00"
+              class="form-input"
+            />
+            <small class="form-help">Montant minimum: 0.01 MGA</small>
+          </div>
+
+          <div class="form-group">
+            <label for="dateEcheance"
+              >Date d'échéance
+              <span style="color: var(--error-color)">*</span></label
+            >
+            <input
+              type="date"
+              id="dateEcheance"
+              name="dateEcheance"
+              required
+              class="form-input"
+            />
+            <small class="form-help"
+              >Date à laquelle vous pourrez retirer le dépôt avec les intérêts.
+              Doit être dans le futur.</small
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="actionDateTime"
+              >Date et heure de création (optionnel)</label
+            >
+            <input
+              type="datetime-local"
+              id="actionDateTime"
+              name="actionDateTime"
+              placeholder="Laissez vide pour utiliser la date/heure actuelle"
+              class="form-input"
+            />
+            <small class="form-help"
+              >Utilisé principalement pour les tests et la rétroactivité.
+              Laissez vide pour utiliser la date et l'heure actuelles.</small
+            >
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">
+              Créer le Compte Dépôt
+            </button>
+            <a
+              href="/comptes-depots"
+              class="btn btn-secondary"
+              >Annuler</a
+            >
+          </div>
+        </form>
+
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>Le compte sera créé immédiatement avec le montant déposé</li>
+            <li>
+              Les intérêts sont calculés automatiquement selon le type de compte
+            </li>
+            <li>Le retrait n'est possible qu'à partir de la date d'échéance</li>
+            <li>Une fois retiré, le compte sera fermé définitivement</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
