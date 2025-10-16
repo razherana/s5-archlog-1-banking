@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Détail du Prêt - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Détail du Prêt</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="../comptes-prets">← Retour à la liste des prêts</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:if="${param.error[0] == 'missing_amount'}">
+            Veuillez saisir un montant.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_amount'}">
+            Le montant doit être supérieur à zéro.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_amount_format'}">
+            Format de montant invalide.
+          </p>
+          <p th:if="${param.error[0] == 'payment_failed'}">
+            Échec du paiement.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_action'}">Action invalide.</p>
+          <p
+            th:text="${param.error[0]}"
+            th:if="${param.error[0] != 'missing_amount' and param.error[0] != 'invalid_amount' and param.error[0] != 'invalid_amount_format' and param.error[0] != 'payment_failed' and param.error[0] != 'invalid_action'}"
+          >
+            Erreur
+          </p>
+        </div>
+
+        <!-- Success Messages -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:if="${param.success[0] == 'payment_successful'}">
+            Paiement effectué avec succès!
+          </p>
+        </div>
+
+        <!-- Loan Information -->
+        <div class="account-info-section">
+          <h3>Informations du Prêt</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">ID Prêt:</span>
+              <span class="value" th:text="${loan.id}">1</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Type de Prêt:</span>
+              <span
+                class="value"
+                th:text="${loan.typeNom != null ? loan.typeNom : 'Type ' + loan.typeComptePretId}"
+                >Personal Loan</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Montant du Prêt:</span>
+              <span class="value" th:text="${loan.formattedMontant}"
+                >10000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Mensualité:</span>
+              <span class="value" th:text="${loan.formattedMonthlyPayment}"
+                >850.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date de Début:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(loan.dateDebut, 'dd/MM/yyyy')}"
+                >01/01/2025</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date de Fin:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(loan.dateFin, 'dd/MM/yyyy')}"
+                >31/12/2025</span
+              >
+            </div>
+            <div class="detail-row" th:if="${loan.typeInteret != null}">
+              <span class="label">Taux d'Intérêt:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatDecimal(loan.typeInteret * 100, 1, 1)} + '%'"
+                >5.5%</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Status -->
+        <div th:if="${paymentStatus != null}" class="account-info-section">
+          <h3>Statut des Paiements</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">Total Payé:</span>
+              <span
+                class="value positive-balance"
+                th:text="${paymentStatus.formattedTotalPaid}"
+                >2500.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Total Attendu:</span>
+              <span
+                class="value"
+                th:text="${paymentStatus.formattedTotalExpected}"
+                >5000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Montant Dû:</span>
+              <span
+                class="value"
+                th:class="${paymentStatus.hasAmountDue()} ? 'negative-balance' : 'positive-balance'"
+                th:text="${paymentStatus.formattedAmountDue}"
+                >2500.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Progression:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatDecimal(paymentStatus.completionPercentage, 1, 1)} + '%'"
+                >50.0%</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Actions -->
+        <div class="transaction-actions">
+          <h3>Actions de Paiement</h3>
+
+          <!-- Make Payment Form -->
+          <div class="transaction-form">
+            <h4>Effectuer un Paiement</h4>
+            <form method="post" action="detail" class="action-form">
+              <input type="hidden" name="loanId" th:value="${loan.id}" />
+              <input type="hidden" name="action" value="make_payment" />
+
+              <div class="form-group">
+                <label for="payment-amount">Montant (MGA):</label>
+                <input
+                  type="number"
+                  id="payment-amount"
+                  name="montant"
+                  step="0.01"
+                  min="0.01"
+                  th:placeholder="${paymentStatus != null ? paymentStatus.monthlyPayment : '500.00'}"
+                  class="form-input"
+                  required
+                />
+                <small class="form-help" th:if="${paymentStatus != null}">
+                  Mensualité recommandée:
+                  <span th:text="${paymentStatus.formattedMonthlyPayment}"
+                    >850.00 MGA</span
+                  >
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="payment-date">Date du Paiement (optionnel):</label>
+                <input
+                  type="date"
+                  id="payment-date"
+                  name="paymentDate"
+                  class="form-input"
+                />
+                <small class="form-help">
+                  Laissez vide pour utiliser la date actuelle
+                </small>
+              </div>
+
+              <button type="submit" class="btn btn-success">
+                Effectuer le Paiement
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Payment History -->
+        <div
+          th:if="${paymentHistory != null and !#lists.isEmpty(paymentHistory)}"
+          class="transaction-history"
+        >
+          <h3>Historique des Paiements</h3>
+          <table class="accounts-table">
+            <thead>
+              <tr>
+                <th>ID Paiement</th>
+                <th>Montant</th>
+                <th>Date d'Échéance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="payment : ${paymentHistory}">
+                <td th:text="${payment.id}">1</td>
+                <td th:text="${payment.formattedMontant}">500.00 MGA</td>
+                <td
+                  th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                >
+                  01/01/2025 10:00
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          th:if="${paymentHistory == null or #lists.isEmpty(paymentHistory)}"
+          class="alert alert-info"
+        >
+          <p>Aucun paiement effectué pour ce prêt.</p>
+        </div>
+
+        <!-- Information Section -->
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>Les paiements sont enregistrés dans l'ordre chronologique</li>
+            <li>Les overpayments sont crédités pour les mensualités futures</li>
+            <li>Vous pouvez effectuer plusieurs paiements dans le même mois</li>
+            <li>
+              La progression est calculée en fonction des mensualités attendues
+            </li>
+            <li>Les paiements peuvent être antidatés si nécessaire</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Auto-set today's date
+      document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date();
+        const dateInput = document.getElementById("payment-date");
+        if (dateInput) {
+          dateInput.value = today.toISOString().split("T")[0];
+        }
+      });
+    </script>
+  </body>
+</html>

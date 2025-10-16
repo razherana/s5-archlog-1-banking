@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un Prêt - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Créer un Nouveau Prêt</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="../comptes-prets">← Retour à la liste des prêts</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:if="${param.error[0] == 'missing_fields'}">
+            Veuillez remplir tous les champs obligatoires.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_amount'}">
+            Le montant doit être supérieur à zéro.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_date_range'}">
+            La date de fin doit être postérieure à la date de début.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_current_account'}">
+            Le compte courant sélectionné n'est pas valide.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_format'}">
+            Format de données invalide.
+          </p>
+          <p th:if="${param.error[0] == 'creation_failed'}">
+            Échec de la création du prêt.
+          </p>
+          <p th:if="${param.error[0] == 'system_error'}">Erreur système.</p>
+          <p
+            th:text="${param.error[0]}"
+            th:if="${param.error[0] != 'missing_fields' and param.error[0] != 'invalid_amount' and param.error[0] != 'invalid_date_range' and param.error[0] != 'invalid_current_account' and param.error[0] != 'invalid_format' and param.error[0] != 'creation_failed' and param.error[0] != 'system_error'}"
+          >
+            Erreur
+          </p>
+        </div>
+
+        <!-- Success Message -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:if="${param.success[0] == 'loan_created'}">
+            Prêt créé avec succès!
+          </p>
+        </div>
+
+        <!-- Check if user has current accounts -->
+        <div
+          th:if="${#lists.isEmpty(currentAccounts)}"
+          class="alert alert-error"
+        >
+          <p>Vous devez avoir au moins un compte courant pour créer un prêt.</p>
+          <p class="text-center" style="margin-top: 1rem">
+            <a href="../comptes-courants/create" class="btn btn-primary"
+              >Créer un compte courant</a
+            >
+          </p>
+        </div>
+
+        <!-- Create Loan Form -->
+        <form
+          th:if="${!#lists.isEmpty(currentAccounts)}"
+          method="post"
+          action="create"
+          class="account-form"
+        >
+          <div class="form-group">
+            <label for="typeComptePretId"
+              >Type de Prêt <span class="required">*</span>:</label
+            >
+            <select
+              id="typeComptePretId"
+              name="typeComptePretId"
+              class="form-input"
+              required
+            >
+              <option value="">-- Sélectionnez un type de prêt --</option>
+              <option
+                th:each="type : ${loanTypes}"
+                th:value="${type.id}"
+                th:text="${type.nom + ' (' + type.interetPercentage + ')'}"
+              >
+                Personal Loan (5.5%)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="montant"
+              >Montant du Prêt (MGA) <span class="required">*</span>:</label
+            >
+            <input
+              type="number"
+              id="montant"
+              name="montant"
+              step="0.01"
+              min="0.01"
+              placeholder="10000.00"
+              class="form-input"
+              required
+            />
+            <small class="form-help">
+              Le montant du prêt sera versé dans le compte courant sélectionné.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="compteCourantId"
+              >Compte Courant de Dépôt <span class="required">*</span>:</label
+            >
+            <select
+              id="compteCourantId"
+              name="compteCourantId"
+              class="form-input"
+              required
+            >
+              <option value="">-- Sélectionnez un compte courant --</option>
+              <option
+                th:each="account : ${currentAccounts}"
+                th:value="${account.id}"
+                th:text="${account.numeroCompte + ' (' + #numbers.formatDecimal(account.solde, 1, 2) + ' MGA)'}"
+              >
+                123456789 (1000.00 MGA)
+              </option>
+            </select>
+            <small class="form-help">
+              Le montant du prêt sera automatiquement versé dans ce compte.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="dateDebut"
+              >Date de Début <span class="required">*</span>:</label
+            >
+            <input
+              type="date"
+              id="dateDebut"
+              name="dateDebut"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="dateFin"
+              >Date de Fin <span class="required">*</span>:</label
+            >
+            <input
+              type="date"
+              id="dateFin"
+              name="dateFin"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Créer le Prêt</button>
+            <a href="../comptes-prets" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>
+              La mensualité sera calculée automatiquement selon le taux
+              d'intérêt
+            </li>
+            <li>
+              Le montant du prêt sera immédiatement versé dans le compte courant
+              sélectionné
+            </li>
+            <li>
+              Les remboursements devront être effectués selon l'échéancier
+            </li>
+            <li>Le taux d'intérêt varie selon le type de prêt choisi</li>
+            <li>La durée du prêt influence le montant de la mensualité</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Auto-set default dates
+      document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date();
+        const nextYear = new Date(
+          today.getFullYear() + 1,
+          today.getMonth(),
+          today.getDate()
+        );
+
+        document.getElementById("dateDebut").value = today
+          .toISOString()
+          .split("T")[0];
+        document.getElementById("dateFin").value = nextYear
+          .toISOString()
+          .split("T")[0];
+      });
+    </script>
+  </body>
+</html>

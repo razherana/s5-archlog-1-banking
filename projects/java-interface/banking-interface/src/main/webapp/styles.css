@@ -401,3 +401,9 @@ body {
   font-size: 0.875rem;
   margin: 0.25rem;
 }
+
+/* Required field indicator */
+.required {
+  color: var(--error-color);
+  font-weight: bold;
+}
