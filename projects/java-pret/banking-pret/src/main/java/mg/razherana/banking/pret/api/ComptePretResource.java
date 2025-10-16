@@ -13,6 +13,7 @@ import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -117,7 +118,12 @@ public class ComptePretResource {
         return Response.status(404).entity(error).build();
       }
 
+      // Get the monthly payment and set it in the DTO
+      BigDecimal monthlyPayment = comptePretService.calculateMonthlyPayment(loan);
+
       ComptePretDTO loanDTO = new ComptePretDTO(loan);
+      loanDTO.setMonthlyPayment(monthlyPayment);
+      
       return Response.ok(loanDTO).build();
 
     } catch (EJBException e) {

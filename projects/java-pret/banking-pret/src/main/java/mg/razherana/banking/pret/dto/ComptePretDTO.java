@@ -20,6 +20,7 @@ public class ComptePretDTO {
   private BigDecimal montant;
   private LocalDateTime dateDebut;
   private LocalDateTime dateFin;
+  private BigDecimal monthlyPayment;
 
   // Default constructor
   public ComptePretDTO() {
@@ -94,5 +95,13 @@ public class ComptePretDTO {
         ", dateDebut=" + dateDebut +
         ", dateFin=" + dateFin +
         '}';
+  }
+
+  public BigDecimal getMonthlyPayment() {
+    return monthlyPayment;
+  }
+
+  public void setMonthlyPayment(BigDecimal monthlyPayment) {
+    this.monthlyPayment = monthlyPayment;
   }
 }
