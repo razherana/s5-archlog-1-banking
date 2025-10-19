@@ -139,65 +139,47 @@ public class AccountDetailController extends HttpServlet {
         case "deposit":
           errorMessage = handleDeposit(request, account);
           success = (errorMessage == null);
-          if (success) {
+
+          if (success)
             redirectUrl += "&success=deposit_success";
-          } else {
-            try {
-              redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
-            } catch (Exception e) {
-              redirectUrl += "&error=deposit_failed";
-            }
-          }
+          else
+            redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
           break;
 
         case "withdraw":
           errorMessage = handleWithdrawal(request, account);
           success = (errorMessage == null);
-          if (success) {
+          if (success)
             redirectUrl += "&success=withdrawal_success";
-          } else {
-            try {
-              redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
-            } catch (Exception e) {
-              redirectUrl += "&error=withdrawal_failed";
-            }
-          }
+          else
+            redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+
           break;
 
         case "pay_tax":
           errorMessage = handleTaxPayment(request, account);
           success = (errorMessage == null);
-          if (success) {
+
+          if (success)
             redirectUrl += "&success=tax_payment_success";
-          } else {
-            try {
-              redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
-            } catch (Exception e) {
-              redirectUrl += "&error=tax_payment_failed";
-            }
-          }
+          else
+            redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+
           break;
 
         case "transfer":
           errorMessage = handleTransfer(request, account, user);
           success = (errorMessage == null);
-          if (success) {
+
+          if (success)
             redirectUrl += "&success=transfer_success";
-          } else {
-            try {
-              redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
-            } catch (Exception e) {
-              redirectUrl += "&error=transfer_failed";
-            }
-          }
+          else
+            redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+
           break;
 
         default:
-          try {
-            redirectUrl += "&error=" + java.net.URLEncoder.encode("Action invalide", "UTF-8");
-          } catch (Exception e) {
-            redirectUrl += "&error=invalid_action";
-          }
+          redirectUrl += "&error=" + java.net.URLEncoder.encode("Action invalide", "UTF-8");
       }
 
       response.sendRedirect(redirectUrl);
@@ -206,7 +188,7 @@ public class AccountDetailController extends HttpServlet {
       response.sendRedirect("../comptes-courants?error=invalid_account_id");
     } catch (Exception e) {
       LOG.severe("Error processing transaction: " + e.getMessage());
-      response.sendRedirect("detail?id=" + accountIdStr + "&error=system_error");
+      response.sendRedirect("detail?id=" + accountIdStr + "&error=" + e.getMessage());
     }
   }
 

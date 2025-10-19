@@ -18,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -53,7 +55,7 @@ public class AccountDepotDetailController extends HttpServlet {
 
     if (accountIdStr == null || accountIdStr.trim().isEmpty()) {
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-          java.net.URLEncoder.encode("ID de compte requis", java.nio.charset.StandardCharsets.UTF_8));
+          URLEncoder.encode("ID de compte requis", StandardCharsets.UTF_8));
       return;
     }
 
@@ -63,14 +65,14 @@ public class AccountDepotDetailController extends HttpServlet {
 
       if (account == null) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-            java.net.URLEncoder.encode("Compte non trouvé", java.nio.charset.StandardCharsets.UTF_8));
+            URLEncoder.encode("Compte non trouvé", StandardCharsets.UTF_8));
         return;
       }
 
       // Verify that the account belongs to the user
       if (!account.getUserId().equals(user.getId())) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-            java.net.URLEncoder.encode("Accès non autorisé", java.nio.charset.StandardCharsets.UTF_8));
+            URLEncoder.encode("Accès non autorisé", StandardCharsets.UTF_8));
         return;
       }
 
@@ -96,7 +98,7 @@ public class AccountDepotDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-          java.net.URLEncoder.encode("ID de compte invalide", java.nio.charset.StandardCharsets.UTF_8));
+          URLEncoder.encode("ID de compte invalide", StandardCharsets.UTF_8));
     }
   }
 
@@ -116,7 +118,7 @@ public class AccountDepotDetailController extends HttpServlet {
 
     if (accountIdStr == null || action == null) {
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-          java.net.URLEncoder.encode("Paramètres manquants", java.nio.charset.StandardCharsets.UTF_8));
+          URLEncoder.encode("Paramètres manquants", StandardCharsets.UTF_8));
       return;
     }
 
@@ -126,8 +128,8 @@ public class AccountDepotDetailController extends HttpServlet {
 
       if (account == null || !account.getUserId().equals(user.getId())) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-            java.net.URLEncoder.encode("Compte non trouvé ou accès non autorisé",
-                java.nio.charset.StandardCharsets.UTF_8));
+            URLEncoder.encode("Compte non trouvé ou accès non autorisé",
+                StandardCharsets.UTF_8));
         return;
       }
 
@@ -139,8 +141,7 @@ public class AccountDepotDetailController extends HttpServlet {
           result = handleWithdrawal(request, account);
           break;
         default:
-          result = "error="
-              + java.net.URLEncoder.encode("Action non reconnue", java.nio.charset.StandardCharsets.UTF_8);
+          result = "error=" + URLEncoder.encode("Action non reconnue", StandardCharsets.UTF_8);
           break;
       }
 
@@ -148,11 +149,11 @@ public class AccountDepotDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-          java.net.URLEncoder.encode("ID de compte invalide", java.nio.charset.StandardCharsets.UTF_8));
+          URLEncoder.encode("ID de compte invalide", StandardCharsets.UTF_8));
     } catch (Exception e) {
       LOG.severe("Error processing deposit account action: " + e.getMessage());
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-          java.net.URLEncoder.encode("Erreur interne", java.nio.charset.StandardCharsets.UTF_8));
+          URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     }
   }
 
@@ -169,13 +170,13 @@ public class AccountDepotDetailController extends HttpServlet {
       String result = compteDepotService.withdrawFromAccount(account.getId(), targetAccountId, actionDateTime);
 
       if (result.startsWith("Retrait effectué")) {
-        return "success=" + java.net.URLEncoder.encode(result, java.nio.charset.StandardCharsets.UTF_8);
-      } else {
-        return "error=" + result; // Already URL encoded
+        return "success=" + URLEncoder.encode(result, StandardCharsets.UTF_8);
       }
+
+      return "error=" + result; // Already URL encoded
     } catch (NumberFormatException e) {
       return "error="
-          + java.net.URLEncoder.encode("Format de données invalide", java.nio.charset.StandardCharsets.UTF_8);
+          + URLEncoder.encode("Format de données invalide", StandardCharsets.UTF_8);
     }
   }
 }
