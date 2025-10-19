@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Statut du Compte - Banking Interface</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Statut du Compte Courant</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a th:href="@{detail(id=${account.id})}"
+            >← Retour au détail du compte</a
+          >
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- Success Messages -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:text="${param.success[0]}">Succès</p>
+        </div>
+
+        <!-- Account Basic Information -->
+        <div class="account-info-section">
+          <h3>Informations du Compte</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">ID Compte:</span>
+              <span class="value" th:text="${account.id}">1</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Date d'Ouverture:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(account.dateOuverture, 'dd/MM/yyyy HH:mm')}"
+                >01/01/2024 10:00</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Taxe Mensuelle:</span>
+              <span
+                class="value"
+                th:text="${#numbers.formatDecimal(account.taxe, 1, 2)} + ' MGA'"
+                >0.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Date de Vérification:</span>
+              <span
+                class="value"
+                th:text="${#temporals.format(actionDateTime, 'dd/MM/yyyy HH:mm')}"
+                >19/10/2025 23:59</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Status at Selected Date -->
+        <div class="account-info-section">
+          <h3>Statut à la Date Sélectionnée</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">Solde du Compte:</span>
+              <span
+                class="value"
+                th:class="${accountStatus.balance.compareTo(BD_ZERO) >= 0} ? 'positive-balance' : 'negative-balance'"
+              >
+                <span th:text="${accountStatus.formattedBalance}"
+                  >1000.00 MGA</span
+                >
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Taxes Payées:</span>
+              <span
+                class="value positive-balance"
+                th:text="${accountStatus.formattedTaxPaid}"
+                >50.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Taxes à Payer:</span>
+              <span
+                class="value"
+                th:class="${accountStatus.taxToPay.compareTo(BD_ZERO) > 0} ? 'negative-balance' : 'positive-balance'"
+              >
+                <span th:text="${accountStatus.formattedTaxToPay}"
+                  >25.00 MGA</span
+                >
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Nombre Total de Transactions:</span>
+              <span class="value" th:text="${accountStatus.totalTransactions}"
+                >15</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction Summary -->
+        <div class="account-info-section">
+          <h3>Résumé des Transactions</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">Total des Dépôts:</span>
+              <span
+                class="value positive-balance"
+                th:text="${accountStatus.formattedTotalDeposits}"
+                >5000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Total des Retraits:</span>
+              <span
+                class="value negative-balance"
+                th:text="${accountStatus.formattedTotalWithdrawals}"
+                >2000.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Total des Transferts Envoyés:</span>
+              <span
+                class="value negative-balance"
+                th:text="${accountStatus.formattedTotalTransfersSent}"
+                >1500.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Total des Transferts Reçus:</span>
+              <span
+                class="value positive-balance"
+                th:text="${accountStatus.formattedTotalTransfersReceived}"
+                >800.00 MGA</span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="label">Total des Paiements de Taxes:</span>
+              <span
+                class="value negative-balance"
+                th:text="${accountStatus.formattedTotalTaxPayments}"
+                >300.00 MGA</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div
+          th:if="${transactionHistory != null and !#lists.isEmpty(transactionHistory)}"
+          class="transaction-history"
+        >
+          <h3>Historique des Transactions</h3>
+          <table class="accounts-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Expéditeur</th>
+                <th>Destinataire</th>
+                <th>Type</th>
+                <th>Montant</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="transaction : ${transactionHistory}"
+                th:with="isPositive=${transaction.isPositiveForAccount(account.id)},
+                           isNegative=${transaction.isNegativeForAccount(account.id)},
+                           balanceClass=${isPositive ? 'positive-balance' : (isNegative ? 'negative-balance' : '')}"
+              >
+                <td th:text="${transaction.id}">1</td>
+                <td>
+                  <span
+                    th:if="${transaction.senderId != null}"
+                    th:text="'Compte ' + ${transaction.senderId}"
+                    >Compte 1</span
+                  >
+                  <span
+                    th:if="${transaction.senderId == null}"
+                    class="text-muted"
+                    >Externe</span
+                  >
+                </td>
+                <td>
+                  <span
+                    th:if="${transaction.receiverId != null}"
+                    th:text="'Compte ' + ${transaction.receiverId}"
+                    >Compte 2</span
+                  >
+                  <span
+                    th:if="${transaction.receiverId == null}"
+                    class="text-muted"
+                    >Externe</span
+                  >
+                </td>
+                <td>
+                  <span
+                    class="transaction-type"
+                    th:text="${transaction.transactionType}"
+                    th:class="${balanceClass}"
+                    >Dépôt</span
+                  >
+                </td>
+                <td>
+                  <span
+                    th:text="${transaction.formattedMontant}"
+                    th:class="${balanceClass}"
+                    >500.00 MGA</span
+                  >
+                </td>
+                <td th:text="${transaction.formattedDate}">19/10/2025 10:30</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          th:if="${transactionHistory == null or #lists.isEmpty(transactionHistory)}"
+          class="alert alert-info"
+        >
+          <p>
+            Aucune transaction trouvée pour ce compte jusqu'à la date
+            sélectionnée.
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions" style="margin-top: 2rem">
+          <a th:href="@{detail(id=${account.id})}" class="btn btn-primary">
+            Retour au Détail
+          </a>
+          <a th:href="@{../comptes-courants}" class="btn btn-secondary">
+            Liste des Comptes
+          </a>
+        </div>
+
+        <!-- Information Section -->
+        <div class="info-section">
+          <h3>Informations importantes</h3>
+          <ul>
+            <li>
+              <strong>Solde du Compte</strong>: Le solde calculé à partir de
+              toutes les transactions jusqu'à la date sélectionnée
+            </li>
+            <li>
+              <strong>Taxes Payées</strong>: Le montant total des taxes payées
+              jusqu'à la date sélectionnée
+            </li>
+            <li>
+              <strong>Taxes à Payer</strong>: Le montant des taxes actuellement
+              dues (calculé en temps réel)
+            </li>
+            <li>
+              <strong>Résumé des Transactions</strong>: Les totaux par type de
+              transaction jusqu'à la date sélectionnée
+            </li>
+            <li>
+              <strong>Historique</strong>: Toutes les transactions effectuées
+              jusqu'à la date sélectionnée, triées par date décroissante
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .transaction-type {
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+
+      .text-muted {
+        color: #b9b9b9;
+        font-style: italic;
+      }
+
+      .transaction-history table {
+        margin-top: 1rem;
+      }
+
+      .transaction-history th {
+        color: #f8f9fa;
+        font-weight: 600;
+      }
+
+      .transaction-history td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .positive-balance {
+        color: #28a745 !important;
+        font-weight: 500;
+      }
+
+      .negative-balance {
+        color: #dc3545 !important;
+        font-weight: 500;
+      }
+
+      .info-section {
+        margin-top: 2rem;
+        padding: 1rem;
+        color: #f8f9fa;
+        border-radius: 4px;
+        border-left: 4px solid #007bff;
+      }
+
+      .info-section h3 {
+        margin-top: 0;
+        color: #007bff;
+      }
+
+      .info-section ul {
+        margin: 0;
+        padding-left: 1.5rem;
+      }
+
+      .info-section li {
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </body>
+</html>

@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.application.compteCourantServices;
 
 import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.interfaces.dto.TransactionCourantDTO;
 import mg.razherana.banking.interfaces.dto.UserDTO;
 import mg.razherana.banking.interfaces.entities.User;
 
@@ -44,7 +45,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   /**
    * Extracts error message from API response body.
-   * Attempts to parse JSON error response, falls back to raw response if parsing fails.
+   * Attempts to parse JSON error response, falls back to raw response if parsing
+   * fails.
    */
   private String extractErrorMessage(String responseBody) {
     try {
@@ -102,8 +104,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   public CompteCourantDTO createAccount(Integer userId, Double taxe, String actionDateTime) {
     try {
       String url = BANKING_COURANT_BASE_URL + "/comptes/user/" + userId;
-      
-      // Only add taxe parameter (actionDateTime not supported by banking-courant for account creation)
+
+      // Only add taxe parameter (actionDateTime not supported by banking-courant for
+      // account creation)
       if (taxe != null && taxe > 0) {
         url += "?taxe=" + taxe;
       }
@@ -123,7 +126,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
       LOG.info("Creating account for user " + userId + " at: " + url);
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
-        LOG.warning("actionDateTime specified for account creation but not supported by banking-courant service. Using current time.");
+        LOG.warning(
+            "actionDateTime specified for account creation but not supported by banking-courant service. Using current time.");
       }
 
       HttpResponse<String> response = httpClient.send(request,
@@ -224,11 +228,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       requestBodyBuilder.append("{\"compteId\":").append(accountId)
           .append(",\"montant\":").append(montant)
           .append(",\"description\":\"").append(description != null ? description : "Deposit").append("\"");
-      
+
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBodyBuilder.append(",\"actionDateTime\":\"").append(actionDateTime).append("\"");
       }
-      
+
       requestBodyBuilder.append("}");
       String requestBody = requestBodyBuilder.toString();
 
@@ -272,11 +276,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       requestBodyBuilder.append("{\"compteId\":").append(accountId)
           .append(",\"montant\":").append(montant)
           .append(",\"description\":\"").append(description != null ? description : "Withdrawal").append("\"");
-      
+
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBodyBuilder.append(",\"actionDateTime\":\"").append(actionDateTime).append("\"");
       }
-      
+
       requestBodyBuilder.append("}");
       String requestBody = requestBodyBuilder.toString();
 
@@ -317,11 +321,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       StringBuilder requestBodyBuilder = new StringBuilder();
       requestBodyBuilder.append("{\"compteId\":").append(accountId)
           .append(",\"description\":\"").append(description != null ? description : "Tax payment").append("\"");
-      
+
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBodyBuilder.append(",\"actionDateTime\":\"").append(actionDateTime).append("\"");
       }
-      
+
       requestBodyBuilder.append("}");
       String requestBody = requestBodyBuilder.toString();
 
@@ -357,28 +361,28 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   public List<UserDTO> getAllUsers() {
     try {
       List<User> users = userService.getAllUsers();
-      
+
       // Extract unique user IDs and create UserDTOs
       List<UserDTO> userDTOs = new ArrayList<>();
-      
-      for(User user : users) {
-          UserDTO userDTO = new UserDTO();
 
-          userDTO.setId(user.getId());
-          userDTO.setName(user.getName());
-          userDTO.setEmail(user.getEmail());
+      for (User user : users) {
+        UserDTO userDTO = new UserDTO();
 
-          userDTOs.add(userDTO);
+        userDTO.setId(user.getId());
+        userDTO.setName(user.getName());
+        userDTO.setEmail(user.getEmail());
+
+        userDTOs.add(userDTO);
       }
-      
+
       return userDTOs;
-      
+
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error getting all users", e);
       return new ArrayList<>();
     }
   }
-  
+
   /**
    * Helper method to get all accounts from the banking-courant service.
    */
@@ -416,21 +420,23 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   }
 
   @Override
-  public String makeTransfer(Integer sourceAccountId, Integer destinationAccountId, Double amount, String description, String actionDateTime) {
+  public String makeTransfer(Integer sourceAccountId, Integer destinationAccountId, Double amount, String description,
+      String actionDateTime) {
     try {
       String url = BANKING_COURANT_BASE_URL + "/transactions/transfert";
-      
+
       // Create request body manually to match the expected format
       StringBuilder requestBodyBuilder = new StringBuilder();
       requestBodyBuilder.append("{\"compteSourceId\":").append(sourceAccountId)
           .append(",\"compteDestinationId\":").append(destinationAccountId)
           .append(",\"montant\":").append(amount)
-          .append(",\"description\":\"").append(description != null ? description : "Transfer via interface").append("\"");
-      
+          .append(",\"description\":\"").append(description != null ? description : "Transfer via interface")
+          .append("\"");
+
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBodyBuilder.append(",\"actionDateTime\":\"").append(actionDateTime).append("\"");
       }
-      
+
       requestBodyBuilder.append("}");
       String requestBody = requestBodyBuilder.toString();
 
@@ -441,7 +447,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
           .POST(HttpRequest.BodyPublishers.ofString(requestBody))
           .build();
 
-      LOG.info("Making transfer from account " + sourceAccountId + " to " + destinationAccountId + " amount: " + amount);
+      LOG.info(
+          "Making transfer from account " + sourceAccountId + " to " + destinationAccountId + " amount: " + amount);
 
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
@@ -458,6 +465,114 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     } catch (IOException | InterruptedException e) {
       LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);
       return "Erreur de communication avec le service bancaire: " + e.getMessage();
+    }
+  }
+
+  @Override
+  public List<TransactionCourantDTO> getTransactionHistory(Integer accountId) {
+    try {
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create(BANKING_COURANT_BASE_URL + "/transactions/compte/" + accountId))
+          .GET()
+          .build();
+
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        TransactionCourantDTO[] transactionArray = objectMapper
+            .readValue(response.body(), TransactionCourantDTO[].class);
+        return Arrays.asList(transactionArray);
+      } else {
+        LOG.warning("Failed to fetch transaction history. Status: " + response.statusCode() +
+            ", Body: " + response.body());
+        return new ArrayList<>();
+      }
+
+    } catch (IOException | InterruptedException e) {
+      LOG.log(Level.SEVERE, "Error fetching transaction history for account " + accountId, e);
+      return new ArrayList<>();
+    }
+  }
+
+  @Override
+  public mg.razherana.banking.interfaces.dto.AccountStatusDTO getAccountStatus(Integer accountId,
+      java.time.LocalDateTime statusDate) {
+    try {
+      // Get account details
+      CompteCourantDTO account = getAccountById(accountId);
+      if (account == null) {
+        return null;
+      }
+
+      // Get transaction history
+      List<TransactionCourantDTO> transactions = getTransactionHistory(accountId);
+
+      // Filter transactions up to the status date
+      List<TransactionCourantDTO> filteredTransactions = transactions.stream()
+          .filter(t -> t.getDate() == null || !t.getDate().isAfter(statusDate))
+          .collect(java.util.stream.Collectors.toList());
+
+      // Calculate status information
+      mg.razherana.banking.interfaces.dto.AccountStatusDTO status = new mg.razherana.banking.interfaces.dto.AccountStatusDTO();
+      status.setStatusDate(statusDate);
+      status.setTotalTransactions(filteredTransactions.size());
+
+      java.math.BigDecimal balance = java.math.BigDecimal.ZERO;
+      java.math.BigDecimal totalDeposits = java.math.BigDecimal.ZERO;
+      java.math.BigDecimal totalWithdrawals = java.math.BigDecimal.ZERO;
+      java.math.BigDecimal totalTransfersSent = java.math.BigDecimal.ZERO;
+      java.math.BigDecimal totalTransfersReceived = java.math.BigDecimal.ZERO;
+      java.math.BigDecimal totalTaxPayments = java.math.BigDecimal.ZERO;
+
+      for (TransactionCourantDTO transaction : filteredTransactions) {
+        java.math.BigDecimal amount = transaction.getMontant() != null ? transaction.getMontant()
+            : java.math.BigDecimal.ZERO;
+
+        if ("taxe".equals(transaction.getSpecialAction())) {
+          // Tax payment
+          totalTaxPayments = totalTaxPayments.add(amount);
+          balance = balance.subtract(amount); // Tax reduces balance
+        } else if (transaction.getSenderId() == null && accountId.equals(transaction.getReceiverId())) {
+          // Deposit (money coming in)
+          totalDeposits = totalDeposits.add(amount);
+          balance = balance.add(amount);
+        } else if (accountId.equals(transaction.getSenderId()) && transaction.getReceiverId() == null) {
+          // Withdrawal (money going out)
+          totalWithdrawals = totalWithdrawals.add(amount);
+          balance = balance.subtract(amount);
+        } else if (accountId.equals(transaction.getSenderId()) && transaction.getReceiverId() != null) {
+          // Transfer sent (money going out)
+          totalTransfersSent = totalTransfersSent.add(amount);
+          balance = balance.subtract(amount);
+        } else if (accountId.equals(transaction.getReceiverId()) && transaction.getSenderId() != null) {
+          // Transfer received (money coming in)
+          totalTransfersReceived = totalTransfersReceived.add(amount);
+          balance = balance.add(amount);
+        }
+      }
+
+      status.setBalance(balance);
+      status.setTotalDeposits(totalDeposits);
+      status.setTotalWithdrawals(totalWithdrawals);
+      status.setTotalTransfersSent(totalTransfersSent);
+      status.setTotalTransfersReceived(totalTransfersReceived);
+      status.setTotalTaxPayments(totalTaxPayments);
+
+      // Calculate tax information
+      // For now, set basic tax info - this could be enhanced with more complex tax
+      // calculation logic
+      status.setTaxPaid(totalTaxPayments);
+
+      // Get current tax to pay (this gives us the current outstanding tax)
+      Double currentTaxToPay = getTaxToPay(accountId);
+      status.setTaxToPay(
+          currentTaxToPay != null ? java.math.BigDecimal.valueOf(currentTaxToPay) : java.math.BigDecimal.ZERO);
+
+      return status;
+
+    } catch (Exception e) {
+      LOG.log(Level.SEVERE, "Error calculating account status for account " + accountId, e);
+      return null;
     }
   }
 }

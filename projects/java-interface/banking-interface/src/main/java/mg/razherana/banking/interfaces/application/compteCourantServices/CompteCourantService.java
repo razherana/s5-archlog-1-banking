@@ -1,6 +1,8 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
+import mg.razherana.banking.interfaces.dto.AccountStatusDTO;
 import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.interfaces.dto.TransactionCourantDTO;
 import mg.razherana.banking.interfaces.dto.UserDTO;
 
 import java.util.List;
@@ -99,4 +101,21 @@ public interface CompteCourantService {
      * Helper method to get all accounts from the banking-courant service.
      */
     List<CompteCourantDTO> getAllAccounts();
+
+    /**
+     * Gets transaction history for a specific account.
+     * 
+     * @param accountId The account ID
+     * @return List of transactions for the account
+     */
+    List<TransactionCourantDTO> getTransactionHistory(Integer accountId);
+
+    /**
+     * Gets account status (balance, tax info, transaction summary) at a specific date.
+     * 
+     * @param accountId The account ID
+     * @param statusDate The date/time to calculate status for
+     * @return Account status information
+     */
+    AccountStatusDTO getAccountStatus(Integer accountId, java.time.LocalDateTime statusDate);
 }
