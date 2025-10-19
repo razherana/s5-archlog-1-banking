@@ -54,7 +54,9 @@ public class CompteCourantResource {
       List<CompteCourantDTO> compteDTOs = comptes.stream()
           .map(compte -> {
             BigDecimal solde = compteCourantService.calculateSolde(compte);
-            return new CompteCourantDTO(compte, solde);
+            var c = new CompteCourantDTO(compte, solde);
+            c.setUserId(compte.getUserId());
+            return c;
           })
           .collect(Collectors.toList());
       return Response.ok(compteDTOs)

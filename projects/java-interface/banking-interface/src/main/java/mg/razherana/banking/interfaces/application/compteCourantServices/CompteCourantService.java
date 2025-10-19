@@ -1,6 +1,8 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
 import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.interfaces.dto.UserDTO;
+
 import java.util.List;
 
 /**
@@ -73,4 +75,28 @@ public interface CompteCourantService {
      * @return null if successful, error message if failed
      */
     String payTax(Integer accountId, String description, String actionDateTime);
+    
+    /**
+     * Gets all users in the system.
+     * 
+     * @return List of all users
+     */
+    List<UserDTO> getAllUsers();
+    
+    /**
+     * Makes a transfer between two accounts.
+     * 
+     * @param sourceAccountId The source account ID
+     * @param destinationAccountId The destination account ID
+     * @param amount The amount to transfer
+     * @param description The transaction description
+     * @param actionDateTime The action date/time (optional, defaults to current time)
+     * @return null if successful, error message if failed
+     */
+    String makeTransfer(Integer sourceAccountId, Integer destinationAccountId, Double amount, String description, String actionDateTime);
+
+    /**
+     * Helper method to get all accounts from the banking-courant service.
+     */
+    List<CompteCourantDTO> getAllAccounts();
 }

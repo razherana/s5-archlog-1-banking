@@ -53,6 +53,7 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>8.0.33</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Hibernate for JPA implementation -->
@@ -61,48 +62,6 @@
       <artifactId>hibernate-core</artifactId>
       <version>6.1.7.Final</version>
     </dependency>
-
-    <!-- to test with TomEE and Arquillian
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-tomee-remote</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
-
-    <!-- to test with OpenEJB embedded and Arquillian
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-openejb-embedded</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
   </dependencies>
 
   <build>
@@ -133,6 +92,31 @@
           <config>src/main/tomee/conf</config>
           <context>ROOT</context>
           <args>-Xmx512m</args>
+
+          <!-- Auto-reload configuration -->
+          <libs>
+            <lib>com.mysql:mysql-connector-j:8.0.33</lib>
+          </libs>
+
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <deployOpenEjbApplication>true</deployOpenEjbApplication>
+          <tomeeClassifier>plume</tomeeClassifier>
+          <synchronization>
+            <extensions>
+              <extension>.class</extension>
+            </extensions>
+          </synchronization>
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <systemVariables>
+            <!-- Debug: Auto reload -->
+            <openejb.system.apps>true</openejb.system.apps>
+
+            <tomee.remote.support>true</tomee.remote.support>
+            <openejb.cdi.activated>true</openejb.cdi.activated>
+            <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>

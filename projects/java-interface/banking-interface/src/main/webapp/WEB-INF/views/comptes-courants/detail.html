@@ -11,8 +11,7 @@
       <h1>Banking Interface System</h1>
     </div>
 
-    <div class="container">
-      <div class="user-info">
+    <div class="user-info">
         <span>Welcome, <strong th:text="${userName}">User</strong></span>
         <a href="../logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
@@ -40,6 +39,9 @@
           <p th:if="${param.success[0] == 'tax_payment_success'}">
             Paiement de taxe effectué avec succès!
           </p>
+          <p th:if="${param.success[0] == 'transfer_success'}">
+            Transfert effectué avec succès!
+          </p>
         </div>
 
         <!-- Account Information -->
@@ -47,9 +49,9 @@
           <h3>Informations du Compte</h3>
           <div class="account-details">
             <div class="detail-row">
-              <span class="label">Numéro de Compte:</span>
-              <span class="value" th:text="${account.numeroCompte}"
-                >ACCT-00000001</span
+              <span class="label">ID du Compte:</span>
+              <span class="value" th:text="${account.id}"
+                >1</span
               >
             </div>
             <div class="detail-row">
@@ -88,177 +90,476 @@
           </div>
         </div>
 
-        <!-- Transaction Actions -->
+        <!-- Transaction Actions with Tabs -->
         <div class="transaction-actions">
           <h3>Actions</h3>
 
-          <!-- Deposit Form -->
-          <div class="transaction-form">
-            <h4>Effectuer un Dépôt</h4>
-            <form method="post" action="detail" class="action-form">
-              <input type="hidden" name="accountId" th:value="${account.id}" />
-              <input type="hidden" name="action" value="deposit" />
-
-              <div class="form-group">
-                <label for="deposit-amount">Montant (MGA):</label>
-                <input
-                  type="number"
-                  id="deposit-amount"
-                  name="montant"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="1000.00"
-                  class="form-input"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="deposit-description"
-                  >Description (optionnel):</label
-                >
-                <input
-                  type="text"
-                  id="deposit-description"
-                  name="description"
-                  placeholder="Description du dépôt"
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="deposit-actionDateTime"
-                  >Date/Heure de l'action (optionnel):</label
-                >
-                <input
-                  type="datetime-local"
-                  id="deposit-actionDateTime"
-                  name="actionDateTime"
-                  class="form-input"
-                />
-                <small class="form-help">
-                  Laissez vide pour utiliser l'heure actuelle
-                </small>
-              </div>
-
-              <button type="submit" class="btn btn-success">
-                Effectuer le Dépôt
-              </button>
-            </form>
+          <!-- Tab Navigation -->
+          <div class="tabs">
+            <button
+              class="tab-button active"
+              onclick="openTab(event, 'deposit-tab')"
+            >
+              Dépôt
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'withdraw-tab')">
+              Retrait
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'transfer-tab')">
+              Transfert
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'tax-tab')">
+              Taxes
+            </button>
           </div>
 
-          <!-- Withdrawal Form -->
-          <div class="transaction-form">
-            <h4>Effectuer un Retrait</h4>
-            <form method="post" action="detail" class="action-form">
-              <input type="hidden" name="accountId" th:value="${account.id}" />
-              <input type="hidden" name="action" value="withdraw" />
-
-              <div class="form-group">
-                <label for="withdraw-amount">Montant (MGA):</label>
+          <!-- Deposit Tab -->
+          <div id="deposit-tab" class="tab-content active">
+            <div class="transaction-form">
+              <h4>Effectuer un Dépôt</h4>
+              <form method="post" action="detail" class="action-form">
                 <input
-                  type="number"
-                  id="withdraw-amount"
-                  name="montant"
-                  step="0.01"
-                  min="0.01"
-                  th:max="${account.solde}"
-                  placeholder="500.00"
-                  class="form-input"
-                  required
+                  type="hidden"
+                  name="accountId"
+                  th:value="${account.id}"
                 />
-                <small class="form-help">
-                  Solde disponible:
-                  <span
-                    th:text="${#numbers.formatDecimal(account.solde, 1, 2)} + ' MGA'"
-                    >0.00 MGA</span
-                  >
-                </small>
-              </div>
+                <input type="hidden" name="action" value="deposit" />
 
-              <div class="form-group">
-                <label for="withdraw-description"
-                  >Description (optionnel):</label
-                >
-                <input
-                  type="text"
-                  id="withdraw-description"
-                  name="description"
-                  placeholder="Description du retrait"
-                  class="form-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="withdraw-actionDateTime"
-                  >Date/Heure de l'action (optionnel):</label
-                >
-                <input
-                  type="datetime-local"
-                  id="withdraw-actionDateTime"
-                  name="actionDateTime"
-                  class="form-input"
-                />
-                <small class="form-help">
-                  Laissez vide pour utiliser l'heure actuelle
-                </small>
-              </div>
-
-              <button
-                type="submit"
-                class="btn btn-primary"
-                th:disabled="${account.solde <= 0}"
-              >
-                Effectuer le Retrait
-              </button>
-            </form>
-          </div>
-
-          <!-- Tax Payment Form -->
-          <div class="transaction-form">
-            <h4>Payer les Taxes</h4>
-            <form method="post" action="detail" class="action-form">
-              <input type="hidden" name="accountId" th:value="${account.id}" />
-              <input type="hidden" name="action" value="pay_tax" />
-
-              <div class="form-group" th:if="${taxToPay > 0}">
-                <label>Montant de la Taxe à Payer:</label>
-                <div class="tax-amount">
-                  <span
-                    th:text="${#numbers.formatDecimal(taxToPay, 1, 2)} + ' MGA'"
-                    >0.00 MGA</span
-                  >
+                <div class="form-group">
+                  <label for="deposit-amount">Montant (MGA):</label>
+                  <input
+                    type="number"
+                    id="deposit-amount"
+                    name="montant"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="1000.00"
+                    class="form-input"
+                    required
+                  />
                 </div>
-                <small class="form-help">
-                  Ce montant correspond aux taxes impayées pour ce compte.
-                </small>
-              </div>
 
-              <div class="form-group">
-                <label for="tax-actionDateTime"
-                  >Date/Heure de l'action (optionnel):</label
-                >
+                <div class="form-group">
+                  <label for="deposit-description"
+                    >Description (optionnel):</label
+                  >
+                  <input
+                    type="text"
+                    id="deposit-description"
+                    name="description"
+                    placeholder="Description du dépôt"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="deposit-actionDateTime"
+                    >Date/Heure de l'action (optionnel):</label
+                  >
+                  <input
+                    type="datetime-local"
+                    id="deposit-actionDateTime"
+                    name="actionDateTime"
+                    class="form-input"
+                  />
+                  <small class="form-help">
+                    Laissez vide pour utiliser l'heure actuelle
+                  </small>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                  Effectuer le Dépôt
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Withdrawal Tab -->
+          <div id="withdraw-tab" class="tab-content">
+            <div class="transaction-form">
+              <h4>Effectuer un Retrait</h4>
+              <form method="post" action="detail" class="action-form">
                 <input
-                  type="datetime-local"
-                  id="tax-actionDateTime"
-                  name="actionDateTime"
-                  class="form-input"
+                  type="hidden"
+                  name="accountId"
+                  th:value="${account.id}"
                 />
-                <small class="form-help">
-                  Laissez vide pour utiliser l'heure actuelle
-                </small>
-              </div>
+                <input type="hidden" name="action" value="withdraw" />
 
-              <button
-                type="submit"
-                class="btn btn-warning"
-              >
-                Payer les taxes
-              </button>
-            </form>
+                <div class="form-group">
+                  <label for="withdraw-amount">Montant (MGA):</label>
+                  <input
+                    type="number"
+                    id="withdraw-amount"
+                    name="montant"
+                    step="0.01"
+                    min="0.01"
+                    th:max="${account.solde}"
+                    placeholder="500.00"
+                    class="form-input"
+                    required
+                  />
+                  <small class="form-help">
+                    Solde disponible:
+                    <span
+                      th:text="${#numbers.formatDecimal(account.solde, 1, 2)} + ' MGA'"
+                      >0.00 MGA</span
+                    >
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="withdraw-description"
+                    >Description (optionnel):</label
+                  >
+                  <input
+                    type="text"
+                    id="withdraw-description"
+                    name="description"
+                    placeholder="Description du retrait"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="withdraw-actionDateTime"
+                    >Date/Heure de l'action (optionnel):</label
+                  >
+                  <input
+                    type="datetime-local"
+                    id="withdraw-actionDateTime"
+                    name="actionDateTime"
+                    class="form-input"
+                  />
+                  <small class="form-help">
+                    Laissez vide pour utiliser l'heure actuelle
+                  </small>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  th:disabled="${account.solde <= 0}"
+                >
+                  Effectuer le Retrait
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Transfer Tab -->
+          <div id="transfer-tab" class="tab-content">
+            <div class="transaction-form">
+              <h4>Effectuer un Transfert</h4>
+              <form method="post" action="detail" class="action-form">
+                <input
+                  type="hidden"
+                  name="accountId"
+                  th:value="${account.id}"
+                />
+                <input type="hidden" name="action" value="transfer" />
+
+                <div class="form-group">
+                  <label for="destination-user"
+                    >Utilisateur Destinataire:</label
+                  >
+                  <select
+                    id="destination-user"
+                    name="destinationUser"
+                    class="form-input"
+                    onchange="loadUserAccounts(this.value)"
+                    required
+                  >
+                    <option value="">-- Sélectionner un utilisateur --</option>
+                    <option
+                      th:each="user : ${allUsers}"
+                      th:value="${user.id}"
+                      th:text="${user.name + ' (' + user.email + ')'}"
+                    >
+                      User Name (user@email.com)
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="destination-account">Compte Destinataire:</label>
+                  <select
+                    id="destination-account"
+                    name="destinationAccountId"
+                    class="form-input"
+                    required
+                    disabled
+                  >
+                    <option value="">
+                      -- Sélectionner d'abord un utilisateur --
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="transfer-amount">Montant (MGA):</label>
+                  <input
+                    type="number"
+                    id="transfer-amount"
+                    name="amount"
+                    step="0.01"
+                    min="0.01"
+                    th:max="${account.solde}"
+                    placeholder="1000.00"
+                    class="form-input"
+                    required
+                  />
+                  <small class="form-help">
+                    Solde disponible:
+                    <span
+                      th:text="${#numbers.formatDecimal(account.solde, 1, 2)} + ' MGA'"
+                      >0.00 MGA</span
+                    >
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="transfer-description"
+                    >Description (optionnel):</label
+                  >
+                  <input
+                    type="text"
+                    id="transfer-description"
+                    name="description"
+                    placeholder="Description du transfert"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="transfer-actionDateTime"
+                    >Date/Heure de l'action (optionnel):</label
+                  >
+                  <input
+                    type="datetime-local"
+                    id="transfer-actionDateTime"
+                    name="actionDateTime"
+                    class="form-input"
+                  />
+                  <small class="form-help">
+                    Laissez vide pour utiliser l'heure actuelle
+                  </small>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-info"
+                  th:disabled="${account.solde <= 0}"
+                >
+                  Effectuer le Transfert
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Tax Payment Tab -->
+          <div id="tax-tab" class="tab-content">
+            <div class="transaction-form">
+              <h4>Payer les Taxes</h4>
+              <form method="post" action="detail" class="action-form">
+                <input
+                  type="hidden"
+                  name="accountId"
+                  th:value="${account.id}"
+                />
+                <input type="hidden" name="action" value="pay_tax" />
+
+                <div class="form-group" th:if="${taxToPay > 0}">
+                  <label>Montant de la Taxe à Payer:</label>
+                  <div class="tax-amount">
+                    <span
+                      th:text="${#numbers.formatDecimal(taxToPay, 1, 2)} + ' MGA'"
+                      >0.00 MGA</span
+                    >
+                  </div>
+                  <small class="form-help">
+                    Ce montant correspond aux taxes impayées pour ce compte.
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="tax-actionDateTime"
+                    >Date/Heure de l'action (optionnel):</label
+                  >
+                  <input
+                    type="datetime-local"
+                    id="tax-actionDateTime"
+                    name="actionDateTime"
+                    class="form-input"
+                  />
+                  <small class="form-help">
+                    Laissez vide pour utiliser l'heure actuelle
+                  </small>
+                </div>
+
+                <button type="submit" class="btn btn-warning">
+                  Payer les taxes
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <script th:inline="javascript">
+      // Server-side data passed to JavaScript
+      const allAccounts = [
+        /*[# th:each="accountV : ${allAccounts}"]*/
+        {
+          id: /*[[${accountV.id}]]*/ 0,
+          userId: /*[[${accountV.userId}]]*/ 0,
+          solde: /*[[${accountV.solde}]]*/ 0.0,
+        },
+        /*[/]*/
+      ];
+
+      // Current account ID to exclude from destination options
+      const currentAccountId = /*[[${account.id}]]*/ 0;
+
+      // Tab functionality
+      function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+
+        // Hide all tab contents
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].classList.remove("active");
+        }
+
+        // Remove active class from all tab buttons
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].classList.remove("active");
+        }
+
+        // Show the selected tab and mark button as active
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+      }
+
+      // Filter and load accounts for selected user (client-side filtering)
+      function loadUserAccounts(userId) {
+        const accountSelect = document.getElementById("destination-account");
+
+        if (!userId) {
+          accountSelect.innerHTML =
+            '<option value="">-- Sélectionner d\'abord un utilisateur --</option>';
+          accountSelect.disabled = true;
+          return;
+        }
+
+        // Clear current options
+        accountSelect.innerHTML =
+          '<option value="">-- Sélectionner un compte --</option>';
+
+        // Filter accounts for the selected user (excluding current account)
+        const userAccounts = allAccounts.filter(
+          (account) =>
+            account.userId == userId && account.id !== currentAccountId
+        );
+
+        if (userAccounts.length === 0) {
+          accountSelect.innerHTML =
+            '<option value="">Aucun compte disponible pour ce transfert</option>';
+          accountSelect.disabled = true;
+          return;
+        }
+
+        // Add filtered accounts to dropdown
+        userAccounts.forEach((account) => {
+          const option = document.createElement("option");
+          option.value = account.id;
+          option.textContent =
+            "Compte " + account.id +
+            " (Solde: " +
+            account.solde.toFixed(2) +
+            " MGA)";
+          accountSelect.appendChild(option);
+        });
+
+        accountSelect.disabled = false;
+      }
+    </script>
+
+    <style>
+      /* Tab styles */
+      .tabs {
+        display: grid;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+        grid-template-columns: repeat(4, 1fr);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .tab-button {
+        background-color: #f8f9fa !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        padding: 12px 24px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        color: #6c757d !important;
+        outline: none;
+        box-shadow: none;
+      }
+
+      .tab-button:hover {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+        border-bottom-color: transparent !important;
+      }
+
+      .tab-button.active {
+        background-color: #fff !important;
+        color: #007bff !important;
+        border-bottom-color: #007bff !important;
+      }
+
+      .tab-button:focus {
+        background-color: #e9ecef !important;
+        outline: none;
+        box-shadow: none;
+      }
+
+      .tab-button.active:focus {
+        background-color: #fff !important;
+        color: #007bff !important;
+      }
+
+      .tab-content {
+        display: none;
+        padding: 1rem 0;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Form improvements for selects */
+      select.form-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+      }
+
+      select.form-input:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+      }
+    </style>
   </body>
 </html>

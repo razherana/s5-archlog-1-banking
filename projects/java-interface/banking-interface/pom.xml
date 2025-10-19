@@ -46,6 +46,7 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>8.0.33</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Hibernate for JPA implementation -->
@@ -111,11 +112,31 @@
           <context>ROOT</context>
           <args>-Xmx512m -Dtomee.remote.support=true</args>
           <config>src/main/tomee/conf</config>
+
+          <!-- Auto-reload configuration -->
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <libs>
+            <lib>com.mysql:mysql-connector-j:8.0.33</lib>
+          </libs>
+
+          <deployOpenEjbApplication>true</deployOpenEjbApplication>
+          <tomeeClassifier>plume</tomeeClassifier>
+          <synchronization>
+            <extensions>
+              <extension>.class</extension>
+              <extension>.html</extension>
+            </extensions>
+          </synchronization>
+          <reloadOnUpdate>true</reloadOnUpdate>
+
           <systemVariables>
+            <!-- Debug: Auto reload -->
+            <openejb.system.apps>true</openejb.system.apps>
+
             <tomee.remote.support>true</tomee.remote.support>
             <openejb.cdi.activated>true</openejb.cdi.activated>
             <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
-            <tomee.serialization.class.whitelist>org.apache.openejb.BeanContext$BusinessRemoteHome,org.apache.openejb.core.ivm.naming.BusinessRemoteReference,mg.razherana.banking.interfaces.application.userServices.UserServiceRemote,mg.razherana.banking.interfaces.application.userServices.UserServiceLocal,mg.razherana.banking.interfaces.application.userServices.UserServiceRemoteImpl,mg.razherana.banking.interfaces.application.userServices.UserServiceLocalImpl,mg.razherana.banking.interfaces.entities.User,[Ljava.net.URI;,java.net.URI,java.lang.String,java.util.ArrayList,java.util.HashMap,java.lang.Integer,java.math.BigDecimal</tomee.serialization.class.whitelist>
           </systemVariables>
         </configuration>
       </plugin>

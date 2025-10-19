@@ -58,7 +58,6 @@ banking-courant/
 - ✅ Create account for existing user (POST /api/comptes/user/{userId})
 - ✅ Get all accounts (GET /api/comptes)
 - ✅ Get account by ID (GET /api/comptes/{id})
-- ✅ Get account by account number (GET /api/comptes/numero/{numeroCompte})
 - ✅ Get all accounts for specific user (GET /api/comptes/user/{userId})
 - ✅ Create multiple accounts for same user
 - ✅ Test 404 error for non-existent user
@@ -262,7 +261,6 @@ Each test script provides:
 
 - `GET /api/comptes` - Get all accounts
 - `GET /api/comptes/{id}` - Get account by ID
-- `GET /api/comptes/numero/{numeroCompte}` - Get account by number
 - `GET /api/comptes/user/{userId}` - Get accounts for user
 - `POST /api/comptes/user/{userId}` - Create account for user
 - `DELETE /api/comptes/{id}` - Delete account

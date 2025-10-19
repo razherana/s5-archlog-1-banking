@@ -1,9 +1,14 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
+import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.interfaces.dto.UserDTO;
+import mg.razherana.banking.interfaces.entities.User;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import java.io.IOException;
 import java.net.URI;
@@ -27,6 +32,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
+
+  @EJB
+  private UserService userService;
 
   public CompteCourantServiceImpl() {
     this.httpClient = HttpClient.newHttpClient();
@@ -341,6 +349,114 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     } catch (IOException | InterruptedException e) {
       LOG.log(Level.SEVERE, "Error paying tax", e);
+      return "Erreur de communication avec le service bancaire: " + e.getMessage();
+    }
+  }
+
+  @Override
+  public List<UserDTO> getAllUsers() {
+    try {
+      List<User> users = userService.getAllUsers();
+      
+      // Extract unique user IDs and create UserDTOs
+      List<UserDTO> userDTOs = new ArrayList<>();
+      
+      for(User user : users) {
+          UserDTO userDTO = new UserDTO();
+
+          userDTO.setId(user.getId());
+          userDTO.setName(user.getName());
+          userDTO.setEmail(user.getEmail());
+
+          userDTOs.add(userDTO);
+      }
+      
+      return userDTOs;
+      
+    } catch (Exception e) {
+      LOG.log(Level.SEVERE, "Error getting all users", e);
+      return new ArrayList<>();
+    }
+  }
+  
+  /**
+   * Helper method to get all accounts from the banking-courant service.
+   */
+  @Override
+  public List<CompteCourantDTO> getAllAccounts() {
+    try {
+      String url = BANKING_COURANT_BASE_URL + "/comptes";
+
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create(url))
+          .header("Accept", "application/json")
+          .GET()
+          .build();
+
+      LOG.info("Fetching all accounts from: " + url);
+
+      HttpResponse<String> response = httpClient.send(request,
+          HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        System.out.println("RESPONSE_BODY: " + response.body());
+        CompteCourantDTO[] accounts = objectMapper.readValue(
+            response.body(), CompteCourantDTO[].class);
+        return Arrays.asList(accounts);
+      } else {
+        LOG.warning("Failed to fetch all accounts. Status: " + response.statusCode() +
+            ", Body: " + response.body());
+        return new ArrayList<>();
+      }
+
+    } catch (IOException | InterruptedException e) {
+      LOG.log(Level.SEVERE, "Error fetching all accounts", e);
+      return new ArrayList<>();
+    }
+  }
+
+  @Override
+  public String makeTransfer(Integer sourceAccountId, Integer destinationAccountId, Double amount, String description, String actionDateTime) {
+    try {
+      String url = BANKING_COURANT_BASE_URL + "/transactions/transfert";
+      
+      // Create request body manually to match the expected format
+      StringBuilder requestBodyBuilder = new StringBuilder();
+      requestBodyBuilder.append("{\"compteSourceId\":").append(sourceAccountId)
+          .append(",\"compteDestinationId\":").append(destinationAccountId)
+          .append(",\"montant\":").append(amount)
+          .append(",\"description\":\"").append(description != null ? description : "Transfer via interface").append("\"");
+      
+      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+        requestBodyBuilder.append(",\"actionDateTime\":\"").append(actionDateTime).append("\"");
+      }
+      
+      requestBodyBuilder.append("}");
+      String requestBody = requestBodyBuilder.toString();
+
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create(url))
+          .header("Accept", "application/json")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+          .build();
+
+      LOG.info("Making transfer from account " + sourceAccountId + " to " + destinationAccountId + " amount: " + amount);
+
+      HttpResponse<String> response = httpClient.send(request,
+          HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 201) {
+        LOG.info("Transfer successful");
+        return null; // Success
+      } else {
+        String errorMessage = extractErrorMessage(response.body());
+        LOG.warning("Failed to make transfer. Status: " + response.statusCode() + ", Body: " + response.body());
+        return errorMessage;
+      }
+
+    } catch (IOException | InterruptedException e) {
+      LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);
       return "Erreur de communication avec le service bancaire: " + e.getMessage();
     }
   }

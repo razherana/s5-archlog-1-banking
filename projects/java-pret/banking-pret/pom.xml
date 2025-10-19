@@ -74,6 +74,28 @@
           <context>ROOT</context>
           <args>-Xmx512m</args>
           <config>src/main/tomee/conf</config>
+
+          <!-- Auto-reload configuration -->
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <deployOpenEjbApplication>true</deployOpenEjbApplication>
+          <tomeeClassifier>plume</tomeeClassifier>
+          <synchronization>
+            <extensions>
+              <extension>.class
+              </extension>
+            </extensions>
+          </synchronization>
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <systemVariables>
+            <!-- Debug: Auto reload -->
+            <openejb.system.apps>true</openejb.system.apps>
+
+            <tomee.remote.support>true</tomee.remote.support>
+            <openejb.cdi.activated>true</openejb.cdi.activated>
+            <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>

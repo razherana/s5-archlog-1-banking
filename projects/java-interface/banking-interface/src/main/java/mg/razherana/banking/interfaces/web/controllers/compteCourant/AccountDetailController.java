@@ -3,6 +3,7 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.interfaces.dto.UserDTO;
 import mg.razherana.banking.interfaces.entities.User;
 
 import org.thymeleaf.context.WebContext;
@@ -16,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -68,14 +70,26 @@ public class AccountDetailController extends HttpServlet {
       // Get tax to pay amount
       Double taxToPay = compteCourantService.getTaxToPay(accountId);
 
+      // Get all users for transfer functionality
+      List<UserDTO> allUsers = compteCourantService.getAllUsers();
+
+      // Get all accounts for each user (for JavaScript filtering)
+      List<CompteCourantDTO> allAccounts = compteCourantService.getAllAccounts();
+
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
       WebContext context = new WebContext(application.buildExchange(request, response));
+
+      System.out.println("All accounts : " + allAccounts);
+      System.out.println("Tomee serialization config : " + System.getProperty("tomee.serialization.class.whitelist"));
+      System.out.println("Tomee serialization config : " + System.getProperty("tomee.serialization.class.blacklist"));
 
       // Set template variables
       context.setVariable("userName", user.getName());
       context.setVariable("account", account);
       context.setVariable("taxToPay", taxToPay);
+      context.setVariable("allUsers", allUsers);
+      context.setVariable("allAccounts", allAccounts);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
 
@@ -164,6 +178,20 @@ public class AccountDetailController extends HttpServlet {
           }
           break;
 
+        case "transfer":
+          errorMessage = handleTransfer(request, account, user);
+          success = (errorMessage == null);
+          if (success) {
+            redirectUrl += "&success=transfer_success";
+          } else {
+            try {
+              redirectUrl += "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+            } catch (Exception e) {
+              redirectUrl += "&error=transfer_failed";
+            }
+          }
+          break;
+
         default:
           try {
             redirectUrl += "&error=" + java.net.URLEncoder.encode("Action invalide", "UTF-8");
@@ -241,5 +269,43 @@ public class AccountDetailController extends HttpServlet {
         account.getId(),
         description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
         actionDateTime);
+  }
+
+  private String handleTransfer(HttpServletRequest request, CompteCourantDTO account, User user) {
+    try {
+      String destinationAccountIdStr = request.getParameter("destinationAccountId");
+      String amountStr = request.getParameter("amount");
+      String description = request.getParameter("description");
+      String actionDateTime = request.getParameter("actionDateTime");
+
+      if (destinationAccountIdStr == null || destinationAccountIdStr.trim().isEmpty()) {
+        return "Compte de destination requis";
+      }
+
+      if (amountStr == null || amountStr.trim().isEmpty()) {
+        return "Montant requis";
+      }
+
+      Integer destinationAccountId = Integer.parseInt(destinationAccountIdStr);
+      Double amount = Double.parseDouble(amountStr);
+
+      if (amount <= 0) {
+        return "Le montant doit être positif";
+      }
+
+      if (destinationAccountId.equals(account.getId())) {
+        return "Vous ne pouvez pas effectuer un transfert vers le même compte";
+      }
+
+      return compteCourantService.makeTransfer(
+          account.getId(),
+          destinationAccountId,
+          amount,
+          description != null && !description.trim().isEmpty() ? description : "Transfer via interface",
+          actionDateTime);
+
+    } catch (NumberFormatException e) {
+      return "Format de données invalide";
+    }
   }
 }
