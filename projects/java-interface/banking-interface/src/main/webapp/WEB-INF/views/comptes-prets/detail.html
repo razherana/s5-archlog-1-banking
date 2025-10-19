@@ -109,119 +109,218 @@
           </div>
         </div>
 
-        <!-- Payment Status Form -->
-        <div class="account-info-section">
-          <h3>Vérifier le Statut des Paiements</h3>
-          <div class="transaction-form">
-            <form method="post" action="payment-status" class="action-form">
-              <input type="hidden" name="loanId" th:value="${loan.id}" />
-
-              <div class="form-group">
-                <label for="status-date">Date de Vérification:</label>
-                <input
-                  type="date"
-                  id="status-date"
-                  name="actionDateTime"
-                  class="form-input"
-                  required
-                />
-                <small class="form-help">
-                  Sélectionnez une date pour voir le statut des paiements à
-                  cette date
-                </small>
-              </div>
-
-              <button type="submit" class="btn btn-primary">
-                Vérifier le Statut
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Payment Actions -->
+        <!-- Loan Actions with Tabs -->
         <div class="transaction-actions">
-          <h3>Actions de Paiement</h3>
+          <h3>Actions</h3>
 
-          <!-- Make Payment Form -->
-          <div class="transaction-form">
-            <h4>Effectuer un Paiement</h4>
-            <form method="post" action="detail" class="action-form">
-              <input type="hidden" name="loanId" th:value="${loan.id}" />
-              <input type="hidden" name="action" value="make_payment" />
-
-              <div class="form-group">
-                <label for="payment-amount">Montant (MGA):</label>
-                <input
-                  type="number"
-                  id="payment-amount"
-                  name="montant"
-                  step="0.01"
-                  min="0.01"
-                  th:placeholder="${paymentStatus != null ? paymentStatus.monthlyPayment : '500.00'}"
-                  class="form-input"
-                  required
-                />
-                <small class="form-help" th:if="${paymentStatus != null}">
-                  Mensualité recommandée:
-                  <span th:text="${paymentStatus.formattedMonthlyPayment}"
-                    >850.00 MGA</span
-                  >
-                </small>
-              </div>
-
-              <div class="form-group">
-                <label for="payment-date">Date du Paiement (optionnel):</label>
-                <input
-                  type="date"
-                  id="payment-date"
-                  name="paymentDate"
-                  class="form-input"
-                />
-                <small class="form-help">
-                  Laissez vide pour utiliser la date actuelle
-                </small>
-              </div>
-
-              <button type="submit" class="btn btn-success">
-                Effectuer le Paiement
-              </button>
-            </form>
+          <!-- Tab Navigation -->
+          <div class="tabs">
+            <button
+              class="tab-button active"
+              onclick="openTab(event, 'payment-tab')"
+            >
+              Paiement
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'status-tab')">
+              Statut
+            </button>
+            <button class="tab-button" onclick="openTab(event, 'history-tab')">
+              Historique
+            </button>
           </div>
-        </div>
 
-        <!-- Payment History -->
-        <div
-          th:if="${paymentHistory != null and !#lists.isEmpty(paymentHistory)}"
-          class="transaction-history"
-        >
-          <h3>Historique des Paiements</h3>
-          <table class="accounts-table">
-            <thead>
-              <tr>
-                <th>ID Paiement</th>
-                <th>Montant</th>
-                <th>Date d'Échéance</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr th:each="payment : ${paymentHistory}">
-                <td th:text="${payment.id}">1</td>
-                <td th:text="${payment.formattedMontant}">500.00 MGA</td>
-                <td
-                  th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'dd/MM/yyyy HH:mm') : 'N/A'}"
-                >
-                  01/01/2025 10:00
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <!-- Payment Tab -->
+          <div id="payment-tab" class="tab-content active">
+            <div class="transaction-form">
+              <h4>Effectuer un Paiement</h4>
+              <form method="post" action="detail" class="action-form">
+                <input type="hidden" name="loanId" th:value="${loan.id}" />
+                <input type="hidden" name="action" value="make_payment" />
 
-        <div
-          th:if="${paymentHistory == null or #lists.isEmpty(paymentHistory)}"
-          class="alert alert-info"
-        >
-          <p>Aucun paiement effectué pour ce prêt.</p>
+                <div class="form-group">
+                  <label for="payment-amount">Montant (MGA):</label>
+                  <input
+                    type="number"
+                    id="payment-amount"
+                    name="montant"
+                    step="0.01"
+                    min="0.01"
+                    th:placeholder="${paymentStatus != null ? paymentStatus.monthlyPayment : '500.00'}"
+                    class="form-input"
+                    required
+                  />
+                  <small class="form-help" th:if="${paymentStatus != null}">
+                    Mensualité recommandée:
+                    <span th:text="${paymentStatus.formattedMonthlyPayment}"
+                      >850.00 MGA</span
+                    >
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="payment-date"
+                    >Date du Paiement (optionnel):</label
+                  >
+                  <input
+                    type="date"
+                    id="payment-date"
+                    name="paymentDate"
+                    class="form-input"
+                  />
+                  <small class="form-help">
+                    Laissez vide pour utiliser la date actuelle
+                  </small>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-success">
+                    Effectuer le Paiement
+                  </button>
+                </div>
+
+                <div class="info-section" style="margin-top: 1rem">
+                  <h5>Informations sur les Paiements</h5>
+                  <ul>
+                    <li>
+                      Les paiements sont enregistrés dans l'ordre chronologique
+                    </li>
+                    <li>
+                      Les overpayments sont crédités pour les mensualités
+                      futures
+                    </li>
+                    <li>
+                      Vous pouvez effectuer plusieurs paiements dans le même
+                      mois
+                    </li>
+                    <li>Les paiements peuvent être antidatés si nécessaire</li>
+                  </ul>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Status Tab -->
+          <div id="status-tab" class="tab-content">
+            <div class="transaction-form">
+              <h4>Vérifier le Statut des Paiements</h4>
+              <form method="post" action="payment-status" class="action-form">
+                <input type="hidden" name="loanId" th:value="${loan.id}" />
+
+                <div class="form-group">
+                  <label for="status-date">Date de Vérification:</label>
+                  <input
+                    type="date"
+                    id="status-date"
+                    name="actionDateTime"
+                    class="form-input"
+                    required
+                    th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                    th:min="${#temporals.format(loan.dateDebut, 'yyyy-MM-dd')}"
+                  />
+                  <small class="form-help">
+                    Sélectionnez une date pour voir le statut des paiements à
+                    cette date. Le statut sera calculé jusqu'à la fin de cette
+                    journée.
+                  </small>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    Vérifier le Statut
+                  </button>
+                </div>
+
+                <div class="info-section" style="margin-top: 1rem">
+                  <h5>Informations sur le Statut</h5>
+                  <ul>
+                    <li>
+                      <strong>Montant Restant à Payer:</strong> Le solde total
+                      restant sur le prêt
+                    </li>
+                    <li>
+                      <strong>À Payer ce Mois:</strong> La mensualité prévue
+                      pour le mois sélectionné
+                    </li>
+                    <li>
+                      <strong>Total Payé:</strong> Le montant total des
+                      paiements effectués
+                    </li>
+                    <li>
+                      <strong>Historique:</strong> Liste complète des paiements
+                      jusqu'à la date sélectionnée
+                    </li>
+                  </ul>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- History Tab -->
+          <div id="history-tab" class="tab-content">
+            <div class="transaction-form">
+              <h4>Historique des Paiements</h4>
+
+              <div
+                th:if="${paymentHistory != null and !#lists.isEmpty(paymentHistory)}"
+                class="transaction-history"
+              >
+                <table class="accounts-table">
+                  <thead>
+                    <tr>
+                      <th>ID Paiement</th>
+                      <th>Montant</th>
+                      <th>Date d'Échéance</th>
+                      <th>Mois</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="payment : ${paymentHistory}">
+                      <td th:text="${payment.id}">1</td>
+                      <td th:text="${payment.formattedMontant}">500.00 MGA</td>
+                      <td
+                        th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                      >
+                        01/01/2025 10:00
+                      </td>
+                      <td
+                        th:text="${payment.dateEcheance != null ? #temporals.format(payment.dateEcheance, 'MM/yyyy') : 'N/A'}"
+                      >
+                        01/2025
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div
+                th:if="${paymentHistory == null or #lists.isEmpty(paymentHistory)}"
+                class="alert alert-info"
+              >
+                <p>Aucun paiement effectué pour ce prêt.</p>
+              </div>
+
+              <div class="info-section" style="margin-top: 1rem">
+                <h5>Informations sur l'Historique</h5>
+                <ul>
+                  <li>
+                    Les paiements sont triés par date d'échéance décroissante
+                  </li>
+                  <li>
+                    La colonne "Mois" indique le mois pour lequel le paiement a
+                    été effectué
+                  </li>
+                  <li>
+                    Les paiements multiples dans le même mois sont listés
+                    séparément
+                  </li>
+                  <li>
+                    La progression est calculée en fonction des mensualités
+                    attendues
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Information Section -->
@@ -249,6 +348,125 @@
           dateInput.value = today.toISOString().split("T")[0];
         }
       });
+
+      // Tab functionality
+      function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+
+        // Hide all tab contents
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].classList.remove("active");
+        }
+
+        // Remove active class from all tab buttons
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].classList.remove("active");
+        }
+
+        // Show the selected tab and mark button as active
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+      }
     </script>
+
+    <style>
+      /* Tab styles */
+      .tabs {
+        display: grid;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 1rem;
+        background-color: var(--secondary-color);
+        grid-template-columns: repeat(3, 1fr);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .tab-button {
+        color: var(--text-color) !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        padding: 12px 24px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background-color: var(--secondary-color) !important;
+        outline: none;
+        box-shadow: none;
+      }
+
+      .tab-button:hover {
+        color: #e9ecef !important;
+        background-color: var(--hover-color) !important;
+        border-bottom-color: transparent !important;
+      }
+
+      .tab-button.active {
+        color: #fff !important;
+        background-color: var(--primary-color) !important;
+        border-bottom-color: var(--primary-color) !important;
+      }
+
+      .tab-button:focus {
+        color: #e9ecef !important;
+        outline: none;
+        box-shadow: none;
+      }
+
+      .tab-button.active:focus {
+        color: #fff !important;
+        background-color: var(--primary-color) !important;
+      }
+
+      .tab-content {
+        display: none;
+        padding: 1rem 0;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Form improvements for selects */
+      select.form-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+      }
+
+      select.form-input:disabled {
+        background-color: var(--border-color);
+        color: var(--accent-color);
+        cursor: not-allowed;
+      }
+
+      /* Info section styling - using dark theme */
+      .info-section h5 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+      }
+
+      /* Transaction history table styling */
+      .transaction-history table {
+        margin-top: 1rem;
+      }
+
+      .transaction-history th {
+        background-color: var(--secondary-color);
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      .transaction-history td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+    </style>
   </body>
 </html>
