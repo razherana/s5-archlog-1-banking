@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modifier un Utilisateur - Banking Interface</title>
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Modifier l'Utilisateur</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="../users">← Retour à la liste des utilisateurs</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- User Information -->
+        <div class="account-info-section" th:if="${userToEdit}">
+          <h3>Informations Actuelles</h3>
+          <div class="account-details">
+            <div class="detail-row">
+              <span class="label">ID Utilisateur:</span>
+              <span class="value" th:text="${userToEdit.id}">1</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Nom Actuel:</span>
+              <span class="value" th:text="${userToEdit.name}">John Doe</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Email Actuel:</span>
+              <span class="value" th:text="${userToEdit.email}">john@example.com</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit User Form -->
+        <form method="post" action="edit" class="account-form" th:if="${userToEdit}">
+          <input type="hidden" name="id" th:value="${userToEdit.id}" />
+
+          <div class="form-group">
+            <label for="name">Nouveau Nom (optionnel):</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="form-input"
+              th:placeholder="${userToEdit.name}"
+            />
+            <small class="form-help">
+              Laissez vide pour conserver le nom actuel
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Nouvelle Adresse Email (optionnel):</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-input"
+              th:placeholder="${userToEdit.email}"
+            />
+            <small class="form-help">
+              Laissez vide pour conserver l'email actuel. Doit être unique si modifié.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Nouveau Mot de Passe (optionnel):</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              placeholder="Nouveau mot de passe"
+            />
+            <small class="form-help">
+              Laissez vide pour conserver le mot de passe actuel
+            </small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Enregistrer les Modifications</button>
+            <a href="../users" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+
+        <!-- Information Section -->
+        <div class="info-section">
+          <h3>Instructions de Modification</h3>
+          <ul>
+            <li><strong>Modifications partielles:</strong> Vous pouvez modifier seulement certains champs</li>
+            <li><strong>Champs vides:</strong> Les champs laissés vides conserveront leur valeur actuelle</li>
+            <li><strong>Email unique:</strong> Si vous modifiez l'email, il doit rester unique dans le système</li>
+            <li><strong>Mot de passe:</strong> Ne modifiez le mot de passe que si nécessaire</li>
+            <li><strong>Sécurité:</strong> Vérifiez les informations avant de sauvegarder</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

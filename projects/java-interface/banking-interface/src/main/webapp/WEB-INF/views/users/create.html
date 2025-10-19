@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un Utilisateur - Banking Interface</title>
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <a href="../../logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Créer un Nouvel Utilisateur</h2>
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="../users">← Retour à la liste des utilisateurs</a>
+        </p>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:text="${param.error[0]}">Erreur</p>
+        </div>
+
+        <!-- Create User Form -->
+        <form method="post" action="create" class="account-form">
+          <div class="form-group">
+            <label for="name">Nom complet <span class="required">*</span>:</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="form-input"
+              placeholder="Ex: Jean Dupont"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Adresse Email <span class="required">*</span>:</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-input"
+              placeholder="Ex: jean.dupont@example.com"
+              required
+            />
+            <small class="form-help">
+              L'adresse email doit être unique dans le système
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mot de Passe <span class="required">*</span>:</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              placeholder="Saisissez un mot de passe sécurisé"
+              required
+            />
+            <small class="form-help">
+              Utilisez un mot de passe fort avec au moins 8 caractères
+            </small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">Créer l'Utilisateur</button>
+            <a href="../users" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+
+        <!-- Information Section -->
+        <div class="info-section">
+          <h3>Instructions</h3>
+          <ul>
+            <li><strong>Nom complet:</strong> Saisissez le nom complet de l'utilisateur</li>
+            <li><strong>Email unique:</strong> L'adresse email doit être unique et valide</li>
+            <li><strong>Mot de passe:</strong> Choisissez un mot de passe sécurisé</li>
+            <li><strong>Accès:</strong> L'utilisateur pourra se connecter avec ces identifiants</li>
+            <li>Tous les champs marqués d'un <span class="required">*</span> sont obligatoires</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
