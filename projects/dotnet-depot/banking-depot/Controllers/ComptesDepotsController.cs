@@ -92,6 +92,38 @@ namespace BankingDepot.Controllers
     }
 
     /// <summary>
+    /// Gets the total balance for all deposit accounts of a specific user.
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <returns>Total balance across all user's deposit accounts</returns>
+    [HttpGet("solde/user/{userId}")]
+    public async Task<ActionResult<object>> GetTotalSoldeByUserId(int userId)
+    {
+      try
+      {
+        var totalSolde = await _compteDepotService.CalculateTotalSoldeByUserIdAsync(userId);
+        var result = new
+        {
+          UserId = userId,
+          TotalSolde = totalSolde
+        };
+        return Ok(result);
+      }
+      catch (ArgumentException ex)
+      {
+        _logger.LogWarning(ex, "Invalid argument for calculating total balance for user: {UserId}", userId);
+        var error = new ErrorDTO(ex.Message, 400, "Bad Request", Request.Path);
+        return BadRequest(error);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "Error calculating total balance for user: {UserId}", userId);
+        var error = new ErrorDTO("Erreur interne du serveur", 500, "Internal Server Error", Request.Path);
+        return StatusCode(500, error);
+      }
+    }
+
+    /// <summary>
     /// Creates a new deposit account.
     /// </summary>
     /// <param name="request">The creation request</param>

@@ -85,6 +85,15 @@ public interface ComptePretService {
   List<ComptePret> getLoansByUserId(Integer userId);
 
   /**
+   * Calculate the total remaining balance for all loans of a user.
+   * Balance = Sum of (original loan amount - total payments made)
+   * 
+   * @param userId the user ID
+   * @return total remaining balance across all user's loans
+   */
+  BigDecimal calculateTotalSoldeByUserId(Integer userId);
+
+  /**
    * Calculates the monthly payment for a loan using amortization formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
    * 

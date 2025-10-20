@@ -226,6 +226,38 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     return solde;
   }
 
+  /**
+   * Calculate the total balance for all accounts of a user.
+   * 
+   * @param userId the user ID
+   * @return total balance across all user's current accounts
+   */
+  @Override
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId) {
+    LOG.info("Calculating total solde for userId: " + userId);
+    
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists (will throw exception if not found)
+    findUser(userId);
+    
+    // Get all user's accounts
+    List<CompteCourant> comptes = getComptesByUserId(userId);
+    
+    // Calculate total balance
+    BigDecimal totalSolde = BigDecimal.ZERO;
+    for (CompteCourant compte : comptes) {
+      BigDecimal compteSolde = calculateSolde(compte);
+      totalSolde = totalSolde.add(compteSolde);
+      LOG.info("Account " + compte.getId() + " balance: " + compteSolde);
+    }
+    
+    LOG.info("Total solde for user " + userId + ": " + totalSolde);
+    return totalSolde;
+  }
+
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe) {

@@ -153,6 +153,38 @@ public class CompteCourantResource {
     }
   }
 
+  @GET
+  @Path("/solde/user/{userId}")
+  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId) {
+    try {
+      BigDecimal totalSolde = compteCourantService.calculateTotalSoldeByUserId(userId);
+      return Response.ok("{\"userId\": " + userId + ", \"totalSolde\": " + totalSolde + "}")
+          .type(MediaType.APPLICATION_JSON)
+          .build();
+    } catch (EJBException e) {
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      if (isClientError(e)) {
+        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+      } else {
+        LOG.severe("EJB error calculating total solde: " + e.getMessage());
+      }
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/comptes/solde/user/" + userId);
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
+    } catch (Exception e) {
+      LOG.severe("Error calculating total solde: " + e.getMessage());
+      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/comptes/solde/user/" + userId);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
+    }
+  }
+
   @POST
   @Path("/user/{userId}")
   public Response createCompte(@PathParam("userId") Integer userId,

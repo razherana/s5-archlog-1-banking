@@ -52,6 +52,46 @@ namespace BankingDepot.Services.Implementations
           .ToListAsync();
     }
 
+    public async Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId)
+    {
+      _logger.LogInformation("Calculating total balance for user: {UserId}", userId);
+
+      // Validate user exists via Java service
+      var userExists = await _userValidationService.ValidateUserExistsAsync(userId);
+      if (!userExists)
+      {
+        throw new ArgumentException($"L'utilisateur avec l'ID {userId} n'existe pas");
+      }
+
+      // Get all user's deposit accounts
+      var comptes = await GetByUserIdAsync(userId);
+
+      decimal totalBalance = 0;
+      foreach (var compte in comptes)
+      {
+        decimal accountBalance;
+        if (compte.EstRetire == 1)
+        {
+          // For withdrawn accounts, balance is 0 as money was already withdrawn
+          accountBalance = 0;
+        }
+        else
+        {
+          // For active accounts, balance = original amount + calculated interest
+          var interest = CalculateInterest(compte);
+          accountBalance = compte.Montant + interest;
+        }
+
+        totalBalance += accountBalance;
+        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest})", 
+          compte.Id, accountBalance, compte.Montant, 
+          compte.EstRetire == 1 ? 0 : CalculateInterest(compte));
+      }
+
+      _logger.LogInformation("Total balance for user {UserId}: {TotalBalance}", userId, totalBalance);
+      return totalBalance;
+    }
+
     public async Task<CompteDepot> CreateAsync(int typeCompteDepotId, int userId, DateTime dateEcheance, decimal montant, DateTime? actionDateTime = null)
     {
       _logger.LogInformation("Creating CompteDepot for user {UserId}, type {TypeId}, amount {Montant}", userId, typeCompteDepotId, montant);

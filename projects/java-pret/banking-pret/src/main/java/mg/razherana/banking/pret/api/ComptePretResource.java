@@ -167,6 +167,30 @@ public class ComptePretResource {
   }
 
   /**
+   * Gets total remaining balance for all loans of a user.
+   */
+  @GET
+  @Path("/solde/user/{userId}")
+  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId) {
+    try {
+      BigDecimal totalSolde = comptePretService.calculateTotalSoldeByUserId(userId);
+      return Response.ok("{\"userId\": " + userId + ", \"totalSolde\": " + totalSolde + "}").build();
+
+    } catch (EJBException e) {
+      if (isClientError(e)) {
+        LOG.warning("Client error calculating total loan balance: " + getErrorMessage(e));
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/solde/user/" + userId);
+        return Response.status(400).entity(error).build();
+      } else {
+        LOG.severe("Unexpected error calculating total loan balance: " + e.getMessage());
+        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error",
+            "/comptes-pret/solde/user/" + userId);
+        return Response.status(500).entity(error).build();
+      }
+    }
+  }
+
+  /**
    * Gets payment status for a loan account.
    */
   @GET

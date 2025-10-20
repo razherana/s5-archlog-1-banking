@@ -67,6 +67,14 @@ public interface CompteCourantService {
    */
   public BigDecimal calculateSolde(CompteCourant compte);
 
+  /**
+   * Calculate the total balance for all accounts of a user.
+   * 
+   * @param userId the user ID
+   * @return total balance across all user's current accounts
+   */
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId);
+
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe);
 
   public void delete(Integer id);

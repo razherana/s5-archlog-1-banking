@@ -220,6 +220,47 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   /**
+   * Calculate the total remaining balance for all loans of a user.
+   * Balance = Sum of (original loan amount - total payments made)
+   * 
+   * @param userId the user ID
+   * @return total remaining balance across all user's loans
+   */
+  @Override
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId) {
+    LOG.info("Calculating total loan balance for userId: " + userId);
+    
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists (will throw exception if not found)
+    findUser(userId);
+    
+    // Get all user's loans
+    List<ComptePret> loans = getLoansByUserId(userId);
+    
+    // Calculate total remaining balance
+    BigDecimal totalBalance = BigDecimal.ZERO;
+    for (ComptePret loan : loans) {
+      BigDecimal originalAmount = loan.getMontant();
+      BigDecimal totalPaid = calculateTotalPaid(loan.getId());
+      BigDecimal remainingBalance = originalAmount.subtract(totalPaid);
+      
+      // Only add positive balances (loans not overpaid)
+      if (remainingBalance.compareTo(BigDecimal.ZERO) > 0) {
+        totalBalance = totalBalance.add(remainingBalance);
+      }
+      
+      LOG.info("Loan " + loan.getId() + " - Original: " + originalAmount + 
+               ", Paid: " + totalPaid + ", Remaining: " + remainingBalance);
+    }
+    
+    LOG.info("Total loan balance for user " + userId + ": " + totalBalance);
+    return totalBalance;
+  }
+
+  /**
    * Calculates the monthly payment for a loan using the standard amortization
    * formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
