@@ -52,9 +52,9 @@ namespace BankingDepot.Services.Implementations
           .ToListAsync();
     }
 
-    public async Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId)
+    public async Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId, DateTime? actionDateTime = null)
     {
-      _logger.LogInformation("Calculating total balance for user: {UserId}", userId);
+      _logger.LogInformation("Calculating total balance for user: {UserId} at {ActionDateTime}", userId, actionDateTime);
 
       // Validate user exists via Java service
       var userExists = await _userValidationService.ValidateUserExistsAsync(userId);
@@ -78,17 +78,17 @@ namespace BankingDepot.Services.Implementations
         else
         {
           // For active accounts, balance = original amount + calculated interest
-          var interest = CalculateInterest(compte);
+          var interest = CalculateInterest(compte, actionDateTime);
           accountBalance = compte.Montant + interest;
         }
 
         totalBalance += accountBalance;
-        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest})", 
+        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest}) at {ActionDateTime}", 
           compte.Id, accountBalance, compte.Montant, 
-          compte.EstRetire == 1 ? 0 : CalculateInterest(compte));
+          compte.EstRetire == 1 ? 0 : CalculateInterest(compte, actionDateTime), actionDateTime);
       }
 
-      _logger.LogInformation("Total balance for user {UserId}: {TotalBalance}", userId, totalBalance);
+      _logger.LogInformation("Total balance for user {UserId} at {ActionDateTime}: {TotalBalance}", userId, actionDateTime, totalBalance);
       return totalBalance;
     }
 

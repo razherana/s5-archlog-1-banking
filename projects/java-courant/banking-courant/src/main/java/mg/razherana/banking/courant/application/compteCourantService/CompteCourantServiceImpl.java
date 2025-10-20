@@ -199,19 +199,29 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     return getComptesByUser(user);
   }
 
+  @Override
+  public BigDecimal calculateSolde(CompteCourant compte) {
+    return calculateSolde(compte, null);
+  }
+
   /**
    * Calculate the balance (solde) of a compte courant by summing transactions
    * Balance = (sum of received amounts) - (sum of sent amounts)
    */
   @Override
-  public BigDecimal calculateSolde(CompteCourant compte) {
+  public BigDecimal calculateSolde(CompteCourant compte, LocalDateTime actionDateTime) {
     LOG.info("Calculating solde for compte ID: " + compte.getId());
+
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
 
     // Sum of incoming transactions (where this compte is receiver)
     TypedQuery<BigDecimal> incomingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.receiver = :compte",
+        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.receiver = :compte AND t.date <= :actionDateTime",
         BigDecimal.class);
     incomingQuery.setParameter("compte", compte);
+    incomingQuery.setParameter("actionDateTime", actionDateTime);
     BigDecimal incoming = incomingQuery.getSingleResult();
 
     // Sum of outgoing transactions (where this compte is sender)
@@ -230,11 +240,12 @@ public class CompteCourantServiceImpl implements CompteCourantService {
    * Calculate the total balance for all accounts of a user.
    * 
    * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
    * @return total balance across all user's current accounts
    */
   @Override
-  public BigDecimal calculateTotalSoldeByUserId(Integer userId) {
-    LOG.info("Calculating total solde for userId: " + userId);
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime) {
+    LOG.info("Calculating total solde for userId: " + userId + " at " + actionDateTime);
     
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
@@ -249,12 +260,12 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     // Calculate total balance
     BigDecimal totalSolde = BigDecimal.ZERO;
     for (CompteCourant compte : comptes) {
-      BigDecimal compteSolde = calculateSolde(compte);
+      BigDecimal compteSolde = calculateSolde(compte, actionDateTime);
       totalSolde = totalSolde.add(compteSolde);
       LOG.info("Account " + compte.getId() + " balance: " + compteSolde);
     }
     
-    LOG.info("Total solde for user " + userId + ": " + totalSolde);
+    LOG.info("Total solde for user " + userId + " at " + actionDateTime + ": " + totalSolde);
     return totalSolde;
   }
 

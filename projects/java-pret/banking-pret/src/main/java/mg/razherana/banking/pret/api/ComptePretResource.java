@@ -171,10 +171,30 @@ public class ComptePretResource {
    */
   @GET
   @Path("/solde/user/{userId}")
-  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId) {
+  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId,
+                                        @QueryParam("actionDateTime") String actionDateTimeStr) {
     try {
-      BigDecimal totalSolde = comptePretService.calculateTotalSoldeByUserId(userId);
-      return Response.ok("{\"userId\": " + userId + ", \"totalSolde\": " + totalSolde + "}").build();
+      LocalDateTime actionDateTime = null;
+      if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeStr);
+        } catch (Exception e) {
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: yyyy-MM-ddTHH:mm:ss",
+              400, "Bad Request", "/comptes-pret/solde/user/" + userId);
+          return Response.status(400).entity(error).build();
+        }
+      }
+
+      BigDecimal totalSolde = comptePretService.calculateTotalSoldeByUserId(userId, actionDateTime);
+      
+      String responseJson = "{\"userId\": " + userId + 
+                           ", \"totalSolde\": " + totalSolde;
+      if (actionDateTime != null) {
+        responseJson += ", \"actionDateTime\": \"" + actionDateTime + "\"";
+      }
+      responseJson += "}";
+      
+      return Response.ok(responseJson).build();
 
     } catch (EJBException e) {
       if (isClientError(e)) {

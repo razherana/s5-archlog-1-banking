@@ -95,17 +95,31 @@ namespace BankingDepot.Controllers
     /// Gets the total balance for all deposit accounts of a specific user.
     /// </summary>
     /// <param name="userId">The user ID</param>
+    /// <param name="actionDateTime">Optional action date time for calculation (ISO format)</param>
     /// <returns>Total balance across all user's deposit accounts</returns>
     [HttpGet("solde/user/{userId}")]
-    public async Task<ActionResult<object>> GetTotalSoldeByUserId(int userId)
+    public async Task<ActionResult<object>> GetTotalSoldeByUserId(int userId, [FromQuery] string? actionDateTime = null)
     {
       try
       {
-        var totalSolde = await _compteDepotService.CalculateTotalSoldeByUserIdAsync(userId);
+        DateTime? parsedActionDateTime = null;
+        if (!string.IsNullOrWhiteSpace(actionDateTime))
+        {
+          if (!DateTime.TryParse(actionDateTime, out var tempDateTime))
+          {
+            var error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: yyyy-MM-ddTHH:mm:ss", 400, "Bad Request", Request.Path);
+            return BadRequest(error);
+          }
+          parsedActionDateTime = tempDateTime;
+        }
+
+        var totalSolde = await _compteDepotService.CalculateTotalSoldeByUserIdAsync(userId, parsedActionDateTime);
+        
         var result = new
         {
           UserId = userId,
-          TotalSolde = totalSolde
+          TotalSolde = totalSolde,
+          ActionDateTime = parsedActionDateTime
         };
         return Ok(result);
       }

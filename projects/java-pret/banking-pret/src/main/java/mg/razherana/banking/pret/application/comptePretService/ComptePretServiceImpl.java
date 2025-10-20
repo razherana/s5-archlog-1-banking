@@ -223,40 +223,44 @@ public class ComptePretServiceImpl implements ComptePretService {
    * Calculate the total remaining balance for all loans of a user.
    * Balance = Sum of (original loan amount - total payments made)
    * 
-   * @param userId the user ID
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
    * @return total remaining balance across all user's loans
    */
   @Override
-  public BigDecimal calculateTotalSoldeByUserId(Integer userId) {
-    LOG.info("Calculating total loan balance for userId: " + userId);
-    
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime) {
+    LOG.info("Calculating total loan balance for userId: " + userId + " at " + actionDateTime);
+
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
     // Verify user exists (will throw exception if not found)
     findUser(userId);
-    
+
     // Get all user's loans
     List<ComptePret> loans = getLoansByUserId(userId);
-    
+
     // Calculate total remaining balance
     BigDecimal totalBalance = BigDecimal.ZERO;
     for (ComptePret loan : loans) {
       BigDecimal originalAmount = loan.getMontant();
-      BigDecimal totalPaid = calculateTotalPaid(loan.getId());
+      BigDecimal totalPaid;
+
+      totalPaid = calculateTotalPaidAtDate(loan.getId(), actionDateTime);
+
       BigDecimal remainingBalance = originalAmount.subtract(totalPaid);
-      
+
       // Only add positive balances (loans not overpaid)
       if (remainingBalance.compareTo(BigDecimal.ZERO) > 0) {
         totalBalance = totalBalance.add(remainingBalance);
       }
-      
-      LOG.info("Loan " + loan.getId() + " - Original: " + originalAmount + 
-               ", Paid: " + totalPaid + ", Remaining: " + remainingBalance);
+
+      LOG.info("Loan " + loan.getId() + " - Original: " + originalAmount +
+          ", Paid: " + totalPaid + ", Remaining: " + remainingBalance);
     }
-    
-    LOG.info("Total loan balance for user " + userId + ": " + totalBalance);
+
+    LOG.info("Total loan balance for user " + userId + " at " + actionDateTime + ": " + totalBalance);
     return totalBalance;
   }
 
@@ -353,14 +357,27 @@ public class ComptePretServiceImpl implements ComptePretService {
    */
   @Override
   public BigDecimal calculateTotalPaid(Integer compteId) {
+    return calculateTotalPaidAtDate(compteId, null);
+  }
+
+  /**
+   * Calculates total amount paid for a loan up to a specific date.
+   */
+  @Override
+  public BigDecimal calculateTotalPaidAtDate(Integer compteId, LocalDateTime actionDateTime) {
     if (compteId == null) {
       throw new IllegalArgumentException("Loan account ID cannot be null");
     }
 
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
+
     TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(e.montant), 0) FROM Echeance e WHERE e.compteId = :compteId",
+        "SELECT COALESCE(SUM(e.montant), 0) FROM Echeance e WHERE e.compteId = :compteId AND e.dateEcheance <= :actionDateTime",
         BigDecimal.class);
     query.setParameter("compteId", compteId);
+    query.setParameter("actionDateTime", actionDateTime);
 
     BigDecimal result = query.getSingleResult();
     return result != null ? result : BigDecimal.ZERO;

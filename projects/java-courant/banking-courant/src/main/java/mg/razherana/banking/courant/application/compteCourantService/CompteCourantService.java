@@ -68,12 +68,18 @@ public interface CompteCourantService {
   public BigDecimal calculateSolde(CompteCourant compte);
 
   /**
+   * Calculate the balance (solde) of a compte courant by summing transactions
+   * Balance = (sum of received amounts) - (sum of sent amounts)
+   */
+  public BigDecimal calculateSolde(CompteCourant compte, LocalDateTime actionDateTime);
+  /**
    * Calculate the total balance for all accounts of a user.
    * 
    * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
    * @return total balance across all user's current accounts
    */
-  public BigDecimal calculateTotalSoldeByUserId(Integer userId);
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime);
 
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe);
 

@@ -89,9 +89,10 @@ public interface ComptePretService {
    * Balance = Sum of (original loan amount - total payments made)
    * 
    * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
    * @return total remaining balance across all user's loans
    */
-  BigDecimal calculateTotalSoldeByUserId(Integer userId);
+  BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime);
 
   /**
    * Calculates the monthly payment for a loan using amortization formula.
@@ -117,6 +118,15 @@ public interface ComptePretService {
    * @return total amount paid
    */
   BigDecimal calculateTotalPaid(Integer compteId);
+
+  /**
+   * Calculates total amount paid for a loan up to a specific date.
+   * 
+   * @param compteId the loan account ID
+   * @param actionDateTime the date/time to calculate payments up to
+   * @return total amount paid up to the specified date
+   */
+  BigDecimal calculateTotalPaidAtDate(Integer compteId, LocalDateTime actionDateTime);
 
   /**
    * Calculates the expected amount to be paid by a specific date.

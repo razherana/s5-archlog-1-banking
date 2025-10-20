@@ -32,8 +32,9 @@ namespace BankingDepot.Services.Interfaces
     /// Balance = Sum of (deposit amount + calculated interest) for non-withdrawn accounts
     /// </summary>
     /// <param name="userId">The user ID</param>
+    /// <param name="actionDateTime">Optional action date time for calculation (defaults to now)</param>
     /// <returns>Total balance across all user's deposit accounts</returns>
-    Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId);
+    Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId, DateTime? actionDateTime = null);
 
     /// <summary>
     /// Creates a new deposit account.
