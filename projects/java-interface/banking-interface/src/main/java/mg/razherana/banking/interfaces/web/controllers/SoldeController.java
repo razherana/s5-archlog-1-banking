@@ -41,17 +41,17 @@ public class SoldeController extends HttpServlet {
       return;
     }
 
-    User user = (User) session.getAttribute("user");
     String userIdParam = request.getParameter("userId");
     String actionDateTime = request.getParameter("actionDateTime");
 
     if (userIdParam == null || userIdParam.trim().isEmpty()) {
-      renderSoldeView(request, response, user, "No user selected. Please go back and choose a user.", null);
+      response.sendRedirect("menu?error=User ID is required");
       return;
     }
 
     try {
       Integer userId = Integer.parseInt(userIdParam);
+      User user = userService.findUserById(userId);
 
       // Get individual module balances and total
       Map<String, Object> balanceData = new HashMap<>();
@@ -101,11 +101,11 @@ public class SoldeController extends HttpServlet {
       renderSoldeView(request, response, user, null, balanceData);
 
     } catch (NumberFormatException e) {
-      renderSoldeView(request, response, user, "Invalid user ID format.", null);
+      LOG.severe("Invalid user ID format: " + userIdParam);
+      response.sendRedirect("menu?error=Invalid user ID format");
     } catch (Exception e) {
       LOG.severe("Error processing balance request: " + e.getMessage());
-      renderSoldeView(request, response, user, "An error occurred while processing your request: " + e.getMessage(),
-          null);
+      response.sendRedirect("menu?error=" + e.getMessage());
     }
   }
 
