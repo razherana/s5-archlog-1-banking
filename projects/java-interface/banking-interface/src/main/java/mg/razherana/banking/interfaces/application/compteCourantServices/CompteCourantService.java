@@ -118,4 +118,13 @@ public interface CompteCourantService {
      * @return Account balance
      */
     BigDecimal getAccountBalance(Integer accountId, LocalDateTime statusDate);
+
+    /**
+     * Gets account balance of an user at a specific date.
+     * 
+     * @param userId
+     * @param actionDateTime
+     * @return Total balance of user
+     */
+    BigDecimal getAccountBalanceByUserId(Integer userId, LocalDateTime actionDateTime);
 }

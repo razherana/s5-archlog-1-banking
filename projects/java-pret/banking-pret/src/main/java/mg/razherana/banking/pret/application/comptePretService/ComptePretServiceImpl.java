@@ -245,9 +245,7 @@ public class ComptePretServiceImpl implements ComptePretService {
     BigDecimal totalBalance = BigDecimal.ZERO;
     for (ComptePret loan : loans) {
       BigDecimal originalAmount = loan.getMontant();
-      BigDecimal totalPaid;
-
-      totalPaid = calculateTotalPaidAtDate(loan.getId(), actionDateTime);
+      BigDecimal totalPaid = calculateTotalPaidAtDate(loan.getId(), actionDateTime);
 
       BigDecimal remainingBalance = originalAmount.subtract(totalPaid);
 

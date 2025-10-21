@@ -201,4 +201,9 @@ public class ComptePretServiceImpl implements ComptePretService {
         .filter(payment -> !payment.getDateEcheance().isAfter(actionDateTime))
         .toList();
   }
+
+  @Override
+  public BigDecimal getLoanBalanceByUserId(Integer userId, LocalDateTime actionDateTime) {
+    return comptePretRemoteService.calculateTotalSoldeByUserId(userId, actionDateTime);
+  }
 }

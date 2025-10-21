@@ -226,4 +226,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return BigDecimal.ZERO;
     }
   }
+
+  @Override
+  public BigDecimal getAccountBalanceByUserId(Integer userId, LocalDateTime actionDateTime) {
+    return compteCourantRemoteService.calculateTotalSoldeByUserId(userId, actionDateTime);
+  }
 }

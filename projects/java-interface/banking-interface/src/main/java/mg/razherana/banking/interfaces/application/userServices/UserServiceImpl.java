@@ -1,6 +1,7 @@
 package mg.razherana.banking.interfaces.application.userServices;
 
 import mg.razherana.banking.interfaces.entities.User;
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -10,9 +11,10 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.NoResultException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import jakarta.ws.rs.client.*;
 import java.util.List;
 import java.util.logging.Logger;
+import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 
 /**
  * Local EJB implementation for User management operations.
@@ -38,14 +40,16 @@ public class UserServiceImpl implements UserService {
 
   private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
 
-  private static final String BACKEND_PRET_URL = "http://127.0.0.3:8080/api/";
-
-  private static final String BACKEND_COURANT_URL = "http://localhost:8080/api";
-
   private static final String BACKEND_DEPOT_URL = "http://127.0.0.4:8080/api";
+
+  @EJB
+  private CompteCourantService compteCourantService;
 
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
+
+  @EJB
+  private ComptePretService comptePretService;
 
   @Override
   public User findUserById(Integer userId) {
@@ -247,66 +251,24 @@ public class UserServiceImpl implements UserService {
    * Get current account balance from java-courant module via REST API
    */
   @Override
-  public BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTime) {
-    Client client = ClientBuilder.newClient();
-    try {
-      String url = BACKEND_COURANT_URL + "/comptes/solde/user/" + userId;
-      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
-        url += "?actionDateTime=" + java.net.URLEncoder.encode(actionDateTime, "UTF-8");
-      }
-
-      WebTarget target = client.target(url);
-      jakarta.ws.rs.core.Response response = target.request(jakarta.ws.rs.core.MediaType.APPLICATION_JSON).get();
-
-      if (response.getStatus() == 200) {
-        String jsonResponse = response.readEntity(String.class);
-        // Parse JSON response {"userId": 1, "totalSolde": 1500.50}
-        jakarta.json.JsonReader jsonReader = jakarta.json.Json.createReader(new java.io.StringReader(jsonResponse));
-        jakarta.json.JsonObject json = jsonReader.readObject();
-        jsonReader.close();
-
-        return new BigDecimal(json.getJsonNumber("totalSolde").toString());
-      } else {
-        throw new RuntimeException("Current account service returned status: " + response.getStatus());
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to call current account service: " + e.getMessage(), e);
-    } finally {
-      client.close();
+  public BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTimeStr) {
+    LocalDateTime actionDateTime = null;
+    if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+      actionDateTime = LocalDateTime.parse(actionDateTimeStr);
     }
+    return compteCourantService.getAccountBalanceByUserId(userId, actionDateTime);
   }
 
   /**
    * Get loan balance from java-pret module via REST API
    */
   @Override
-  public BigDecimal getLoanBalance(Integer userId, String actionDateTime) {
-    Client client = ClientBuilder.newClient();
-    try {
-      String url = BACKEND_PRET_URL + "/comptes-pret/solde/user/" + userId;
-      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
-        url += "?actionDateTime=" + java.net.URLEncoder.encode(actionDateTime, "UTF-8");
-      }
-
-      WebTarget target = client.target(url);
-      jakarta.ws.rs.core.Response response = target.request(jakarta.ws.rs.core.MediaType.APPLICATION_JSON).get();
-
-      if (response.getStatus() == 200) {
-        String jsonResponse = response.readEntity(String.class);
-        // Parse JSON response {"userId": 1, "totalSolde": 5000.00}
-        jakarta.json.JsonReader jsonReader = jakarta.json.Json.createReader(new java.io.StringReader(jsonResponse));
-        jakarta.json.JsonObject json = jsonReader.readObject();
-        jsonReader.close();
-
-        return new BigDecimal(json.getJsonNumber("totalSolde").toString());
-      } else {
-        throw new RuntimeException("Loan service returned status: " + response.getStatus());
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to call loan service: " + e.getMessage(), e);
-    } finally {
-      client.close();
+  public BigDecimal getLoanBalance(Integer userId, String actionDateTimeStr) {
+    LocalDateTime actionDateTime = null;
+    if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+      actionDateTime = LocalDateTime.parse(actionDateTimeStr);
     }
+    return comptePretService.getLoanBalanceByUserId(userId, actionDateTime);
   }
 
   /**

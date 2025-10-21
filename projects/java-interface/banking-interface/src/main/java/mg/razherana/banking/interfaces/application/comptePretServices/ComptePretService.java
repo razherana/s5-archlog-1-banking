@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.application.comptePretServices;
 
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -83,4 +84,12 @@ public interface ComptePretService {
    * @return List of payments for the loan
    */
   List<EcheanceDTO> getPaymentHistory(Integer loanId, LocalDateTime actionDateTime);
+
+  /**
+   * 
+   * @param userId
+   * @param actionDateTime
+   * @return Loan balance of user
+   */
+  BigDecimal getLoanBalanceByUserId(Integer userId, LocalDateTime actionDateTime);
 }
