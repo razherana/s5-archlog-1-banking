@@ -48,7 +48,7 @@
               <span class="label">Date d'Ouverture:</span>
               <span
                 class="value"
-                th:text="${#temporals.format(account.dateOuverture, 'dd/MM/yyyy HH:mm')}"
+                th:text="${#temporals.format(account.createdAt, 'dd/MM/yyyy HH:mm')}"
                 >01/01/2024 10:00</span
               >
             </div>
@@ -56,7 +56,7 @@
               <span class="label">Taxe Mensuelle:</span>
               <span
                 class="value"
-                th:text="${#numbers.formatDecimal(account.taxe, 1, 2)} + ' MGA'"
+                th:text="${#numbers.formatDecimal(account.taxe, 1, 2) + ' MGA'}"
                 >0.00 MGA</span
               >
             </div>
@@ -79,7 +79,7 @@
               <span class="label">Solde du Compte:</span>
               <span
                 class="value"
-                th:class="${accountStatus.balance.compareTo(BD_ZERO) >= 0} ? 'positive-balance' : 'negative-balance'"
+                th:class="${accountStatus.isPositive} ? 'positive-balance' : 'negative-balance'"
               >
                 <span th:text="${accountStatus.formattedBalance}"
                   >1000.00 MGA</span
@@ -98,7 +98,7 @@
               <span class="label">Taxes à Payer:</span>
               <span
                 class="value"
-                th:class="${accountStatus.taxToPay.compareTo(BD_ZERO) > 0} ? 'negative-balance' : 'positive-balance'"
+                th:class="${accountStatus.taxToPayPositive} ? 'negative-balance' : 'positive-balance'"
               >
                 <span th:text="${accountStatus.formattedTaxToPay}"
                   >25.00 MGA</span
@@ -182,8 +182,8 @@
               <tr
                 th:each="transaction : ${transactionHistory}"
                 th:with="isPositive=${transaction.isPositiveForAccount(account.id)},
-                           isNegative=${transaction.isNegativeForAccount(account.id)},
-                           balanceClass=${isPositive ? 'positive-balance' : (isNegative ? 'negative-balance' : '')}"
+                          isNegative=${transaction.isNegativeForAccount(account.id)},
+                          balanceClass=${isPositive ? 'positive-balance' : (isNegative ? 'negative-balance' : '')}"
               >
                 <td th:text="${transaction.id}">1</td>
                 <td>
@@ -220,7 +220,7 @@
                 </td>
                 <td>
                   <span
-                    th:text="${transaction.formattedMontant}"
+                    th:text="${transaction.formattedAmount}"
                     th:class="${balanceClass}"
                     >500.00 MGA</span
                   >

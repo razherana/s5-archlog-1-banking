@@ -85,6 +85,31 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <id>make-a-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>classes</classifier>
+              <includes>
+                <!-- Include only entities and remote interfaces -->
+                <include>**/entities/**</include>
+                <include>**/compteCourantService/CompteCourantService.class</include>
+                <include>**/compteCourantService/CompteCourantRemoteService.class</include>
+                <include>**/transactionService/TransactionService.class</include>
+                <include>**/transactionService/TransactionRemoteService.class</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.tomee.maven</groupId>
         <artifactId>tomee-maven-plugin</artifactId>
         <version>10.1.0</version>

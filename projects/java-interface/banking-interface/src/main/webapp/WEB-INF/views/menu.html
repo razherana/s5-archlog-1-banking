@@ -65,6 +65,65 @@
       </div>
 
       <div class="card">
+        <h3 class="text-center">Check Balance</h3>
+        <p class="text-center">Select a user and a date/time to check balances (per-module and total).</p>
+
+        <form id="balanceForm" action="/solde" method="get">
+          <div style="margin-bottom: 0.5rem;">
+            <label for="userSelect">User</label>
+            <select id="userSelect" name="userId" required>
+              <option value="">Loading users...</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 0.5rem;">
+            <label for="actionDateTime">Date/Time</label>
+            <input id="actionDateTime" name="actionDateTime" type="datetime-local" />
+          </div>
+
+          <div>
+            <button type="submit">Solde</button>
+          </div>
+        </form>
+
+        <script>
+          // Populate user dropdown by calling the local users API
+          (function loadUsers() {
+            const select = document.getElementById('userSelect');
+            fetch('/api/users')
+              .then(res => {
+                if (!res.ok) throw new Error('Failed to load users');
+                return res.json();
+              })
+              .then(list => {
+                select.innerHTML = '';
+                if (!Array.isArray(list) || list.length === 0) {
+                  const opt = document.createElement('option');
+                  opt.value = '';
+                  opt.textContent = 'No users';
+                  select.appendChild(opt);
+                  return;
+                }
+                list.forEach(u => {
+                  const opt = document.createElement('option');
+                  opt.value = u.id || u.userId || u.idUser || u.user_id || u.uuid || u.id;
+                  opt.textContent = (u.name || u.fullName || u.username || ('User ' + opt.value));
+                  select.appendChild(opt);
+                });
+              })
+              .catch(err => {
+                select.innerHTML = '';
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Failed to load users';
+                select.appendChild(opt);
+                console.warn('Could not load users for dropdown', err);
+              });
+          })();
+        </script>
+      </div>
+
+      <div class="card">
         <h3 class="text-center">User Management</h3>
         <ul class="menu-list">
           <li>

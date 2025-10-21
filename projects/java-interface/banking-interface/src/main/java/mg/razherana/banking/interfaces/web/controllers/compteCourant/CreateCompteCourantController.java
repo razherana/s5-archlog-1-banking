@@ -2,7 +2,7 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.interfaces.entities.User;
 
 import org.thymeleaf.context.WebContext;
@@ -16,6 +16,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
 
 /**
@@ -75,13 +78,14 @@ public class CreateCompteCourantController extends HttpServlet {
     try {
       // Get the monthly tax amount from form (optional)
       String taxeParam = request.getParameter("taxe");
-      String actionDateTime = request.getParameter("actionDateTime");
-      Double taxe = null;
+      String actionDateTimeParam = request.getParameter("actionDateTime");
+      BigDecimal taxe = BigDecimal.ZERO;
+      LocalDateTime actionDateTime = LocalDateTime.now();
 
       if (taxeParam != null && !taxeParam.trim().isEmpty()) {
         try {
-          taxe = Double.parseDouble(taxeParam);
-          if (taxe < 0) {
+          taxe = new BigDecimal(taxeParam);
+          if (taxe.compareTo(BigDecimal.ZERO) < 0) {
             response.sendRedirect("create?error=invalid_taxe");
             return;
           }
@@ -90,15 +94,23 @@ public class CreateCompteCourantController extends HttpServlet {
           return;
         }
       }
+      
+      if (actionDateTimeParam != null && !actionDateTimeParam.trim().isEmpty()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeParam, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+          LOG.warning("Invalid date format, using current time: " + e.getMessage());
+          actionDateTime = LocalDateTime.now();
+        }
+      }
 
-      LOG.info("Creating account for user: " + userId + " with taxe: " + taxe +
-          (actionDateTime != null && !actionDateTime.trim().isEmpty() ? " at time: " + actionDateTime : ""));
+      LOG.info("Creating account for user: " + userId + " with taxe: " + taxe + " at time: " + actionDateTime);
 
       // Create the account
-      CompteCourantDTO createdAccount = compteCourantService.createAccount(userId, taxe, actionDateTime);
+      CompteCourant createdAccount = compteCourantService.createAccount(userId, taxe, actionDateTime);
 
       if (createdAccount != null) {
-        LOG.info("Account created successfully: " + createdAccount.getNumeroCompte());
+        LOG.info("Account created successfully with ID: " + createdAccount.getId());
         response.sendRedirect("../comptes-courants?success=account_created");
       } else {
         LOG.warning("Failed to create account for user: " + userId);

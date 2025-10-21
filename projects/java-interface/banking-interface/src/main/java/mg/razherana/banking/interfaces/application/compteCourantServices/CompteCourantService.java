@@ -1,10 +1,10 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
-import mg.razherana.banking.interfaces.dto.AccountStatusDTO;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
-import mg.razherana.banking.interfaces.dto.TransactionCourantDTO;
-import mg.razherana.banking.interfaces.dto.UserDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -18,7 +18,7 @@ public interface CompteCourantService {
      * @param userId The ID of the user
      * @return List of current accounts for the user
      */
-    List<CompteCourantDTO> getAccountsByUserId(Integer userId);
+    List<CompteCourant> getAccountsByUserId(Integer userId);
     
     /**
      * Creates a new current account for a user.
@@ -28,7 +28,7 @@ public interface CompteCourantService {
      * @param actionDateTime The creation date/time (optional, defaults to current time)
      * @return The created account or null if creation failed
      */
-    CompteCourantDTO createAccount(Integer userId, Double taxe, String actionDateTime);
+    CompteCourant createAccount(Integer userId, BigDecimal taxe, LocalDateTime actionDateTime);
     
     /**
      * Gets a specific account by ID.
@@ -36,7 +36,7 @@ public interface CompteCourantService {
      * @param accountId The account ID
      * @return The account or null if not found
      */
-    CompteCourantDTO getAccountById(Integer accountId);
+    CompteCourant getAccountById(Integer accountId);
     
     /**
      * Gets the minimum tax amount to be paid for an account.
@@ -44,7 +44,7 @@ public interface CompteCourantService {
      * @param accountId The account ID
      * @return The minimum tax amount to pay
      */
-    Double getTaxToPay(Integer accountId);
+    BigDecimal getTaxToPay(Integer accountId, LocalDateTime actionDateTime);
     
     /**
      * Makes a deposit to an account.
@@ -53,9 +53,9 @@ public interface CompteCourantService {
      * @param montant The amount to deposit
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
-     * @return null if successful, error message if failed
+     * @return The created transaction or null if failed
      */
-    String makeDeposit(Integer accountId, Double montant, String description, String actionDateTime);
+    TransactionCourant makeDeposit(Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime);
     
     /**
      * Makes a withdrawal from an account.
@@ -64,9 +64,9 @@ public interface CompteCourantService {
      * @param montant The amount to withdraw
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
-     * @return null if successful, error message if failed
+     * @return The created transaction or null if failed
      */
-    String makeWithdrawal(Integer accountId, Double montant, String description, String actionDateTime);
+    TransactionCourant makeWithdrawal(Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime);
     
     /**
      * Pays tax for an account.
@@ -74,16 +74,16 @@ public interface CompteCourantService {
      * @param accountId The account ID
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
-     * @return null if successful, error message if failed
+     * @return The created transaction or null if failed
      */
-    String payTax(Integer accountId, String description, String actionDateTime);
+    TransactionCourant payTax(Integer accountId, String description, LocalDateTime actionDateTime);
     
     /**
      * Gets all users in the system.
      * 
      * @return List of all users
      */
-    List<UserDTO> getAllUsers();
+    List<mg.razherana.banking.interfaces.entities.User> getAllUsers();
     
     /**
      * Makes a transfer between two accounts.
@@ -93,14 +93,14 @@ public interface CompteCourantService {
      * @param amount The amount to transfer
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
-     * @return null if successful, error message if failed
+     * @return True if successful, false if failed
      */
-    String makeTransfer(Integer sourceAccountId, Integer destinationAccountId, Double amount, String description, String actionDateTime);
+    boolean makeTransfer(Integer sourceAccountId, Integer destinationAccountId, BigDecimal amount, String description, LocalDateTime actionDateTime);
 
     /**
      * Helper method to get all accounts from the banking-courant service.
      */
-    List<CompteCourantDTO> getAllAccounts();
+    List<CompteCourant> getAllAccounts();
 
     /**
      * Gets transaction history for a specific account.
@@ -108,14 +108,14 @@ public interface CompteCourantService {
      * @param accountId The account ID
      * @return List of transactions for the account
      */
-    List<TransactionCourantDTO> getTransactionHistory(Integer accountId);
+    List<TransactionCourant> getTransactionHistory(Integer accountId);
 
     /**
-     * Gets account status (balance, tax info, transaction summary) at a specific date.
+     * Gets account balance at a specific date.
      * 
      * @param accountId The account ID
-     * @param statusDate The date/time to calculate status for
-     * @return Account status information
+     * @param statusDate The date/time to calculate balance for
+     * @return Account balance
      */
-    AccountStatusDTO getAccountStatus(Integer accountId, java.time.LocalDateTime statusDate);
+    BigDecimal getAccountBalance(Integer accountId, LocalDateTime statusDate);
 }

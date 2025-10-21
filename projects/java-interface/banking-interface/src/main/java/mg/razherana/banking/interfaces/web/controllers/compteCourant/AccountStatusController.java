@@ -2,10 +2,11 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
-import mg.razherana.banking.interfaces.dto.AccountStatusDTO;
-import mg.razherana.banking.interfaces.dto.TransactionCourantDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.AccountStatusDTO;
+import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.TransactionDTO;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -54,21 +55,21 @@ public class AccountStatusController extends HttpServlet {
     String actionDateTimeStr = request.getParameter("actionDateTime");
 
     if (accountIdStr == null || accountIdStr.trim().isEmpty()) {
-      response.sendRedirect("../comptes-courants?error=missing_account_id");
+      response.sendRedirect("../comptes-courants?error=Account ID missing");
       return;
     }
 
     if (actionDateTimeStr == null || actionDateTimeStr.trim().isEmpty()) {
-      response.sendRedirect("detail?id=" + accountIdStr + "&error=missing_date");
+      response.sendRedirect("detail?id=" + accountIdStr + "&error=Date missing");
       return;
     }
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourantDTO account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(accountId);
 
       if (account == null) {
-        response.sendRedirect("../comptes-courants?error=account_not_found");
+        response.sendRedirect("../comptes-courants?error=Account not found");
         return;
       }
 
@@ -79,45 +80,77 @@ public class AccountStatusController extends HttpServlet {
       }
 
       // Parse the action date and set time to end of day for status check
-      LocalDateTime actionDateTime = LocalDateTime.parse(actionDateTimeStr + "T23:59:59");
+      LocalDateTime actionDateTime;
+      try {
+        actionDateTime = LocalDateTime.parse(actionDateTimeStr + "T23:59:59");
+      } catch (Exception e) {
+        response.sendRedirect("detail?id=" + accountIdStr + "&error=Invalid date format");
+        return;
+      }
 
-      if (actionDateTime.isBefore(account.getDateOuverture())) {
+      if (actionDateTime.isBefore(account.getCreatedAt())) {
         String errorMsg = "La date de vérification ne peut pas être antérieure à la date d'ouverture du compte.";
         String encodedError = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8);
         response.sendRedirect("detail?id=" + accountId + "&error=" + encodedError);
         return;
       }
 
-      // Get account status at the specified date
-      AccountStatusDTO accountStatus = compteCourantService.getAccountStatus(accountId, actionDateTime);
-      
-      if (accountStatus == null) {
-        response.sendRedirect("detail?id=" + accountId + "&error=status_calculation_failed");
-        return;
-      }
+      // Get account balance at the specified date
+      BigDecimal accountBalance = compteCourantService.getAccountBalance(accountId, actionDateTime);
+      BigDecimal taxToPay = compteCourantService.getTaxToPay(accountId, actionDateTime);
 
       // Get transaction history filtered up to the status date
-      List<TransactionCourantDTO> transactionHistory = compteCourantService.getTransactionHistory(accountId);
-      List<TransactionCourantDTO> filteredTransactions = transactionHistory.stream()
-          .filter(t -> t.getDate() == null || !t.getDate().isAfter(actionDateTime))
-          .sorted((t1, t2) -> {
-            if (t1.getDate() == null && t2.getDate() == null) return 0;
-            if (t1.getDate() == null) return 1;
-            if (t2.getDate() == null) return -1;
-            return t2.getDate().compareTo(t1.getDate()); // Most recent first
-          })
-          .collect(java.util.stream.Collectors.toList());
+      List<TransactionCourant> transactionHistory = compteCourantService.getTransactionHistory(accountId);
+      List<TransactionCourant> filteredTransactions = transactionHistory.stream()
+          .filter(t -> !t.getDate().isAfter(actionDateTime))
+          .sorted((t1, t2) -> t2.getDate().compareTo(t1.getDate())) // Most recent first
+          .toList();
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
       WebContext context = new WebContext(application.buildExchange(request, response));
 
+      BigDecimal taxPaid = filteredTransactions.stream()
+          .filter(t -> t.getSpecialAction().equals(TransactionCourant.SpecialAction.TAXE.getDatabaseName()))
+          .map(e -> e.getMontant())
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      // Calculate transaction statistics
+      int totalTransactions = filteredTransactions.size();
+
+      BigDecimal totalDeposits = filteredTransactions.stream()
+          .filter(t -> TransactionCourant.SpecialAction.DEPOSIT.getDatabaseName().equals(t.getSpecialAction()))
+          .map(TransactionCourant::getMontant)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      BigDecimal totalWithdrawals = filteredTransactions.stream()
+          .filter(t -> TransactionCourant.SpecialAction.WITHDRAWAL.getDatabaseName().equals(t.getSpecialAction()))
+          .map(TransactionCourant::getMontant)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      BigDecimal totalTransfersSent = filteredTransactions.stream()
+          .filter(t -> t.getSender() != null && t.getSender().getId().equals(accountId) &&
+              t.getReceiver() != null)
+          .map(TransactionCourant::getMontant)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      BigDecimal totalTransfersReceived = filteredTransactions.stream()
+          .filter(t -> t.getReceiver() != null && t.getReceiver().getId().equals(accountId) &&
+              t.getSender() != null)
+          .map(TransactionCourant::getMontant)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+
       // Set template variables
       context.setVariable("userName", user.getName());
       context.setVariable("BD_ZERO", BigDecimal.ZERO);
       context.setVariable("account", account);
-      context.setVariable("accountStatus", accountStatus);
-      context.setVariable("transactionHistory", filteredTransactions);
+      context.setVariable("accountBalance", accountBalance);
+      context.setVariable("accountStatus", new AccountStatusDTO(accountBalance, taxPaid, taxToPay,
+          totalTransactions, totalDeposits, totalWithdrawals,
+          totalTransfersSent, totalTransfersReceived));
+      context.setVariable("taxToPay", taxToPay);
+      context.setVariable("statusDate", actionDateTime);
+      context.setVariable("transactionHistory", filteredTransactions.stream().map(TransactionDTO::new).toList());
       context.setVariable("actionDateTime", actionDateTime);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
@@ -131,7 +164,9 @@ public class AccountStatusController extends HttpServlet {
       response.sendRedirect("../comptes-courants?error=invalid_account_id");
     } catch (Exception e) {
       LOG.severe("Error processing account status: " + e.getMessage());
-      response.sendRedirect("detail?id=" + accountIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
+      e.printStackTrace();
+      response.sendRedirect(
+          "detail?id=" + accountIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     }
   }
 }

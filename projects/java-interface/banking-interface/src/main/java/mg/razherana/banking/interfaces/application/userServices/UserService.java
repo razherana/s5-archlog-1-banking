@@ -2,6 +2,8 @@ package mg.razherana.banking.interfaces.application.userServices;
 
 import mg.razherana.banking.interfaces.entities.User;
 import jakarta.ejb.Local;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -87,4 +89,48 @@ public interface UserService {
    * @return User entity if authentication successful, null otherwise
    */
   User authenticateUser(String email, String password);
+
+  /**
+   * Calculate the total balance across all banking modules for a user.
+   * This method makes REST API calls to:
+   * - Current accounts module (java-courant)
+   * - Loan module (java-pret) 
+   * - Deposit module (dotnet-depot)
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @return total balance across all modules
+   * @throws IllegalArgumentException if user not found or API calls fail
+   */
+  BigDecimal calculateTotalBalanceAcrossModules(Integer userId, String actionDateTime);
+
+  /**
+   * Get current account balance for a user from the java-courant module.
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @return current account balance
+   * @throws RuntimeException if API call fails
+   */
+  BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTime);
+
+  /**
+   * Get loan balance for a user from the java-pret module.
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @return loan balance (remaining debt)
+   * @throws RuntimeException if API call fails
+   */
+  BigDecimal getLoanBalance(Integer userId, String actionDateTime);
+
+  /**
+   * Get deposit balance for a user from the dotnet-depot module.
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @return deposit balance
+   * @throws RuntimeException if API call fails
+   */
+  BigDecimal getDepositBalance(Integer userId, String actionDateTime);
 }

@@ -17,6 +17,8 @@
 package mg.razherana.banking.courant.entities;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -46,7 +48,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "compte_courants")
-public class CompteCourant {
+public class CompteCourant implements Serializable {
   /**
    * Unique identifier for the current account.
    * Auto-generated using database identity strategy.

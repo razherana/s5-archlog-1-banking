@@ -1,6 +1,8 @@
 package mg.razherana.banking.courant.entities;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -35,7 +37,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "transaction_courants")
-public class TransactionCourant {
+public class TransactionCourant implements Serializable {
   /**
    * Enumeration defining special transaction types for the banking system.
    * 

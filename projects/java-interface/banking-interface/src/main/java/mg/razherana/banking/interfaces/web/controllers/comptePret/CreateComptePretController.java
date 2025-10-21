@@ -4,7 +4,7 @@ import mg.razherana.banking.interfaces.application.comptePretServices.ComptePret
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.interfaces.entities.User;
 
 import org.thymeleaf.context.WebContext;
@@ -54,7 +54,7 @@ public class CreateComptePretController extends HttpServlet {
 
     // Get loan types and current accounts for the user
     List<TypeComptePretDTO> loanTypes = comptePretService.getAllLoanTypes();
-    List<CompteCourantDTO> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
+    List<CompteCourant> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
 
     // Create Thymeleaf context
     JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
@@ -124,7 +124,7 @@ public class CreateComptePretController extends HttpServlet {
       }
 
       // Verify that the current account belongs to the user
-      CompteCourantDTO currentAccount = compteCourantService.getAccountById(compteCourantId);
+      CompteCourant currentAccount = compteCourantService.getAccountById(compteCourantId);
       if (currentAccount == null || !currentAccount.getUserId().equals(userId)) {
         response.sendRedirect("create?error=invalid_current_account");
         return;

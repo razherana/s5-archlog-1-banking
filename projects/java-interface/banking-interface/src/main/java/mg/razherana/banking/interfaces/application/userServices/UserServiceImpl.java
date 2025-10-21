@@ -8,7 +8,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.NoResultException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import jakarta.ws.rs.client.*;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -35,6 +37,12 @@ import java.util.logging.Logger;
 public class UserServiceImpl implements UserService {
 
   private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
+
+  private static final String BACKEND_PRET_URL = "http://127.0.0.3:8080/api/";
+
+  private static final String BACKEND_COURANT_URL = "http://localhost:8080/api";
+
+  private static final String BACKEND_DEPOT_URL = "http://127.0.0.4:8080/api";
 
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
@@ -101,7 +109,7 @@ public class UserServiceImpl implements UserService {
     User user = new User();
     user.setName(name.trim());
     user.setEmail(email.trim().toLowerCase());
-    user.setPassword(password); 
+    user.setPassword(password);
     user.setCreatedAt(LocalDateTime.now());
 
     entityManager.persist(user);
@@ -136,7 +144,7 @@ public class UserServiceImpl implements UserService {
     }
 
     if (password != null && !password.trim().isEmpty()) {
-      user.setPassword(password); 
+      user.setPassword(password);
     }
 
     entityManager.merge(user);
@@ -181,5 +189,160 @@ public class UserServiceImpl implements UserService {
 
     LOG.info("Authentication failed for user: " + email);
     return null;
+  }
+
+  @Override
+  public BigDecimal calculateTotalBalanceAcrossModules(Integer userId, String actionDateTime) {
+    LOG.info("Calculating total balance across all modules for user: " + userId + " at " + actionDateTime);
+
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists
+    User user = findUserById(userId);
+    if (user == null) {
+      throw new IllegalArgumentException("User not found: " + userId);
+    }
+
+    BigDecimal totalBalance = BigDecimal.ZERO;
+
+    // 1. Get balance from Current Accounts module (java-courant)
+    try {
+      BigDecimal currentAccountBalance = getCurrentAccountBalance(userId, actionDateTime);
+      totalBalance = totalBalance.add(currentAccountBalance);
+      LOG.info("Current accounts balance for user " + userId + ": " + currentAccountBalance);
+    } catch (Exception e) {
+      LOG.warning("Failed to get current account balance for user " + userId + ": " + e.getMessage());
+      // Continue with other modules even if one fails
+    }
+
+    // 2. Get balance from Loan module (java-pret) - this represents debt (negative
+    // balance)
+    try {
+      BigDecimal loanBalance = getLoanBalance(userId, actionDateTime);
+      // Loan balance represents debt, so we subtract it from total
+      totalBalance = totalBalance.subtract(loanBalance);
+      LOG.info("Loan balance (debt) for user " + userId + ": " + loanBalance);
+    } catch (Exception e) {
+      LOG.warning("Failed to get loan balance for user " + userId + ": " + e.getMessage());
+      // Continue with other modules even if one fails
+    }
+
+    // 3. Get balance from Deposit module (dotnet-depot)
+    try {
+      BigDecimal depositBalance = getDepositBalance(userId, actionDateTime);
+      totalBalance = totalBalance.add(depositBalance);
+      LOG.info("Deposit balance for user " + userId + ": " + depositBalance);
+    } catch (Exception e) {
+      LOG.warning("Failed to get deposit balance for user " + userId + ": " + e.getMessage());
+      // Continue with other modules even if one fails
+    }
+
+    LOG.info("Total balance across all modules for user " + userId + ": " + totalBalance);
+    return totalBalance;
+  }
+
+  /**
+   * Get current account balance from java-courant module via REST API
+   */
+  @Override
+  public BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTime) {
+    Client client = ClientBuilder.newClient();
+    try {
+      String url = BACKEND_COURANT_URL + "/comptes/solde/user/" + userId;
+      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+        url += "?actionDateTime=" + java.net.URLEncoder.encode(actionDateTime, "UTF-8");
+      }
+
+      WebTarget target = client.target(url);
+      jakarta.ws.rs.core.Response response = target.request(jakarta.ws.rs.core.MediaType.APPLICATION_JSON).get();
+
+      if (response.getStatus() == 200) {
+        String jsonResponse = response.readEntity(String.class);
+        // Parse JSON response {"userId": 1, "totalSolde": 1500.50}
+        jakarta.json.JsonReader jsonReader = jakarta.json.Json.createReader(new java.io.StringReader(jsonResponse));
+        jakarta.json.JsonObject json = jsonReader.readObject();
+        jsonReader.close();
+
+        return new BigDecimal(json.getJsonNumber("totalSolde").toString());
+      } else {
+        throw new RuntimeException("Current account service returned status: " + response.getStatus());
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to call current account service: " + e.getMessage(), e);
+    } finally {
+      client.close();
+    }
+  }
+
+  /**
+   * Get loan balance from java-pret module via REST API
+   */
+  @Override
+  public BigDecimal getLoanBalance(Integer userId, String actionDateTime) {
+    Client client = ClientBuilder.newClient();
+    try {
+      String url = BACKEND_PRET_URL + "/comptes-pret/solde/user/" + userId;
+      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+        url += "?actionDateTime=" + java.net.URLEncoder.encode(actionDateTime, "UTF-8");
+      }
+
+      WebTarget target = client.target(url);
+      jakarta.ws.rs.core.Response response = target.request(jakarta.ws.rs.core.MediaType.APPLICATION_JSON).get();
+
+      if (response.getStatus() == 200) {
+        String jsonResponse = response.readEntity(String.class);
+        // Parse JSON response {"userId": 1, "totalSolde": 5000.00}
+        jakarta.json.JsonReader jsonReader = jakarta.json.Json.createReader(new java.io.StringReader(jsonResponse));
+        jakarta.json.JsonObject json = jsonReader.readObject();
+        jsonReader.close();
+
+        return new BigDecimal(json.getJsonNumber("totalSolde").toString());
+      } else {
+        throw new RuntimeException("Loan service returned status: " + response.getStatus());
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to call loan service: " + e.getMessage(), e);
+    } finally {
+      client.close();
+    }
+  }
+
+  /**
+   * Get deposit balance from dotnet-depot module via REST API
+   */
+  @Override
+  public BigDecimal getDepositBalance(Integer userId, String actionDateTime) {
+    java.net.http.HttpClient httpClient = java.net.http.HttpClient.newHttpClient();
+    try {
+      String url = BACKEND_DEPOT_URL + "/ComptesDepots/solde/user/" + userId;
+      if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+        url += "?actionDateTime=" + java.net.URLEncoder.encode(actionDateTime, "UTF-8");
+      }
+
+      java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+          .uri(java.net.URI.create(url))
+          .header("Accept", "application/json")
+          .GET()
+          .build();
+
+      java.net.http.HttpResponse<String> response = httpClient.send(request,
+          java.net.http.HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() == 200) {
+        String jsonResponse = response.body();
+        // Parse JSON response {"userId": 1, "totalSolde": 2500.75}
+        jakarta.json.JsonReader jsonReader = jakarta.json.Json.createReader(new java.io.StringReader(jsonResponse));
+        jakarta.json.JsonObject json = jsonReader.readObject();
+        jsonReader.close();
+
+        return new BigDecimal(json.getJsonNumber("totalSolde").toString());
+      } else {
+        throw new RuntimeException("Deposit service returned status: " + response.statusCode());
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to call deposit service: " + e.getMessage(), e);
+    }
   }
 }

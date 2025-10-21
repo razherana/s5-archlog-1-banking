@@ -17,10 +17,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Implementation of CompteDepotService that communicates with the .NET
@@ -57,17 +61,19 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .GET()
           .build();
 
+      LOG.info("Fetching deposit accounts for user: " + userId);
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {
-        });
+        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {});
+        LOG.info("Successfully fetched " + accounts.size() + " deposit accounts for user: " + userId);
+        return accounts;
       } else {
-        LOG.warning("Failed to get accounts for user " + userId + ": " + response.statusCode());
+        LOG.warning("Failed to get accounts for user " + userId + ": " + response.statusCode() + " - " + response.body());
         return List.of();
       }
     } catch (Exception e) {
-      LOG.severe("Error getting accounts for user " + userId + ": " + e.getMessage());
+      LOG.log(Level.SEVERE, "Error getting accounts for user " + userId + ": " + e.getMessage(), e);
       return List.of();
     }
   }
@@ -82,16 +88,19 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .GET()
           .build();
 
+      LOG.info("Fetching deposit account: " + accountId);
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), CompteDepotDTO.class);
+        CompteDepotDTO account = objectMapper.readValue(response.body(), CompteDepotDTO.class);
+        LOG.info("Successfully fetched deposit account: " + accountId);
+        return account;
       } else {
-        LOG.warning("Failed to get account " + accountId + ": " + response.statusCode());
+        LOG.warning("Failed to get account " + accountId + ": " + response.statusCode() + " - " + response.body());
         return null;
       }
     } catch (Exception e) {
-      LOG.severe("Error getting account " + accountId + ": " + e.getMessage());
+      LOG.log(Level.SEVERE, "Error getting account " + accountId + ": " + e.getMessage(), e);
       return null;
     }
   }
@@ -117,16 +126,19 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
+      LOG.info("Creating deposit account for user " + userId + " with type " + typeCompteDepotId + " and amount " + montant);
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 201) {
-        return objectMapper.readValue(response.body(), CompteDepotDTO.class);
+        CompteDepotDTO account = objectMapper.readValue(response.body(), CompteDepotDTO.class);
+        LOG.info("Successfully created deposit account with ID: " + account.getId());
+        return account;
       } else {
         LOG.warning("Failed to create account: " + response.statusCode() + " - " + response.body());
         return null;
       }
     } catch (Exception e) {
-      LOG.severe("Error creating account: " + e.getMessage());
+      LOG.log(Level.SEVERE, "Error creating account: " + e.getMessage(), e);
       return null;
     }
   }
@@ -148,6 +160,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
+      LOG.info("Processing withdrawal for deposit account: " + accountId + 
+               (targetAccountId != null ? " with transfer to current account: " + targetAccountId : ""));
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
@@ -158,17 +172,31 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           // First get the deposit account details to know the withdrawn amount
           CompteDepotDTO account = getAccountById(accountId);
           if (account != null && account.getMontantTotal() != null) {
-            String depositResult = compteCourantService.makeDeposit(
-                targetAccountId, 
-                account.getMontantTotal().doubleValue(), 
-                "Dépôt provenant du retrait du compte dépôt #" + accountId, 
-                actionDateTime
-            );
+            LocalDateTime actionDateTimeParsed = LocalDateTime.now();
+            if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+              try {
+                actionDateTimeParsed = LocalDateTime.parse(actionDateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+              } catch (Exception e) {
+                LOG.log(Level.WARNING, "Invalid actionDateTime format, using current time: " + e.getMessage());
+              }
+            }
             
-            if (depositResult == null) {
-              withdrawalMessage += " Dépôt automatique effectué sur le compte courant #" + targetAccountId;
-            } else {
-              withdrawalMessage += " ATTENTION: Échec du dépôt automatique: " + depositResult;
+            try {
+              var depositResult = compteCourantService.makeDeposit(
+                  targetAccountId, 
+                  account.getMontantTotal(), 
+                  "Dépôt provenant du retrait du compte dépôt #" + accountId, 
+                  actionDateTimeParsed
+              );
+              
+              if (depositResult != null) {
+                withdrawalMessage += " Dépôt automatique effectué sur le compte courant #" + targetAccountId;
+              } else {
+                withdrawalMessage += " ATTENTION: Échec du dépôt automatique sur le compte courant #" + targetAccountId;
+              }
+            } catch (Exception e) {
+              LOG.log(Level.SEVERE, "Error making automatic deposit: " + e.getMessage(), e);
+              withdrawalMessage += " ATTENTION: Erreur lors du dépôt automatique: " + e.getMessage();
             }
           }
         }
@@ -178,7 +206,7 @@ public class CompteDepotServiceImpl implements CompteDepotService {
         return extractErrorMessage(response);
       }
     } catch (Exception e) {
-      LOG.severe("Error withdrawing from account " + accountId + ": " + e.getMessage());
+      LOG.log(Level.SEVERE, "Error withdrawing from account " + accountId + ": " + e.getMessage(), e);
       return "Erreur lors du retrait: " + e.getMessage();
     }
   }
@@ -186,30 +214,36 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public List<TypeCompteDepotDTO> getAllDepositTypes() {
     try {
+      LOG.info("Fetching all deposit types from service");
+      
       HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create(TYPES_ENDPOINT))
-          .header("Content-Type", "application/json")
-          .GET()
-          .build();
+              .uri(URI.create(BASE_URL + "/type-comptes-depots"))
+              .header("Content-Type", "application/json")
+              .GET()
+              .build();
 
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
+      
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), new TypeReference<List<TypeCompteDepotDTO>>() {
-        });
+        List<TypeCompteDepotDTO> types = objectMapper.readValue(response.body(), 
+                  objectMapper.getTypeFactory().constructCollectionType(List.class, TypeCompteDepotDTO.class));
+        LOG.info("Successfully retrieved " + types.size() + " deposit types");
+        return types;
       } else {
-        LOG.warning("Failed to get deposit types: " + response.statusCode());
-        return List.of();
+        LOG.warning("Failed to retrieve deposit types. Status: " + response.statusCode() + ", Body: " + response.body());
+        return new ArrayList<>();
       }
-    } catch (Exception e) {
-      LOG.severe("Error getting deposit types: " + e.getMessage());
-      return List.of();
+    } catch (IOException | InterruptedException e) {
+      LOG.log(Level.SEVERE, "Error fetching all deposit types: " + e.getMessage(), e);
+      return new ArrayList<>();
     }
   }
 
   @Override
   public TypeCompteDepotDTO getDepositTypeById(Integer typeId) {
     try {
+      LOG.info("Fetching deposit type with ID: " + typeId);
+      
       String url = TYPES_ENDPOINT + "/" + typeId;
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(url))
@@ -220,13 +254,18 @@ public class CompteDepotServiceImpl implements CompteDepotService {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), TypeCompteDepotDTO.class);
+        TypeCompteDepotDTO type = objectMapper.readValue(response.body(), TypeCompteDepotDTO.class);
+        LOG.info("Successfully retrieved deposit type: " + type.getNom());
+        return type;
+      } else if (response.statusCode() == 404) {
+        LOG.warning("Deposit type with ID " + typeId + " not found");
+        return null;
       } else {
-        LOG.warning("Failed to get deposit type " + typeId + ": " + response.statusCode());
+        LOG.warning("Failed to get deposit type " + typeId + ". Status: " + response.statusCode() + ", Body: " + response.body());
         return null;
       }
     } catch (Exception e) {
-      LOG.severe("Error getting deposit type " + typeId + ": " + e.getMessage());
+      LOG.log(Level.SEVERE, "Error getting deposit type " + typeId + ": " + e.getMessage(), e);
       return null;
     }
   }
@@ -234,6 +273,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public List<CompteDepotDTO> getAllAccounts() {
     try {
+      LOG.info("Fetching all deposit accounts from service");
+      
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(COMPTES_ENDPOINT))
           .header("Content-Type", "application/json")
@@ -243,15 +284,17 @@ public class CompteDepotServiceImpl implements CompteDepotService {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {
+        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {
         });
+        LOG.info("Successfully retrieved " + accounts.size() + " deposit accounts");
+        return accounts;
       } else {
-        LOG.warning("Failed to get all accounts: " + response.statusCode());
-        return List.of();
+        LOG.warning("Failed to get all accounts. Status: " + response.statusCode() + ", Body: " + response.body());
+        return new ArrayList<>();
       }
     } catch (Exception e) {
-      LOG.severe("Error getting all accounts: " + e.getMessage());
-      return List.of();
+      LOG.log(Level.SEVERE, "Error getting all accounts: " + e.getMessage(), e);
+      return new ArrayList<>();
     }
   }
 

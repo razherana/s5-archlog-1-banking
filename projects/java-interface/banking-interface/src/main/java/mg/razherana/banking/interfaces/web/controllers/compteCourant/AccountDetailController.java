@@ -2,9 +2,10 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
-import mg.razherana.banking.interfaces.dto.UserDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountDetailDTOs.CompteData;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -17,6 +18,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -54,7 +58,7 @@ public class AccountDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourantDTO account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(accountId);
 
       if (account == null) {
         response.sendRedirect("../comptes-courants?error=account_not_found");
@@ -68,25 +72,32 @@ public class AccountDetailController extends HttpServlet {
       }
 
       // Get tax to pay amount
-      Double taxToPay = compteCourantService.getTaxToPay(accountId);
+      BigDecimal taxToPay = compteCourantService.getTaxToPay(accountId, LocalDateTime.now());
 
       // Get all users for transfer functionality
-      List<UserDTO> allUsers = compteCourantService.getAllUsers();
+      List<User> allUsers = compteCourantService.getAllUsers();
 
       // Get all accounts for each user (for JavaScript filtering)
-      List<CompteCourantDTO> allAccounts = compteCourantService.getAllAccounts();
+      List<CompteCourant> allAccountsOld = compteCourantService.getAllAccounts();
+
+      var allAccounts = allAccountsOld.stream()
+          .map(
+              ac -> new CompteData(ac.getId(), ac.getUserId(), compteCourantService.getAccountBalance(accountId, null)))
+          .toList();
+
+      // Get current balance
+      BigDecimal currentBalance = compteCourantService.getAccountBalance(accountId, LocalDateTime.now());
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
       WebContext context = new WebContext(application.buildExchange(request, response));
 
       System.out.println("All accounts : " + allAccounts);
-      System.out.println("Tomee serialization config : " + System.getProperty("tomee.serialization.class.whitelist"));
-      System.out.println("Tomee serialization config : " + System.getProperty("tomee.serialization.class.blacklist"));
 
       // Set template variables
       context.setVariable("userName", user.getName());
       context.setVariable("account", account);
+      context.setVariable("currentBalance", currentBalance);
       context.setVariable("taxToPay", taxToPay);
       context.setVariable("allUsers", allUsers);
       context.setVariable("allAccounts", allAccounts);
@@ -124,7 +135,7 @@ public class AccountDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourantDTO account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(accountId);
 
       if (account == null || !account.getUserId().equals(user.getId())) {
         response.sendRedirect("../comptes-courants?error=unauthorized_access");
@@ -192,73 +203,107 @@ public class AccountDetailController extends HttpServlet {
     }
   }
 
-  private String handleDeposit(HttpServletRequest request, CompteCourantDTO account) {
+  private String handleDeposit(HttpServletRequest request, CompteCourant account) {
     try {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
-      String actionDateTime = request.getParameter("actionDateTime");
+      String actionDateTimeStr = request.getParameter("actionDateTime");
 
       if (montantStr == null || montantStr.trim().isEmpty()) {
         return "Montant requis";
       }
 
-      Double montant = Double.parseDouble(montantStr);
-      if (montant <= 0) {
+      BigDecimal montant = new BigDecimal(montantStr);
+      if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
 
-      return compteCourantService.makeDeposit(
+      LocalDateTime actionDateTime = LocalDateTime.now();
+      if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+          LOG.warning("Invalid date format, using current time: " + e.getMessage());
+        }
+      }
+
+      TransactionCourant result = compteCourantService.makeDeposit(
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Deposit via interface",
           actionDateTime);
 
+      return result != null ? null : "Failed to create deposit transaction";
+
     } catch (NumberFormatException e) {
       return "Format de montant invalide";
     }
   }
 
-  private String handleWithdrawal(HttpServletRequest request, CompteCourantDTO account) {
+  private String handleWithdrawal(HttpServletRequest request, CompteCourant account) {
     try {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
-      String actionDateTime = request.getParameter("actionDateTime");
+      String actionDateTimeStr = request.getParameter("actionDateTime");
 
       if (montantStr == null || montantStr.trim().isEmpty()) {
         return "Montant requis";
       }
 
-      Double montant = Double.parseDouble(montantStr);
-      if (montant <= 0) {
+      BigDecimal montant = new BigDecimal(montantStr);
+      if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
 
-      return compteCourantService.makeWithdrawal(
+      LocalDateTime actionDateTime = LocalDateTime.now();
+      if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+          LOG.warning("Invalid date format, using current time: " + e.getMessage());
+        }
+      }
+
+      TransactionCourant result = compteCourantService.makeWithdrawal(
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Withdrawal via interface",
           actionDateTime);
+
+      return result != null ? null : "Failed to create withdrawal transaction";
 
     } catch (NumberFormatException e) {
       return "Format de montant invalide";
     }
   }
 
-  private String handleTaxPayment(HttpServletRequest request, CompteCourantDTO account) {
+  private String handleTaxPayment(HttpServletRequest request, CompteCourant account) {
     String description = request.getParameter("description");
-    String actionDateTime = request.getParameter("actionDateTime");
-    return compteCourantService.payTax(
+    String actionDateTimeStr = request.getParameter("actionDateTime");
+
+    LocalDateTime actionDateTime = LocalDateTime.now();
+    if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+      try {
+        actionDateTime = LocalDateTime.parse(actionDateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+      } catch (Exception e) {
+        LOG.warning("Invalid date format, using current time: " + e.getMessage());
+      }
+    }
+
+    TransactionCourant result = compteCourantService.payTax(
         account.getId(),
         description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
         actionDateTime);
+
+    return result != null ? null : "Failed to create tax payment transaction";
   }
 
-  private String handleTransfer(HttpServletRequest request, CompteCourantDTO account, User user) {
+  private String handleTransfer(HttpServletRequest request, CompteCourant account, User user) {
     try {
       String destinationAccountIdStr = request.getParameter("destinationAccountId");
       String amountStr = request.getParameter("amount");
       String description = request.getParameter("description");
-      String actionDateTime = request.getParameter("actionDateTime");
+      String actionDateTimeStr = request.getParameter("actionDateTime");
 
       if (destinationAccountIdStr == null || destinationAccountIdStr.trim().isEmpty()) {
         return "Compte de destination requis";
@@ -269,9 +314,9 @@ public class AccountDetailController extends HttpServlet {
       }
 
       Integer destinationAccountId = Integer.parseInt(destinationAccountIdStr);
-      Double amount = Double.parseDouble(amountStr);
+      BigDecimal amount = new BigDecimal(amountStr);
 
-      if (amount <= 0) {
+      if (amount.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
 
@@ -279,12 +324,23 @@ public class AccountDetailController extends HttpServlet {
         return "Vous ne pouvez pas effectuer un transfert vers le même compte";
       }
 
-      return compteCourantService.makeTransfer(
+      LocalDateTime actionDateTime = LocalDateTime.now();
+      if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
+        try {
+          actionDateTime = LocalDateTime.parse(actionDateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+          LOG.warning("Invalid date format, using current time: " + e.getMessage());
+        }
+      }
+
+      boolean success = compteCourantService.makeTransfer(
           account.getId(),
           destinationAccountId,
           amount,
           description != null && !description.trim().isEmpty() ? description : "Transfer via interface",
           actionDateTime);
+
+      return success ? null : "Failed to create transfer";
 
     } catch (NumberFormatException e) {
       return "Format de données invalide";

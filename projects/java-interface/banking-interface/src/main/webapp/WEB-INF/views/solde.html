@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Solde - Balance Check</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Balance Check</h1>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <h2 class="text-center">Balance Results</h2>
+        
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        
+        <!-- Balance Data -->
+        <div th:if="${balanceData != null and error == null}">
+          
+          <h3>Per-Module Balances:</h3>
+          <ul class="menu-list" style="margin: 1rem 0;">
+            
+            <!-- Current Accounts -->
+            <li th:if="${balanceData.currentAccountError != null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Courants:</strong> 
+                <span style="color: var(--error-color)">Error: </span>
+                <span style="color: var(--error-color)" th:text="${balanceData.currentAccountError}"></span>
+              </div>
+            </li>
+            <li th:if="${balanceData.currentAccountError == null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Courants:</strong> 
+                <span class="positive-balance" th:text="${balanceData.currentAccountBalance != null ? balanceData.currentAccountBalance : '0.00'}"></span>
+              </div>
+            </li>
+            
+            <!-- Loans (debt) -->
+            <li th:if="${balanceData.loanError != null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Prêts (debt):</strong> 
+                <span style="color: var(--error-color)">Error: </span>
+                <span style="color: var(--error-color)" th:text="${balanceData.loanError}"></span>
+              </div>
+            </li>
+            <li th:if="${balanceData.loanError == null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Prêts (debt):</strong> 
+                <span class="negative-balance">-<span th:text="${balanceData.loanBalance != null ? balanceData.loanBalance : '0.00'}"></span></span>
+              </div>
+            </li>
+            
+            <!-- Deposits -->
+            <li th:if="${balanceData.depositError != null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Dépôts:</strong> 
+                <span style="color: var(--error-color)">Error: </span>
+                <span style="color: var(--error-color)" th:text="${balanceData.depositError}"></span>
+              </div>
+            </li>
+            <li th:if="${balanceData.depositError == null}">
+              <div style="padding: 0.5rem; background-color: var(--secondary-color); border-radius: 4px;">
+                <strong>Comptes Dépôts:</strong> 
+                <span class="positive-balance" th:text="${balanceData.depositBalance != null ? balanceData.depositBalance : '0.00'}"></span>
+              </div>
+            </li>
+            
+          </ul>
+          
+          <!-- Total Balance -->
+          <div class="account-info-section">
+            <h3 th:if="${balanceData.totalError != null}" class="text-center">
+              Total Balance: <span style="color: var(--error-color)">Error: </span>
+              <span style="color: var(--error-color)" th:text="${balanceData.totalError}"></span>
+            </h3>
+            <h3 th:if="${balanceData.totalError == null}" class="text-center">
+              Total Balance: 
+              <span th:class="${balanceData.totalBalance != null and balanceData.totalBalance >= 0 ? 'positive-balance' : 'negative-balance'}" 
+                    th:text="${balanceData.totalBalance != null ? balanceData.totalBalance : '0.00'}"></span>
+            </h3>
+          </div>
+          
+        </div>
+        
+        <!-- No Data Message -->
+        <div th:if="${balanceData == null and error == null}" class="alert alert-info">
+          No balance data available.
+        </div>
+
+        <div class="text-center mt-2">
+          <a href="/" class="btn btn-secondary">Back to menu</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

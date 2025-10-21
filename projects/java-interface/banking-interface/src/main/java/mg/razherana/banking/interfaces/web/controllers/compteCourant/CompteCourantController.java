@@ -2,7 +2,7 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.interfaces.entities.User;
 
 import org.thymeleaf.context.WebContext;
@@ -48,7 +48,7 @@ public class CompteCourantController extends HttpServlet {
 
     LOG.info("Fetching current accounts for user: " + userId);
 
-    List<CompteCourantDTO> accounts = compteCourantService.getAccountsByUserId(userId);
+    List<CompteCourant> accounts = compteCourantService.getAccountsByUserId(userId);
 
     // Create Thymeleaf context
     JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());

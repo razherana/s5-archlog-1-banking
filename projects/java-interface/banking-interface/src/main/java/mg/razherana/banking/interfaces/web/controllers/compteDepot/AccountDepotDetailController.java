@@ -4,7 +4,7 @@ import mg.razherana.banking.interfaces.application.compteDepotServices.CompteDep
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
-import mg.razherana.banking.interfaces.dto.CompteCourantDTO;
+import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.interfaces.entities.User;
 
 import org.thymeleaf.context.WebContext;
@@ -77,7 +77,7 @@ public class AccountDepotDetailController extends HttpServlet {
       }
 
       // Get user's current accounts for withdrawal dropdown
-      List<CompteCourantDTO> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
+      List<CompteCourant> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication

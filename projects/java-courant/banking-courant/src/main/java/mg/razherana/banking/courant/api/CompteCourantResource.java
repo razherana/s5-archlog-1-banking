@@ -155,16 +155,17 @@ public class CompteCourantResource {
 
   @GET
   @Path("/solde/user/{userId}")
-  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId, 
-                                        @QueryParam("actionDateTime") String actionDateTimeStr) {
+  public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId,
+      @QueryParam("actionDateTime") String actionDateTimeStr) {
     try {
+      System.out.println("ActionDateTime = " + actionDateTimeStr);
       LocalDateTime actionDateTime = null;
       if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
         try {
           actionDateTime = LocalDateTime.parse(actionDateTimeStr);
         } catch (Exception e) {
-          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS", 
-                                       400, "Bad Request", "/comptes/solde/user/" + userId);
+          ErrorDTO error = new ErrorDTO("Invalid actionDateTime format. Use ISO format: YYYY-MM-DDTHH:MM:SS",
+              400, "Bad Request", "/comptes/solde/user/" + userId);
           return Response.status(400)
               .type(MediaType.APPLICATION_JSON)
               .entity(error).build();
@@ -172,14 +173,14 @@ public class CompteCourantResource {
       }
 
       BigDecimal totalSolde = compteCourantService.calculateTotalSoldeByUserId(userId, actionDateTime);
-      
-      String responseJson = "{\"userId\": " + userId + 
-                           ", \"totalSolde\": " + totalSolde;
+
+      String responseJson = "{\"userId\": " + userId +
+          ", \"totalSolde\": " + totalSolde;
       if (actionDateTime != null) {
         responseJson += ", \"actionDateTime\": \"" + actionDateTime + "\"";
       }
       responseJson += "}";
-      
+
       return Response.ok(responseJson)
           .type(MediaType.APPLICATION_JSON)
           .build();

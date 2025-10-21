@@ -52,25 +52,28 @@
         <table th:if="${!#lists.isEmpty(accounts)}" class="accounts-table">
           <thead>
             <tr>
-              <th>Numéro de Compte</th>
+              <th>ID de Compte</th>
               <th>Solde</th>
               <th>Date d'Ouverture</th>
+              <th>Taxe Mensuelle</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr th:each="account : ${accounts}">
-              <td th:text="${account.numeroCompte}">12345</td>
-              <td
-                th:class="${account.solde >= 0} ? 'positive-balance' : 'negative-balance'"
-                th:text="${#numbers.formatDecimal(account.solde, 1, 2)} + ' MGA'"
-              >
-                0.00 MGA
+              <td th:text="${account.id}">12345</td>
+              <td class="positive-balance">
+                Voir détails
               </td>
               <td
-                th:text="${account.dateOuverture != null} ? ${#temporals.format(account.dateOuverture, 'dd/MM/yyyy HH:mm')} : 'N/A'"
+                th:text="${account.createdAt != null} ? ${#temporals.format(account.createdAt, 'dd/MM/yyyy HH:mm')} : 'N/A'"
               >
                 01/01/2024 10:00
+              </td>
+              <td
+                th:text="${#numbers.formatDecimal(account.taxe, 1, 2)} + ' MGA'"
+              >
+                0.00 MGA
               </td>
               <td>
                 <a th:href="@{comptes-courants/detail(id=${account.id})}" class="btn btn-primary btn-small">

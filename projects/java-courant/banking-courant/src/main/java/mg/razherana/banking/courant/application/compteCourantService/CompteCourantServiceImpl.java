@@ -213,8 +213,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     LOG.info("Calculating solde for compte ID: " + compte.getId());
 
     if (actionDateTime == null) {
+      System.out.println("ETo eeeee");
       actionDateTime = LocalDateTime.now();
     }
+
+    System.out.println("calculateSolde = " + actionDateTime);
 
     // Sum of incoming transactions (where this compte is receiver)
     TypedQuery<BigDecimal> incomingQuery = entityManager.createQuery(
@@ -261,6 +264,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     BigDecimal totalSolde = BigDecimal.ZERO;
     for (CompteCourant compte : comptes) {
       BigDecimal compteSolde = calculateSolde(compte, actionDateTime);
+      System.out.println("Compte : " + compte + " - " + compteSolde);
       totalSolde = totalSolde.add(compteSolde);
       LOG.info("Account " + compte.getId() + " balance: " + compteSolde);
     }

@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.application.comptePretServices;
 
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -47,6 +48,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public List<TypeComptePretDTO> getAllLoanTypes() {
     try {
+      LOG.info("Fetching all loan types from banking-pret service");
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/types";
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -55,14 +58,13 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching loan types from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         TypeComptePretDTO[] types = objectMapper.readValue(
             response.body(), TypeComptePretDTO[].class);
+        LOG.info("Successfully retrieved " + types.length + " loan types");
         return Arrays.asList(types);
       } else {
         LOG.warning("Failed to fetch loan types. Status: " + response.statusCode() +
@@ -71,7 +73,7 @@ public class ComptePretServiceImpl implements ComptePretService {
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching loan types", e);
+      LOG.log(Level.SEVERE, "Error fetching loan types: " + e.getMessage(), e);
       return new ArrayList<>();
     }
   }
@@ -79,6 +81,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public List<ComptePretDTO> getLoansByUserId(Integer userId) {
     try {
+      LOG.info("Fetching loans for user ID: " + userId);
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/user/" + userId;
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -87,23 +91,25 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching loans for user " + userId + " from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         ComptePretDTO[] loans = objectMapper.readValue(
             response.body(), ComptePretDTO[].class);
+        LOG.info("Successfully retrieved " + loans.length + " loans for user " + userId);
         return Arrays.asList(loans);
+      } else if (response.statusCode() == 404) {
+        LOG.info("No loans found for user " + userId);
+        return new ArrayList<>();
       } else {
-        LOG.warning("Failed to fetch loans. Status: " + response.statusCode() +
+        LOG.warning("Failed to fetch loans for user " + userId + ". Status: " + response.statusCode() +
             ", Body: " + response.body());
         return new ArrayList<>();
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching loans for user " + userId, e);
+      LOG.log(Level.SEVERE, "Error fetching loans for user " + userId + ": " + e.getMessage(), e);
       return new ArrayList<>();
     }
   }
@@ -111,6 +117,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public ComptePretDTO getLoanById(Integer loanId) {
     try {
+      LOG.info("Fetching loan with ID: " + loanId);
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/" + loanId;
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -119,21 +127,24 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching loan " + loanId + " from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), ComptePretDTO.class);
+        ComptePretDTO loan = objectMapper.readValue(response.body(), ComptePretDTO.class);
+        LOG.info("Successfully retrieved loan " + loanId);
+        return loan;
+      } else if (response.statusCode() == 404) {
+        LOG.warning("Loan with ID " + loanId + " not found");
+        return null;
       } else {
-        LOG.warning("Failed to fetch loan. Status: " + response.statusCode() +
+        LOG.warning("Failed to fetch loan " + loanId + ". Status: " + response.statusCode() +
             ", Body: " + response.body());
         return null;
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching loan " + loanId, e);
+      LOG.log(Level.SEVERE, "Error fetching loan " + loanId + ": " + e.getMessage(), e);
       return null;
     }
   }
@@ -141,6 +152,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public ComptePretDTO createLoan(CreateComptePretRequest request) {
     try {
+      LOG.info("Creating loan for user " + request.getUserId() + " with amount " + request.getMontant());
+      
       // First, create the loan via banking-pret service
       String url = BANKING_PRET_BASE_URL + "/comptes-pret";
 
@@ -162,9 +175,6 @@ public class ComptePretServiceImpl implements ComptePretService {
           .POST(HttpRequest.BodyPublishers.ofString(requestBody))
           .build();
 
-      LOG.info("Creating loan at: " + url);
-      LOG.info("Request body: " + requestBody);
-
       HttpResponse<String> response = httpClient.send(httpRequest,
           HttpResponse.BodyHandlers.ofString());
 
@@ -174,20 +184,27 @@ public class ComptePretServiceImpl implements ComptePretService {
 
         // Now deposit the loan amount to the specified current account
         if (request.getCompteCourantId() != null) {
-          String description = "Prêt #" + createdLoan.getId() + " - Versement du montant emprunté";
-          String depositResult = compteCourantService.makeDeposit(
-              request.getCompteCourantId(),
-              request.getMontant().doubleValue(),
-              description,
-              null // Use current time
-          );
+          try {
+            String description = "Prêt #" + createdLoan.getId() + " - Versement du montant emprunté";
+            TransactionCourant depositTransaction = compteCourantService.makeDeposit(
+                request.getCompteCourantId(),
+                request.getMontant(),
+                description,
+                null // Use current time
+            );
 
-          if (depositResult != null) {
-            LOG.warning("Failed to deposit loan amount to current account: " + depositResult);
+            if (depositTransaction != null) {
+              LOG.info("Loan amount deposited successfully to current account " + request.getCompteCourantId() + 
+                      ", transaction ID: " + depositTransaction.getId());
+            } else {
+              LOG.warning("Failed to deposit loan amount to current account - transaction returned null");
+              // Note: We could decide whether to rollback the loan creation here
+              // For now, we'll log the error but return the created loan
+            }
+          } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error depositing loan amount to current account: " + e.getMessage(), e);
             // Note: We could decide whether to rollback the loan creation here
             // For now, we'll log the error but return the created loan
-          } else {
-            LOG.info("Loan amount deposited successfully to current account " + request.getCompteCourantId());
           }
         }
 
@@ -199,7 +216,7 @@ public class ComptePretServiceImpl implements ComptePretService {
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error creating loan", e);
+      LOG.log(Level.SEVERE, "Error creating loan: " + e.getMessage(), e);
       return null;
     }
   }
@@ -207,6 +224,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public EcheanceDTO makePayment(MakePaymentRequest request) {
     try {
+      LOG.info("Making payment for loan " + request.getCompteId() + " with amount " + request.getMontant());
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/make-payment";
 
       String requestBody = objectMapper.writeValueAsString(request);
@@ -218,24 +237,23 @@ public class ComptePretServiceImpl implements ComptePretService {
           .POST(HttpRequest.BodyPublishers.ofString(requestBody))
           .build();
 
-      LOG.info("Making payment at: " + url);
-
       HttpResponse<String> response = httpClient.send(httpRequest,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 201) {
-        return objectMapper.readValue(response.body(), EcheanceDTO.class);
+        EcheanceDTO payment = objectMapper.readValue(response.body(), EcheanceDTO.class);
+        LOG.info("Payment processed successfully for loan " + request.getCompteId());
+        return payment;
       } else if (response.statusCode() != 500) {
         LOG.warning("Failed to make payment. Status: " + response.statusCode() +
             ", Body: " + response.body());
 
         String errorMessage = objectMapper.readTree(response.body()).get("message").asText();
-
         throw new IllegalStateException(errorMessage);
       }
 
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "Error making payment", e);
+      LOG.log(Level.SEVERE, "Error making payment for loan " + request.getCompteId() + ": " + e.getMessage(), e);
       throw new IllegalStateException(e.getMessage());
     }
 
@@ -245,6 +263,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public PaymentStatusDTO getPaymentStatus(Integer loanId) {
     try {
+      LOG.info("Fetching payment status for loan ID: " + loanId);
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/" + loanId + "/payment-status";
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -253,21 +273,24 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching payment status for loan " + loanId + " from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), PaymentStatusDTO.class);
+        PaymentStatusDTO status = objectMapper.readValue(response.body(), PaymentStatusDTO.class);
+        LOG.info("Successfully retrieved payment status for loan " + loanId);
+        return status;
+      } else if (response.statusCode() == 404) {
+        LOG.warning("Payment status not found for loan " + loanId);
+        return null;
       } else {
-        LOG.warning("Failed to fetch payment status. Status: " + response.statusCode() +
+        LOG.warning("Failed to fetch payment status for loan " + loanId + ". Status: " + response.statusCode() +
             ", Body: " + response.body());
         return null;
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId, e);
+      LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId + ": " + e.getMessage(), e);
       return null;
     }
   }
@@ -275,6 +298,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public PaymentStatusDTO getPaymentStatus(Integer loanId, LocalDateTime actionDateTime) {
     try {
+      LOG.info("Fetching payment status for loan " + loanId + " at date: " + actionDateTime);
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/" + loanId + "/payment-status";
       if (actionDateTime != null) {
         url += "?actionDateTime=" + actionDateTime.toString();
@@ -286,21 +311,25 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching payment status for loan " + loanId + " at " + actionDateTime + " from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        return objectMapper.readValue(response.body(), PaymentStatusDTO.class);
+        PaymentStatusDTO status = objectMapper.readValue(response.body(), PaymentStatusDTO.class);
+        LOG.info("Successfully retrieved payment status for loan " + loanId + " at " + actionDateTime);
+        return status;
+      } else if (response.statusCode() == 404) {
+        LOG.warning("Payment status not found for loan " + loanId + " at " + actionDateTime);
+        return null;
       } else {
-        LOG.warning("Failed to fetch payment status. Status: " + response.statusCode() +
-            ", Body: " + response.body());
+        LOG.warning("Failed to fetch payment status for loan " + loanId + " at " + actionDateTime + 
+                   ". Status: " + response.statusCode() + ", Body: " + response.body());
         return null;
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId + " at " + actionDateTime, e);
+      LOG.log(Level.SEVERE, "Error fetching payment status for loan " + loanId + " at " + actionDateTime + 
+             ": " + e.getMessage(), e);
       return null;
     }
   }
@@ -308,6 +337,8 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   public List<EcheanceDTO> getPaymentHistory(Integer loanId) {
     try {
+      LOG.info("Fetching payment history for loan ID: " + loanId);
+      
       String url = BANKING_PRET_BASE_URL + "/comptes-pret/" + loanId + "/payment-history";
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -316,23 +347,25 @@ public class ComptePretServiceImpl implements ComptePretService {
           .GET()
           .build();
 
-      LOG.info("Fetching payment history for loan " + loanId + " from: " + url);
-
       HttpResponse<String> response = httpClient.send(request,
           HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         EcheanceDTO[] payments = objectMapper.readValue(
             response.body(), EcheanceDTO[].class);
+        LOG.info("Successfully retrieved " + payments.length + " payment records for loan " + loanId);
         return Arrays.asList(payments);
+      } else if (response.statusCode() == 404) {
+        LOG.info("No payment history found for loan " + loanId);
+        return new ArrayList<>();
       } else {
-        LOG.warning("Failed to fetch payment history. Status: " + response.statusCode() +
+        LOG.warning("Failed to fetch payment history for loan " + loanId + ". Status: " + response.statusCode() +
             ", Body: " + response.body());
         return new ArrayList<>();
       }
 
     } catch (IOException | InterruptedException e) {
-      LOG.log(Level.SEVERE, "Error fetching payment history for loan " + loanId, e);
+      LOG.log(Level.SEVERE, "Error fetching payment history for loan " + loanId + ": " + e.getMessage(), e);
       return new ArrayList<>();
     }
   }

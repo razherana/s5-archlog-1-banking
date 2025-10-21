@@ -1,5 +1,7 @@
 package mg.razherana.banking.courant.entities;
 
+import java.io.Serializable;
+
 import jakarta.persistence.*;
 
 /**
@@ -20,7 +22,7 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements Serializable {
   /**
    * Unique identifier for the user.
    * Auto-generated using database identity strategy.
