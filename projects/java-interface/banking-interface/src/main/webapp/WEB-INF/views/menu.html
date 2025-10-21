@@ -25,7 +25,7 @@
       </script>
 
       <div class="user-info">
-        <span>Welcome, <strong id="userName" th:text="${user.name}"></strong></span>
+        <span>Welcome, <strong id="userName" th:text="${userAdmin.name}"></strong></span>
         <a href="logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -71,8 +71,8 @@
         <form id="balanceForm" action="/solde" method="get">
           <div style="margin-bottom: 0.5rem;">
             <label for="userSelect">User</label>
-            <select id="userSelect" name="userId" required>
-              <option value="">Loading users...</option>
+            <select id="userSelect" name="userId" required th:each="userV : ${users}">
+              <option th:value="${userV.id}" th:text="${userV.name}">Username (fake)</option>
             </select>
           </div>
 
@@ -85,42 +85,6 @@
             <button type="submit">Solde</button>
           </div>
         </form>
-
-        <script>
-          // Populate user dropdown by calling the local users API
-          (function loadUsers() {
-            const select = document.getElementById('userSelect');
-            fetch('/api/users')
-              .then(res => {
-                if (!res.ok) throw new Error('Failed to load users');
-                return res.json();
-              })
-              .then(list => {
-                select.innerHTML = '';
-                if (!Array.isArray(list) || list.length === 0) {
-                  const opt = document.createElement('option');
-                  opt.value = '';
-                  opt.textContent = 'No users';
-                  select.appendChild(opt);
-                  return;
-                }
-                list.forEach(u => {
-                  const opt = document.createElement('option');
-                  opt.value = u.id || u.userId || u.idUser || u.user_id || u.uuid || u.id;
-                  opt.textContent = (u.name || u.fullName || u.username || ('User ' + opt.value));
-                  select.appendChild(opt);
-                });
-              })
-              .catch(err => {
-                select.innerHTML = '';
-                const opt = document.createElement('option');
-                opt.value = '';
-                opt.textContent = 'Failed to load users';
-                select.appendChild(opt);
-                console.warn('Could not load users for dropdown', err);
-              });
-          })();
-        </script>
       </div>
 
       <div class="card">
