@@ -214,7 +214,6 @@
                     name="actionDateTime"
                     class="form-input"
                     required
-                    th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
                     th:min="${#temporals.format(loan.dateDebut, 'yyyy-MM-dd')}"
                   />
                   <small class="form-help">
