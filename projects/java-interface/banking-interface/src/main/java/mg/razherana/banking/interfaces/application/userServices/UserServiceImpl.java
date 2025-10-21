@@ -1,9 +1,14 @@
 package mg.razherana.banking.interfaces.application.userServices;
 
+import mg.razherana.banking.common.entities.ActionRole;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.ejb.EJB;
-import jakarta.ejb.Stateless;
+import jakarta.ejb.Stateful;
+import jakarta.ejb.StatefulTimeout;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
@@ -13,6 +18,7 @@ import jakarta.persistence.NoResultException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
@@ -36,12 +42,17 @@ import mg.razherana.banking.interfaces.application.comptePretServices.ComptePret
  * @version 1.0
  * @since 1.0
  */
-@Stateless
+@Stateful
+@StatefulTimeout(unit = TimeUnit.MINUTES, value = 30)
 public class UserServiceImpl implements UserService {
 
   private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
 
   private static final String BACKEND_DEPOT_URL = "http://127.0.0.4:8080/api";
+
+  // Session state for current authenticated UserAdmin
+  private UserAdmin currentUserAdmin;
+  private List<ActionRole> currentUserAdminRoles;
 
   @EJB
   private CompteCourantService compteCourantService;
@@ -52,9 +63,22 @@ public class UserServiceImpl implements UserService {
   @EJB
   private ComptePretService comptePretService;
 
+  @PostConstruct
+  public void init() {
+    System.out.println("Stateful EJB created: " + this);
+  }
+
+  @PreDestroy
+  public void cleanup() {
+    // Clear ThreadLocal context to prevent memory leaks
+    AuthenticationContext.clear();
+    System.out.println("Stateful EJB destroyed: " + this);
+  }
+
   @Override
   public User findUserById(Integer userId) {
     LOG.info("Finding user by ID: " + userId);
+
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
@@ -62,15 +86,15 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public User findUserByEmail(String email) {
-    LOG.info("Finding user by email: " + email);
+  public UserAdmin findUserAdminByEmail(String email) {
+    LOG.info("Finding user admin by email: " + email);
     if (email == null || email.trim().isEmpty()) {
       throw new IllegalArgumentException("Email cannot be null or empty");
     }
 
     try {
-      TypedQuery<User> query = entityManager.createQuery(
-          "SELECT u FROM User u WHERE u.email = :email", User.class);
+      TypedQuery<UserAdmin> query = entityManager.createQuery(
+          "SELECT u FROM UserAdmin u WHERE u.email = :email", UserAdmin.class);
       query.setParameter("email", email.trim().toLowerCase());
       return query.getSingleResult();
     } catch (NoResultException e) {
@@ -90,31 +114,17 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public User createUser(String name, String email, String password) {
-    LOG.info("Creating user with email: " + email);
+  public User createUser(String name) {
+    LOG.info("Creating user with name: " + name);
 
     // Validation
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Name cannot be null or empty");
     }
-    if (email == null || email.trim().isEmpty()) {
-      throw new IllegalArgumentException("Email cannot be null or empty");
-    }
-    if (password == null || password.trim().isEmpty()) {
-      throw new IllegalArgumentException("Password cannot be null or empty");
-    }
-
-    // Check if email already exists
-    User existingUser = findUserByEmail(email);
-    if (existingUser != null) {
-      throw new IllegalArgumentException("Email already exists: " + email);
-    }
 
     // Create new user
     User user = new User();
     user.setName(name.trim());
-    user.setEmail(email.trim().toLowerCase());
-    user.setPassword(password);
     user.setCreatedAt(LocalDateTime.now());
 
     entityManager.persist(user);
@@ -126,7 +136,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public User updateUser(Integer userId, String name, String email, String password) {
+  public User updateUser(Integer userId, String name) {
     LOG.info("Updating user with ID: " + userId);
 
     User user = findUserById(userId);
@@ -137,19 +147,6 @@ public class UserServiceImpl implements UserService {
     // Validation
     if (name != null && !name.trim().isEmpty()) {
       user.setName(name.trim());
-    }
-
-    if (email != null && !email.trim().isEmpty()) {
-      // Check if new email already exists (for different user)
-      User existingUser = findUserByEmail(email);
-      if (existingUser != null && !existingUser.getId().equals(userId)) {
-        throw new IllegalArgumentException("Email already exists: " + email);
-      }
-      user.setEmail(email.trim().toLowerCase());
-    }
-
-    if (password != null && !password.trim().isEmpty()) {
-      user.setPassword(password);
     }
 
     entityManager.merge(user);
@@ -173,27 +170,6 @@ public class UserServiceImpl implements UserService {
     entityManager.flush();
 
     LOG.info("User deleted successfully");
-  }
-
-  @Override
-  public User authenticateUser(String email, String password) {
-    LOG.info("Authenticating user with email: " + email);
-
-    if (email == null || email.trim().isEmpty()) {
-      throw new IllegalArgumentException("Email cannot be null or empty");
-    }
-    if (password == null || password.trim().isEmpty()) {
-      throw new IllegalArgumentException("Password cannot be null or empty");
-    }
-
-    User user = findUserByEmail(email);
-    if (user != null && password.equals(user.getPassword())) {
-      LOG.info("Authentication successful for user: " + email);
-      return user;
-    }
-
-    LOG.info("Authentication failed for user: " + email);
-    return null;
   }
 
   @Override
@@ -307,5 +283,114 @@ public class UserServiceImpl implements UserService {
     } catch (Exception e) {
       throw new RuntimeException("Failed to call deposit service: " + e.getMessage(), e);
     }
+  }
+
+  @Override
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  public UserAdmin authenticateUserAdmin(String email, String password) {
+    LOG.info("Authenticating user admin with email: " + email);
+
+    if (email == null || email.trim().isEmpty()) {
+      throw new IllegalArgumentException("Email cannot be null or empty");
+    }
+    if (password == null || password.trim().isEmpty()) {
+      throw new IllegalArgumentException("Password cannot be null or empty");
+    }
+
+    try {
+      TypedQuery<UserAdmin> query = entityManager.createQuery(
+          "SELECT ua FROM UserAdmin ua WHERE ua.email = :email", UserAdmin.class);
+      query.setParameter("email", email.trim().toLowerCase());
+      UserAdmin userAdmin = query.getSingleResult();
+
+      if (userAdmin != null && password.equals(userAdmin.getPassword())) {
+        // Cache the current user admin and their roles in session
+        this.currentUserAdmin = userAdmin;
+        this.currentUserAdminRoles = getActionRoleByRole(userAdmin.getRole());
+        
+        // ALSO store in ThreadLocal context for cross-method access
+        AuthenticationContext.setCurrentUserAdmin(userAdmin);
+
+        LOG.info("Authentication successful for user admin: " + email);
+        return userAdmin;
+      }
+    } catch (NoResultException e) {
+      LOG.info("User admin not found: " + email);
+    }
+
+    LOG.info("Authentication failed for user admin: " + email);
+    return null;
+  }
+
+  @Override
+  public List<ActionRole> getActionRoleByRole(Integer role) {
+    TypedQuery<ActionRole> query = entityManager.createQuery(
+        "SELECT ar FROM ActionRole ar WHERE ar.role = :role", ActionRole.class);
+    query.setParameter("role", role);
+    return query.getResultList();
+  }
+
+  @Override
+  public UserAdmin findUserAdminById(Integer id) {
+    if (id == null) {
+      throw new IllegalArgumentException("UserAdmin ID cannot be null");
+    }
+    return entityManager.find(UserAdmin.class, id);
+  }
+
+  @Override
+  public boolean hasAuthorization(Integer userAdminId, String tableName, String action) {
+    if (userAdminId == null) {
+      throw new IllegalArgumentException("UserAdmin ID cannot be null");
+    }
+
+    if (tableName == null || tableName.trim().isEmpty()) {
+      throw new IllegalArgumentException("Table name cannot be null or empty");
+    }
+
+    if (action == null || action.trim().isEmpty()) {
+      throw new IllegalArgumentException("Action cannot be null or empty");
+    }
+
+    if (currentUserAdmin == null) {
+      throw new IllegalStateException("No authenticated UserAdmin in current session");
+    }
+
+    if (currentUserAdminRoles == null) {
+      throw new IllegalStateException("No cached roles for current UserAdmin in session");
+    }
+
+    // If the userAdminId matches the current session, use cached roles
+    if (currentUserAdmin.getId().equals(userAdminId))
+      if (currentUserAdminRoles != null)
+        for (ActionRole role : currentUserAdminRoles)
+          if (role.getTableName().equals(tableName) && role.getAction().equals(action))
+            return true;
+    return false;
+  }
+
+  @Override
+  public UserAdmin getAuthedUser() {
+    // This is the magic method! Returns the current authenticated user from ThreadLocal context
+    return AuthenticationContext.getCurrentUserAdmin();
+  }
+
+  @Override
+  public UserAdmin createUserAdmin(String email, String password, int role) {
+    // Checks 
+    if (email == null || email.trim().isEmpty()) {
+      throw new IllegalArgumentException("Email cannot be null or empty");
+    }
+    if (password == null || password.trim().isEmpty()) {
+      throw new IllegalArgumentException("Password cannot be null or empty");
+    }
+    
+    UserAdmin userAdmin = new UserAdmin();
+    userAdmin.setEmail(email.trim().toLowerCase());
+    userAdmin.setPassword(password);
+    userAdmin.setRole(role);
+
+    entityManager.persist(userAdmin);
+    return userAdmin;
   }
 }

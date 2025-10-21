@@ -1,6 +1,8 @@
 package mg.razherana.banking.common.services.userServices;
 
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.entities.ActionRole;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -34,14 +36,6 @@ public interface UserService {
   User findUserById(Integer userId);
 
   /**
-   * Find a user by email address.
-   * 
-   * @param email the user's email
-   * @return User entity or null if not found
-   */
-  User findUserByEmail(String email);
-
-  /**
    * Get all users in the system.
    * 
    * @return List of all users
@@ -51,25 +45,21 @@ public interface UserService {
   /**
    * Create a new user.
    * 
-   * @param name     the user's full name
-   * @param email    the user's email (must be unique)
-   * @param password the user's password
+   * @param name the user's full name
    * @return created User entity
    * @throws IllegalArgumentException if validation fails or email already exists
    */
-  User createUser(String name, String email, String password);
+  User createUser(String name);
 
   /**
    * Update an existing user.
    * 
-   * @param userId   the ID of the user to update
-   * @param name     the new name (optional, can be null to keep existing)
-   * @param email    the new email (optional, can be null to keep existing)
-   * @param password the new password (optional, can be null to keep existing)
+   * @param userId the ID of the user to update
+   * @param name   the new name (optional, can be null to keep existing)
    * @return updated User entity
    * @throws IllegalArgumentException if user not found or validation fails
    */
-  User updateUser(Integer userId, String name, String email, String password);
+  User updateUser(Integer userId, String name);
 
   /**
    * Delete a user by ID.
@@ -80,23 +70,48 @@ public interface UserService {
   void deleteUser(Integer userId);
 
   /**
-   * Authenticate a user with email and password.
+   * Authenticate a user admin with email and password.
    * 
-   * @param email    the user's email
-   * @param password the user's password
-   * @return User entity if authentication successful, null otherwise
+   * @param email    the user admin's email
+   * @param password the user admin's password
+   * @return UserAdmin entity if authentication successful, null otherwise
    */
-  User authenticateUser(String email, String password);
+  UserAdmin authenticateUserAdmin(String email, String password);
+
+  /**
+   * Find a user by email address.
+   * 
+   * @param email the user's email
+   * @return User entity or null if not found
+   */
+  UserAdmin findUserAdminByEmail(String email);
+
+  /**
+   * Find a user admin by ID.
+   * 
+   * @param userAdminId the user admin ID
+   * @return UserAdmin entity or null if not found
+   */
+  UserAdmin findUserAdminById(Integer userAdminId);
+
+  /**
+   * Get action roles by role number.
+   * 
+   * @param role the role number
+   * @return List of ActionRole entities for the given role
+   */
+  List<ActionRole> getActionRoleByRole(Integer role);
 
   /**
    * Calculate the total balance across all banking modules for a user.
    * This method makes REST API calls to:
    * - Current accounts module (java-courant)
-   * - Loan module (java-pret) 
+   * - Loan module (java-pret)
    * - Deposit module (dotnet-depot)
    * 
-   * @param userId the user ID
-   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (ISO format:
+   *                       yyyy-MM-ddTHH:mm:ss)
    * @return total balance across all modules
    * @throws IllegalArgumentException if user not found or API calls fail
    */
@@ -105,8 +120,9 @@ public interface UserService {
   /**
    * Get current account balance for a user from the java-courant module.
    * 
-   * @param userId the user ID
-   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (ISO format:
+   *                       yyyy-MM-ddTHH:mm:ss)
    * @return current account balance
    * @throws RuntimeException if API call fails
    */
@@ -115,8 +131,9 @@ public interface UserService {
   /**
    * Get loan balance for a user from the java-pret module.
    * 
-   * @param userId the user ID
-   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (ISO format:
+   *                       yyyy-MM-ddTHH:mm:ss)
    * @return loan balance (remaining debt)
    * @throws RuntimeException if API call fails
    */
@@ -125,10 +142,42 @@ public interface UserService {
   /**
    * Get deposit balance for a user from the dotnet-depot module.
    * 
-   * @param userId the user ID
-   * @param actionDateTime optional date time for calculation (ISO format: yyyy-MM-ddTHH:mm:ss)
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (ISO format:
+   *                       yyyy-MM-ddTHH:mm:ss)
    * @return deposit balance
    * @throws RuntimeException if API call fails
    */
   BigDecimal getDepositBalance(Integer userId, String actionDateTime);
+
+  /**
+   * Test if the user admin has authorization for a specific action.
+   * 
+   * @param userAdminId the user admin ID
+   * @param tableName   the database table name
+   * @param action      the action to authorize (e.g., "CREATE", "READ", "UPDATE",
+   *                    "DELETE")
+   * @return true if authorized, false otherwise
+   */
+  boolean hasAuthorization(Integer userAdminId, String tableName, String action);
+
+  /**
+   * Get the currently authenticated UserAdmin from the authentication context.
+   * This is the magic method that allows other modules to access the current
+   * authenticated user without needing to pass it as a parameter.
+   * 
+   * @return the currently authenticated UserAdmin or null if no user is
+   *         authenticated
+   */
+  UserAdmin getAuthedUser();
+
+  /**
+   * Create a new user admin.
+   * 
+   * @param email the email of the user admin
+   * @param password the password of the user admin
+   * @param role the role of the user admin
+   * @return the created UserAdmin entity
+   */
+  UserAdmin createUserAdmin(String email, String password, int role);
 }

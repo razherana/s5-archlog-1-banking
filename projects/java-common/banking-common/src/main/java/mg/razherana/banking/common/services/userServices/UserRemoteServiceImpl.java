@@ -5,7 +5,9 @@ import java.util.List;
 
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateful;
+import mg.razherana.banking.common.entities.ActionRole;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 
 @Stateful
 public class UserRemoteServiceImpl implements UserRemoteService {
@@ -19,23 +21,18 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   }
 
   @Override
-  public User findUserByEmail(String email) {
-    return userService.findUserByEmail(email);
-  }
-
-  @Override
   public List<User> getAllUsers() {
     return userService.getAllUsers();
   }
 
   @Override
-  public User createUser(String name, String email, String password) {
-    return userService.createUser(name, email, password);
+  public User createUser(String name) {
+    return userService.createUser(name);
   }
 
   @Override
-  public User updateUser(Integer userId, String name, String email, String password) {
-    return userService.updateUser(userId, name, email, password);
+  public User updateUser(Integer userId, String name) {
+    return userService.updateUser(userId, name);
   }
 
   @Override
@@ -44,8 +41,8 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   }
 
   @Override
-  public User authenticateUser(String email, String password) {
-    return userService.authenticateUser(email, password);
+  public UserAdmin authenticateUserAdmin(String email, String password) {
+    return userService.authenticateUserAdmin(email, password);
   }
 
   @Override
@@ -67,5 +64,35 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   public BigDecimal getDepositBalance(Integer userId, String actionDateTime) {
     return userService.getDepositBalance(userId, actionDateTime);
   }
-  
+
+  @Override
+  public boolean hasAuthorization(Integer userId, String tableName, String action) {
+    return userService.hasAuthorization(userId, tableName, action);
+  }
+
+  @Override
+  public UserAdmin findUserAdminByEmail(String email) {
+    return userService.findUserAdminByEmail(email);
+  }
+
+  @Override
+  public UserAdmin findUserAdminById(Integer userAdminId) {
+    return userService.findUserAdminById(userAdminId);
+  }
+
+  @Override
+  public List<ActionRole> getActionRoleByRole(Integer role) {
+    return userService.getActionRoleByRole(role);
+  }
+
+  @Override
+  public UserAdmin getAuthedUser() {
+    return userService.getAuthedUser();
+  }
+
+  @Override
+  public UserAdmin createUserAdmin(String email, String password, int role) {
+    return userService.createUserAdmin(email, password, role);
+  }
+
 }
