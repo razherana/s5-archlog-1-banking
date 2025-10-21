@@ -81,12 +81,11 @@
             <configuration>
               <classifier>classes</classifier>
               <includes>
-                <!-- Include only entities and remote interfaces -->
+                <!-- Include only entities and remote interfaces and dtos -->
                 <include>**/entities/**</include>
-                <include>**/compteCourantService/CompteCourantService.class</include>
-                <include>**/compteCourantService/CompteCourantRemoteService.class</include>
-                <include>**/transactionService/TransactionService.class</include>
-                <include>**/transactionService/TransactionRemoteService.class</include>
+                <include>**/dto/**</include>
+                <include>**/comptePretService/ComptePretService.class</include>
+                <include>**/comptePretService/ComptePretServiceRemote.class</include>
               </includes>
             </configuration>
           </execution>

@@ -123,7 +123,7 @@ public class ComptePretResource {
 
       ComptePretDTO loanDTO = new ComptePretDTO(loan);
       loanDTO.setMonthlyPayment(monthlyPayment);
-      
+
       return Response.ok(loanDTO).build();
 
     } catch (EJBException e) {
@@ -172,7 +172,7 @@ public class ComptePretResource {
   @GET
   @Path("/solde/user/{userId}")
   public Response getTotalSoldeByUserId(@PathParam("userId") Integer userId,
-                                        @QueryParam("actionDateTime") String actionDateTimeStr) {
+      @QueryParam("actionDateTime") String actionDateTimeStr) {
     try {
       LocalDateTime actionDateTime = null;
       if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
@@ -186,14 +186,14 @@ public class ComptePretResource {
       }
 
       BigDecimal totalSolde = comptePretService.calculateTotalSoldeByUserId(userId, actionDateTime);
-      
-      String responseJson = "{\"userId\": " + userId + 
-                           ", \"totalSolde\": " + totalSolde;
+
+      String responseJson = "{\"userId\": " + userId +
+          ", \"totalSolde\": " + totalSolde;
       if (actionDateTime != null) {
         responseJson += ", \"actionDateTime\": \"" + actionDateTime + "\"";
       }
       responseJson += "}";
-      
+
       return Response.ok(responseJson).build();
 
     } catch (EJBException e) {
@@ -235,7 +235,8 @@ public class ComptePretResource {
     } catch (EJBException e) {
       if (isClientError(e)) {
         LOG.warning("Client error getting payment status: " + getErrorMessage(e));
-        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id + "/payment-status");
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request",
+            "/comptes-pret/" + id + "/payment-status");
         return Response.status(400).entity(error).build();
       } else {
         LOG.severe("Unexpected error getting payment status: " + e.getMessage());
@@ -266,7 +267,8 @@ public class ComptePretResource {
     } catch (EJBException e) {
       if (isClientError(e)) {
         LOG.warning("Client error getting payment history: " + getErrorMessage(e));
-        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id + "/payment-history");
+        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request",
+            "/comptes-pret/" + id + "/payment-history");
         return Response.status(400).entity(error).build();
       } else {
         LOG.severe("Unexpected error getting payment history: " + e.getMessage());

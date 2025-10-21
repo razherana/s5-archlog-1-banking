@@ -91,6 +91,13 @@
       <classifier>classes</classifier>
     </dependency>
 
+    <dependency>
+      <groupId>mg.razherana.banking</groupId>
+      <artifactId>banking-pret</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <classifier>classes</classifier>
+    </dependency>
+
     <!-- TomEE OpenEJB Client for remote EJB calls -->
     <dependency>
       <groupId>org.apache.tomee</groupId>

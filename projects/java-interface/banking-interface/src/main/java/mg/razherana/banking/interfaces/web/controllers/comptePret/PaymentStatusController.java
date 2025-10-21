@@ -92,7 +92,7 @@ public class PaymentStatusController extends HttpServlet {
       // This leverages the backend's comprehensive payment calculation logic
       // instead of manually calculating values in the frontend
       PaymentStatusDTO paymentStatus = comptePretService.getPaymentStatus(loanId, actionDateTime);
-      List<EcheanceDTO> paymentHistory = comptePretService.getPaymentHistory(loanId);
+      List<EcheanceDTO> paymentHistory = comptePretService.getPaymentHistory(loanId, actionDateTime);
 
       // Extract values from API response or set defaults if null
       BigDecimal totalExpected = paymentStatus != null ? paymentStatus.getTotalExpected() : BigDecimal.ZERO;

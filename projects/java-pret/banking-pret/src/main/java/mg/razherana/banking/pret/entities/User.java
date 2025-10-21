@@ -1,5 +1,7 @@
 package mg.razherana.banking.pret.entities;
 
+import java.io.Serializable;
+
 /**
  * Simple User entity for representing user data retrieved from java-interface
  * service.
@@ -14,7 +16,7 @@ package mg.razherana.banking.pret.entities;
  * @version 1.0
  * @since 1.0
  */
-public class User {
+public class User implements Serializable {
 
   private Integer id;
   private String name;

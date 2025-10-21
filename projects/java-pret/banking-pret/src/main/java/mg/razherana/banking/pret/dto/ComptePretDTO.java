@@ -1,6 +1,8 @@
 package mg.razherana.banking.pret.dto;
 
 import mg.razherana.banking.pret.entities.ComptePret;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,7 +14,7 @@ import java.time.LocalDateTime;
  * endpoints.
  * </p>
  */
-public class ComptePretDTO {
+public class ComptePretDTO implements Serializable {
 
   private Integer id;
   private Integer userId;

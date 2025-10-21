@@ -1,6 +1,8 @@
 package mg.razherana.banking.interfaces.application.comptePretServices;
 
 import mg.razherana.banking.interfaces.dto.comptePret.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -72,4 +74,13 @@ public interface ComptePretService {
    * @return List of payments for the loan
    */
   List<EcheanceDTO> getPaymentHistory(Integer loanId);
+
+  /**
+   * Gets the payment history for a loan at a specific date/time.
+   * 
+   * @param loanId The loan ID
+   * @param actionDateTime The date/time to filter the payment history
+   * @return List of payments for the loan
+   */
+  List<EcheanceDTO> getPaymentHistory(Integer loanId, LocalDateTime actionDateTime);
 }

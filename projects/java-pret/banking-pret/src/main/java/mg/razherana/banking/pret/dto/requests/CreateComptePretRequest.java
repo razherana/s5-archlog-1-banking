@@ -1,12 +1,13 @@
 package mg.razherana.banking.pret.dto.requests;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * Request DTO for creating a new loan account.
  */
-public class CreateComptePretRequest {
+public class CreateComptePretRequest implements Serializable{
 
   private Integer userId;
   private Integer typeComptePretId;
