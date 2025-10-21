@@ -6,10 +6,10 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-public class EJBLookupCourantService {
+public class EJBLookupService {
   private Context context;
 
-  public EJBLookupCourantService() throws NamingException {
+  public EJBLookupService() throws NamingException {
     // Create once, reuse multiple times
     Properties props = new Properties();
     props.put(Context.INITIAL_CONTEXT_FACTORY,
@@ -19,7 +19,7 @@ public class EJBLookupCourantService {
     this.context = new InitialContext(props);
   }
 
-  public EJBLookupCourantService(String url) throws NamingException {
+  public EJBLookupService(String url) throws NamingException {
     // Create once, reuse multiple times
     Properties props = new Properties();
     props.put(Context.INITIAL_CONTEXT_FACTORY,
