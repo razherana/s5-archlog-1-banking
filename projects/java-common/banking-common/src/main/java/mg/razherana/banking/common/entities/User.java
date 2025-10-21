@@ -33,12 +33,6 @@ public class User implements Serializable {
   @Column(nullable = false)
   private String name;
 
-  @Column(nullable = false, unique = true)
-  private String email;
-
-  @Column(nullable = false)
-  private String password;
-
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
@@ -48,11 +42,9 @@ public class User implements Serializable {
   }
 
   // Constructor with parameters
-  public User(String name, String email, String password) {
+  public User(String name) {
     this();
     this.name = name;
-    this.email = email;
-    this.password = password;
   }
 
   // Getters and setters
@@ -72,22 +64,6 @@ public class User implements Serializable {
     this.name = name;
   }
 
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
   public LocalDateTime getCreatedAt() {
     return createdAt;
   }
@@ -101,7 +77,6 @@ public class User implements Serializable {
     return "User{" +
         "id=" + id +
         ", name='" + name + '\'' +
-        ", email='" + email + '\'' +
         ", createdAt=" + createdAt +
         '}';
   }
