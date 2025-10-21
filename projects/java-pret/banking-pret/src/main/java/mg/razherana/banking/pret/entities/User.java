@@ -20,8 +20,6 @@ public class User implements Serializable {
 
   private Integer id;
   private String name;
-  private String email;
-  private String password;
 
   /**
    * Default constructor.
@@ -32,10 +30,9 @@ public class User implements Serializable {
   /**
    * Constructor with basic fields.
    */
-  public User(Integer id, String name, String email) {
+  public User(Integer id, String name) {
     this.id = id;
     this.name = name;
-    this.email = email;
   }
 
   public Integer getId() {
@@ -54,28 +51,11 @@ public class User implements Serializable {
     this.name = name;
   }
 
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
   @Override
   public String toString() {
     return "User{" +
         "id=" + id +
         ", name='" + name + '\'' +
-        ", email='" + email + '\'' +
         '}';
   }
 }

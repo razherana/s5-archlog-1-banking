@@ -1,6 +1,6 @@
 package mg.razherana.banking.interfaces.web.controllers;
 
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
@@ -37,26 +37,26 @@ public class LoginController extends HttpServlet {
     LOG.info("Login attempt for email: " + email);
 
     try {
-      User user = userService.authenticateUser(email, password);
+      UserAdmin user = userService.authenticateUserAdmin(email, password);
 
       if (user != null) {
         // Login successful - create session
         HttpSession session = request.getSession();
-        session.setAttribute("user", user);
-        session.setAttribute("userId", user.getId());
-        session.setAttribute("userName", user.getName());
+        session.setAttribute("userAdmin", user);
+        session.setAttribute("userAdminId", user.getId());
+        session.setAttribute("userAdminName", user.getEmail());
 
-        LOG.info("Login successful for user: " + email);
+        LOG.info("Login successful for user admin: " + email);
         response.sendRedirect("menu.html");
       } else {
         // Login failed
-        LOG.info("Login failed for user: " + email);
+        LOG.info("Login failed for user admin: " + email);
         response.sendRedirect("login.html?error=invalid");
       }
 
     } catch (Exception e) {
       LOG.severe("Error during login: " + e.getMessage());
-      response.sendRedirect("login.html?error=system");
+      response.sendRedirect("login.html?error=" + e.getMessage());
     }
   }
 

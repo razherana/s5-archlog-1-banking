@@ -28,7 +28,7 @@ public class LogoutController extends HttpServlet {
     HttpSession session = request.getSession(false);
 
     if (session != null) {
-      String userName = (String) session.getAttribute("userName");
+      String userName = (String) session.getAttribute("userAdminName");
       LOG.info("User logout: " + (userName != null ? userName : "Unknown"));
 
       // Invalidate session

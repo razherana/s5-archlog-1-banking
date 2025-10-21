@@ -94,8 +94,6 @@ public class EditUserController extends HttpServlet {
 
     String userIdStr = request.getParameter("id");
     String name = request.getParameter("name");
-    String email = request.getParameter("email");
-    String password = request.getParameter("password");
 
     if (userIdStr == null || userIdStr.trim().isEmpty()) {
       response.sendRedirect("../users?error=" + URLEncoder.encode("ID utilisateur manquant", StandardCharsets.UTF_8));
@@ -108,12 +106,10 @@ public class EditUserController extends HttpServlet {
       // Update the user (empty password means keep existing password)
       User updatedUser = userService.updateUser(
           userId,
-          name != null && !name.trim().isEmpty() ? name.trim() : null,
-          email != null && !email.trim().isEmpty() ? email.trim() : null,
-          password != null && !password.trim().isEmpty() ? password : null
+          name != null && !name.trim().isEmpty() ? name.trim() : null
       );
 
-      LOG.info("User updated successfully: " + updatedUser.getEmail());
+      LOG.info("User updated successfully: " + updatedUser.getName());
       response.sendRedirect("../users?success=" + URLEncoder.encode("Utilisateur modifié avec succès", StandardCharsets.UTF_8));
 
     } catch (NumberFormatException e) {

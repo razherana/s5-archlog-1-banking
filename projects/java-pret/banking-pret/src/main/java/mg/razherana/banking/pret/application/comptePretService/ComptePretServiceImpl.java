@@ -65,8 +65,6 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     user.setId(ogUser.getId());
     user.setName(ogUser.getName());
-    user.setEmail(ogUser.getEmail());
-    user.setPassword(ogUser.getPassword());
 
     return user;
   }

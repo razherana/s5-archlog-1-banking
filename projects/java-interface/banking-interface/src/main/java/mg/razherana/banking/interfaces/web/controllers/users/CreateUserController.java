@@ -70,8 +70,6 @@ public class CreateUserController extends HttpServlet {
     }
 
     String name = request.getParameter("name");
-    String email = request.getParameter("email");
-    String password = request.getParameter("password");
 
     // Basic validation
     if (name == null || name.trim().isEmpty()) {
@@ -79,21 +77,11 @@ public class CreateUserController extends HttpServlet {
       return;
     }
 
-    if (email == null || email.trim().isEmpty()) {
-      response.sendRedirect("create?error=" + URLEncoder.encode("L'email est requis", StandardCharsets.UTF_8));
-      return;
-    }
-
-    if (password == null || password.trim().isEmpty()) {
-      response.sendRedirect("create?error=" + URLEncoder.encode("Le mot de passe est requis", StandardCharsets.UTF_8));
-      return;
-    }
-
     try {
       // Create the user
-      User newUser = userService.createUser(name.trim(), email.trim(), password);
-      
-      LOG.info("User created successfully: " + newUser.getEmail());
+      User newUser = userService.createUser(name.trim());
+
+      LOG.info("User created successfully: " + newUser.getName());
       response.sendRedirect("../users?success=" + URLEncoder.encode("Utilisateur créé avec succès", StandardCharsets.UTF_8));
 
     } catch (IllegalArgumentException e) {

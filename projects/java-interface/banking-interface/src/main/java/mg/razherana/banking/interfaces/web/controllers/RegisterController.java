@@ -1,6 +1,6 @@
 package mg.razherana.banking.interfaces.web.controllers;
 
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
@@ -31,25 +31,25 @@ public class RegisterController extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String name = request.getParameter("name");
     String email = request.getParameter("email");
     String password = request.getParameter("password");
+    int role = Integer.parseInt(request.getParameter("role"));
 
     LOG.info("Registration attempt for email: " + email);
 
     try {
-      User user = userService.createUser(name, email, password);
-      if (user != null) {
+      UserAdmin userAdmin = userService.createUserAdmin(email, password, role);
+      if (userAdmin != null) {
         // Registration successful - auto-login
         HttpSession session = request.getSession();
-        session.setAttribute("user", user);
-        session.setAttribute("userId", user.getId());
-        session.setAttribute("userName", user.getName());
+        session.setAttribute("userAdmin", userAdmin);
+        session.setAttribute("userAdminId", userAdmin.getId());
+        session.setAttribute("userAdminName", userAdmin.getEmail());
 
-        LOG.info("Registration and auto-login successful for user: " + email);
+        LOG.info("Registration and auto-login successful for user admin: " + email);
         response.sendRedirect("menu.html?success=registered");
       } else {
-        LOG.warning("Registration failed for user: " + email);
+        LOG.warning("Registration failed for user admin: " + email);
         response.sendRedirect("register.html?error=failed");
       }
 
