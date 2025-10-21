@@ -21,7 +21,7 @@ public class AuthFilter extends HttpFilter {
     LOG.info("AuthFilter: Checking authentication for " + req.getRequestURI());
 
     if (!req.getRequestURI().replace(req.getContextPath(), "").equals("/login.html")
-        && (req.getSession(false) == null || req.getSession(false).getAttribute("user") == null)) {
+        && (req.getSession(false) == null || req.getSession(false).getAttribute("userAdmin") == null)) {
       res.sendRedirect(req.getContextPath() + "/login.html");
       return;
     }
