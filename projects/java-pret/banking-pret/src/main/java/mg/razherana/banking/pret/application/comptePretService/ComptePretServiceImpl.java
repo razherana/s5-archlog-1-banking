@@ -239,7 +239,10 @@ public class ComptePretServiceImpl implements ComptePretService {
     findUser(userId);
 
     // Get all user's loans
-    List<ComptePret> loans = getLoansByUserId(userId);
+    List<ComptePret> loans = getLoansByUserId(userId)
+        .stream()
+        .filter(e -> !e.getDateDebut().isAfter(actionDateTime))
+        .toList();
 
     // Calculate total remaining balance
     BigDecimal totalBalance = BigDecimal.ZERO;

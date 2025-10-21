@@ -229,9 +229,10 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     // Sum of outgoing transactions (where this compte is sender)
     TypedQuery<BigDecimal> outgoingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte",
+        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.date <= :actionDateTime",
         BigDecimal.class);
     outgoingQuery.setParameter("compte", compte);
+    outgoingQuery.setParameter("actionDateTime", actionDateTime);
     BigDecimal outgoing = outgoingQuery.getSingleResult();
 
     BigDecimal solde = incoming.subtract(outgoing);
@@ -242,24 +243,24 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   /**
    * Calculate the total balance for all accounts of a user.
    * 
-   * @param userId the user ID
+   * @param userId         the user ID
    * @param actionDateTime optional date time for calculation (defaults to now)
    * @return total balance across all user's current accounts
    */
   @Override
   public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime) {
     LOG.info("Calculating total solde for userId: " + userId + " at " + actionDateTime);
-    
+
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
     // Verify user exists (will throw exception if not found)
     findUser(userId);
-    
+
     // Get all user's accounts
     List<CompteCourant> comptes = getComptesByUserId(userId);
-    
+
     // Calculate total balance
     BigDecimal totalSolde = BigDecimal.ZERO;
     for (CompteCourant compte : comptes) {
@@ -268,7 +269,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       totalSolde = totalSolde.add(compteSolde);
       LOG.info("Account " + compte.getId() + " balance: " + compteSolde);
     }
-    
+
     LOG.info("Total solde for user " + userId + " at " + actionDateTime + ": " + totalSolde);
     return totalSolde;
   }

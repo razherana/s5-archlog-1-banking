@@ -65,6 +65,7 @@ namespace BankingDepot.Services.Implementations
 
       // Get all user's deposit accounts
       var comptes = await GetByUserIdAsync(userId);
+      comptes = [.. comptes.Where(c => c.TypeCompteDepot != null).Where(c => c.DateOuverture <= actionDateTime!.Value)];
 
       decimal totalBalance = 0;
       foreach (var compte in comptes)
@@ -83,8 +84,8 @@ namespace BankingDepot.Services.Implementations
         }
 
         totalBalance += accountBalance;
-        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest}) at {ActionDateTime}", 
-          compte.Id, accountBalance, compte.Montant, 
+        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest}) at {ActionDateTime}",
+          compte.Id, accountBalance, compte.Montant,
           compte.EstRetire == 1 ? 0 : CalculateInterest(compte, actionDateTime), actionDateTime);
       }
 
@@ -144,7 +145,7 @@ namespace BankingDepot.Services.Implementations
 
       var compte = (await GetByIdAsync(id))
         ?? throw new ArgumentException($"Le compte avec l'ID {id} n'existe pas");
-      
+
       var referenceDateTime = actionDateTime ?? DateTime.Now;
 
       // Check if account is already withdrawn
@@ -185,7 +186,14 @@ namespace BankingDepot.Services.Implementations
       }
 
       // Calculate time period from opening to maturity date
-      var timeSpan = compte.DateEcheance - compte.DateOuverture;
+      TimeSpan timeSpan = compte.DateEcheance - compte.DateOuverture;
+
+      // If actionDateTime is before maturity, calculate interest only up to actionDateTime
+      if (actionDateTime != null && actionDateTime < compte.DateEcheance)
+      {
+        timeSpan = actionDateTime.Value - compte.DateOuverture;
+      }
+
       var timeInYears = (decimal)timeSpan.TotalDays / 365.25m; // Using 365.25 to account for leap years
 
       // Simple Interest = Principal × Rate × Time
