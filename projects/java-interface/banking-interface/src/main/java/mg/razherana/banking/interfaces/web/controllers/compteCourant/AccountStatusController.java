@@ -4,7 +4,7 @@ import mg.razherana.banking.interfaces.application.compteCourantServices.CompteC
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
-import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.AccountStatusDTO;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.TransactionDTO;
 

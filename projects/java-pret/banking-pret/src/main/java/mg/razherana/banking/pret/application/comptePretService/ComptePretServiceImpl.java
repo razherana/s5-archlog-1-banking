@@ -1,24 +1,17 @@
 package mg.razherana.banking.pret.application.comptePretService;
 
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import java.io.StringReader;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.pret.application.remoteServices.UserServiceWrapper;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
@@ -43,14 +36,14 @@ import java.util.logging.Logger;
 public class ComptePretServiceImpl implements ComptePretService {
   private static final Logger LOG = Logger.getLogger(ComptePretServiceImpl.class.getName());
 
-  // Hardcoded URL for java-interface REST API
-  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
-
   @PersistenceContext(unitName = "pretPU")
   private EntityManager entityManager;
 
+  @EJB
+  private UserServiceWrapper userServiceWrapper;
+
   /**
-   * Find a user by ID using REST API call to java-interface.
+   * Find a user by ID using remote EJB call to java-interface.
    * 
    * @param userId the user ID
    * @return User object with the specified ID or null if not found
@@ -58,45 +51,24 @@ public class ComptePretServiceImpl implements ComptePretService {
    */
   @Override
   public User findUser(Integer userId) {
-    LOG.info("Finding user by ID: " + userId);
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
-    Client client = ClientBuilder.newClient();
-    try {
-      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
-      Response response = target.request(MediaType.APPLICATION_JSON).get();
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(userId);
 
-      if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User
-        // entity
-        String jsonResponse = response.readEntity(String.class);
-        LOG.info("Received JSON response: " + jsonResponse);
-
-        // Parse the UserDTO JSON response
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
-        JsonObject userDto = jsonReader.readObject();
-        jsonReader.close();
-
-        // Map UserDTO fields to User entity
-        User user = new User();
-        user.setId(userDto.getInt("id"));
-        user.setName(userDto.getString("name"));
-        user.setEmail(userDto.getString("email"));
-        user.setPassword(""); // Password not returned by UserDTO for security
-
-        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
-        return user;
-      }
-
-      return null; // User not found
-    } catch (Exception e) {
-      LOG.severe("Error calling REST UserService: " + e.getMessage());
-      throw new IllegalArgumentException(e.getMessage());
-    } finally {
-      client.close();
+    if (ogUser == null) {
+      throw new IllegalArgumentException("User with ID " + userId + " not found");
     }
+
+    var user = new User();
+
+    user.setId(ogUser.getId());
+    user.setName(ogUser.getName());
+    user.setEmail(ogUser.getEmail());
+    user.setPassword(ogUser.getPassword());
+
+    return user;
   }
 
   /**

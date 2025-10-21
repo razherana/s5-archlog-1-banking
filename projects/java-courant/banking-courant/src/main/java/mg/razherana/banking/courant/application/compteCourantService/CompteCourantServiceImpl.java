@@ -1,21 +1,13 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
+import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import java.io.StringReader;
-
+import mg.razherana.banking.courant.application.remoteServices.UserServiceWrapper;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
@@ -64,11 +56,11 @@ import java.util.logging.Logger;
 public class CompteCourantServiceImpl implements CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());
 
-  // Hardcoded URL for java-interface REST API
-  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
-
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
+
+  @EJB
+  private UserServiceWrapper userServiceWrapper;
 
   /**
    * Find a user by ID using REST API call to java-interface.
@@ -79,46 +71,20 @@ public class CompteCourantServiceImpl implements CompteCourantService {
    */
   @Override
   public User findUser(Integer userId) {
-    LOG.info("Finding user by ID: " + userId);
-    if (userId == null) {
-      throw new IllegalArgumentException("User ID cannot be null");
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(userId);
+
+    if (ogUser == null) {
+      throw new IllegalArgumentException("User with ID " + userId + " not found");
     }
 
-    Client client = ClientBuilder.newClient();
-    try {
-      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
-      Response response = target.request(MediaType.APPLICATION_JSON).get();
+    var user = new User();
 
-      if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User
-        // entity
-        String jsonResponse = response.readEntity(String.class);
-        LOG.info("Received JSON response: " + jsonResponse);
+    user.setId(ogUser.getId());
+    user.setName(ogUser.getName());
+    user.setEmail(ogUser.getEmail());
+    user.setPassword(ogUser.getPassword());
 
-        // Parse the UserDTO JSON response
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
-        JsonObject userDto = jsonReader.readObject();
-        jsonReader.close();
-
-        // Map UserDTO fields to User entity
-        User user = new User();
-        user.setId(userDto.getInt("id"));
-        user.setName(userDto.getString("name"));
-        user.setEmail(userDto.getString("email"));
-        user.setPassword(""); // Password not returned by UserDTO for security
-
-        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
-        return user;
-      } else {
-        LOG.warning("User with ID " + userId + " not found. Response status: " + response.getStatus());
-        throw new IllegalArgumentException("User with ID " + userId + " not found");
-      }
-    } catch (Exception e) {
-      LOG.severe("Error calling REST UserService: " + e.getMessage());
-      throw new IllegalArgumentException(e.getMessage());
-    } finally {
-      client.close();
-    }
+    return user;
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)

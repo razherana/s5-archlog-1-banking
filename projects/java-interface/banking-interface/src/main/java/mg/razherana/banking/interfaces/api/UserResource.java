@@ -1,11 +1,10 @@
 package mg.razherana.banking.interfaces.api;
 
-import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.dto.UserDTO;
 import mg.razherana.banking.interfaces.dto.ErrorDTO;
 import mg.razherana.banking.interfaces.dto.requests.RegisterRequest;
-import mg.razherana.banking.interfaces.entities.User;
-
+import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;

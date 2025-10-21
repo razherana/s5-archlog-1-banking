@@ -1,6 +1,6 @@
 package mg.razherana.banking.interfaces.dto;
 
-import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.common.entities.User;
 import java.time.LocalDateTime;
 
 /**

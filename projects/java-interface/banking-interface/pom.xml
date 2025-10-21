@@ -98,6 +98,12 @@
       <classifier>classes</classifier>
     </dependency>
 
+    <dependency>
+      <groupId>mg.razherana.banking</groupId>
+      <artifactId>banking-common</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- TomEE OpenEJB Client for remote EJB calls -->
     <dependency>
       <groupId>org.apache.tomee</groupId>
@@ -125,6 +131,29 @@
         <configuration>
           <failOnMissingWebXml>false</failOnMissingWebXml>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <id>make-a-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>classes</classifier>
+              <includes>
+                <!-- Include only entities and remote interfaces -->
+                <include>**/entities/User.class</include>
+                <include>**/userServices/UserService.class</include>
+                <include>**/userServices/UserRemoteService.class</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.tomee.maven</groupId>

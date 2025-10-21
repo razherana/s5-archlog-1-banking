@@ -1,13 +1,12 @@
-package mg.razherana.banking.interfaces.application.userServices;
+package mg.razherana.banking.common.services.userServices;
 
-import mg.razherana.banking.interfaces.entities.User;
-import jakarta.ejb.Local;
+import mg.razherana.banking.common.entities.User;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Local EJB interface for User management services.
+ * EJB interface for User management services.
  * 
  * <p>
  * This interface is used for local EJB calls within the same application
@@ -24,7 +23,6 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-@Local
 public interface UserService {
 
   /**

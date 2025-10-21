@@ -48,6 +48,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Banking Courant classes for remote EJB access -->
+    <dependency>
+      <groupId>mg.razherana.banking</groupId>
+      <artifactId>banking-common</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- MySQL Connector -->
     <dependency>
       <groupId>mysql</groupId>

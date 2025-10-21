@@ -1,8 +1,7 @@
 package mg.razherana.banking.interfaces.web.controllers.users;
 
-import mg.razherana.banking.interfaces.application.userServices.UserService;
-import mg.razherana.banking.interfaces.entities.User;
-
+import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

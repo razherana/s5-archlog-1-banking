@@ -3,7 +3,7 @@ package mg.razherana.banking.interfaces.web.controllers.comptePret;
 import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.comptePret.ComptePretDTO;
-import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.common.entities.User;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;

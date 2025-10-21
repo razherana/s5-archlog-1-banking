@@ -83,7 +83,7 @@ public interface CompteCourantService {
      * 
      * @return List of all users
      */
-    List<mg.razherana.banking.interfaces.entities.User> getAllUsers();
+    List<mg.razherana.banking.common.entities.User> getAllUsers();
     
     /**
      * Makes a transfer between two accounts.

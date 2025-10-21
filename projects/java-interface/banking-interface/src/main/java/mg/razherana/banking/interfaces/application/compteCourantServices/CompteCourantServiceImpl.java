@@ -1,8 +1,8 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
 import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
-import mg.razherana.banking.interfaces.application.userServices.UserService;
-import mg.razherana.banking.interfaces.entities.User;
+import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.services.userServices.UserService;
 import mg.razherana.banking.interfaces.tests.JNDITreeLister;
 import mg.razherana.banking.courant.application.compteCourantService.CompteCourantRemoteService;
 import mg.razherana.banking.courant.application.transactionService.TransactionRemoteService;
