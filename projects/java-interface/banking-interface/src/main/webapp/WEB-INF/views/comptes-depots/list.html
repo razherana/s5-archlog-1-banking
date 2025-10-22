@@ -13,17 +13,35 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${user.name}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="/logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
 
       <div class="card">
-        <h2 class="text-center">Mes Comptes Dépôts</h2>
+        <h2 class="text-center">Comptes Dépôts</h2>
 
         <p class="text-center" style="margin-bottom: 2rem">
           <a href="/menu.html">← Retour au menu</a>
         </p>
+
+        <!-- User Selection Form -->
+        <form action="comptes-depots" method="get" style="margin-bottom: 2rem">
+          <div style="margin-bottom: 1rem">
+            <label for="userId">Sélectionner un utilisateur:</label>
+            <select id="userId" name="userId" class="form-input" onchange="this.form.submit()">
+              <option value="">Choisir un utilisateur...</option>
+              <option
+                th:each="userEntry : ${usersForDropdown}"
+                th:value="${userEntry.key}"
+                th:text="${userEntry.value}"
+                th:selected="${userEntry.key.toString() == selectedUserId}"
+              >
+                1 : John Doe
+              </option>
+            </select>
+          </div>
+        </form>
 
         <!-- Success/Error messages -->
         <div
@@ -38,18 +56,39 @@
         ></div>
 
         <!-- Create Account Button -->
-        <div class="text-center" style="margin-bottom: 2rem">
-          <a href="/comptes-depots/create" class="btn btn-success"
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty()}"
+          class="text-center"
+          style="margin-bottom: 2rem"
+        >
+          <a
+            th:href="@{/comptes-depots/create(userId=${selectedUserId})}"
+            class="btn btn-success"
             >+ Créer un Nouveau Compte Dépôt</a
           >
         </div>
 
-        <div th:if="${#lists.isEmpty(comptes)}" class="alert alert-info">
-          <p>Aucun compte dépôt trouvé.</p>
+        <div
+          th:if="${selectedUserId == null or selectedUserId.isEmpty()}"
+          class="alert alert-info"
+        >
+          <p>
+            Veuillez sélectionner un utilisateur pour voir ses comptes dépôts.
+          </p>
+        </div>
+
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and (comptes == null or #lists.isEmpty(comptes))}"
+          class="alert alert-info"
+        >
+          <p>Aucun compte dépôt trouvé pour cet utilisateur.</p>
           <p>Cliquez sur "Créer un Nouveau Compte Dépôt" pour commencer.</p>
         </div>
 
-        <table th:if="${!#lists.isEmpty(comptes)}" class="accounts-table">
+        <table
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and comptes != null and !#lists.isEmpty(comptes)}"
+          class="accounts-table"
+        >
           <thead>
             <tr>
               <th>Type de Compte</th>
@@ -63,15 +102,10 @@
           <tbody>
             <tr th:each="compte : ${comptes}">
               <td th:text="${compte.typeCompteDepotNom}">Type de compte</td>
-              <td
-                class="positive-balance"
-                th:text="${compte.montant} + ' MGA'"
-              >
+              <td class="positive-balance" th:text="${compte.montant} + ' MGA'">
                 1000.00 MGA
               </td>
-              <td
-                th:text="${#numbers.formatPercent(compte.tauxInteret, 1, 2)}"
-              >
+              <td th:text="${#numbers.formatPercent(compte.tauxInteret, 1, 2)}">
                 2.5%
               </td>
               <td

@@ -3,7 +3,10 @@ package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+
+import java.util.Map;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -35,24 +38,31 @@ public class CreateCompteCourantController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+
+    // Get all users for dropdown
+    Map<Integer, String> usersForDropdown = userService.getAllUsersForDropdown();
 
     // Create Thymeleaf context
     JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
     WebContext context = new WebContext(application.buildExchange(request, response));
 
     // Set template variables
-    context.setVariable("userName", user.getName());
+    context.setVariable("userAdminName", userAdmin.getEmail());
+    context.setVariable("usersForDropdown", usersForDropdown);
     context.setVariable("error", request.getParameter("error"));
     context.setVariable("success", request.getParameter("success"));
 
@@ -67,13 +77,27 @@ public class CreateCompteCourantController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
-    Integer userId = user.getId();
+    // UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+    
+    // Get userId from form parameter
+    String userIdParam = request.getParameter("userId");
+    if (userIdParam == null || userIdParam.trim().isEmpty()) {
+      response.sendRedirect("create?error=missing_user_id");
+      return;
+    }
+    
+    Integer userId;
+    try {
+      userId = Integer.parseInt(userIdParam);
+    } catch (NumberFormatException e) {
+      response.sendRedirect("create?error=invalid_user_id");
+      return;
+    }
 
     try {
       // Get the monthly tax amount from form (optional)

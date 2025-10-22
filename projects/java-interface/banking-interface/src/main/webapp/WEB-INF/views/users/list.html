@@ -13,7 +13,7 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="../logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -36,7 +36,9 @@
 
         <!-- Create User Button -->
         <div class="form-actions" style="margin-bottom: 2rem">
-          <a href="users/create" class="btn btn-success">Créer un Nouvel Utilisateur</a>
+          <a href="users/create" class="btn btn-success"
+            >Créer un Nouvel Utilisateur</a
+          >
         </div>
 
         <!-- Users Table -->
@@ -56,16 +58,18 @@
                 <td th:text="${user.name}">John Doe</td>
                 <td th:text="${user.email}">john@example.com</td>
                 <td>
-                  <a 
-                    th:href="@{users/edit(id=${user.id})}" 
-                    class="btn btn-primary btn-small">
+                  <a
+                    th:href="@{users/edit(id=${user.id})}"
+                    class="btn btn-primary btn-small"
+                  >
                     Modifier
                   </a>
-                  <form 
-                    method="post" 
-                    th:action="@{users/delete}" 
-                    style="display: inline-block; margin-left: 0.5rem;"
-                    onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                  <form
+                    method="post"
+                    th:action="@{users/delete}"
+                    style="display: inline-block; margin-left: 0.5rem"
+                    onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')"
+                  >
                     <input type="hidden" name="id" th:value="${user.id}" />
                     <button type="submit" class="btn btn-secondary btn-small">
                       Supprimer
@@ -78,7 +82,10 @@
         </div>
 
         <!-- No Users Message -->
-        <div th:if="${users == null or #lists.isEmpty(users)}" class="alert alert-info">
+        <div
+          th:if="${users == null or #lists.isEmpty(users)}"
+          class="alert alert-info"
+        >
           <p>Aucun utilisateur trouvé dans le système.</p>
         </div>
 
@@ -86,11 +93,26 @@
         <div class="info-section">
           <h3>Informations importantes</h3>
           <ul>
-            <li><strong>Création:</strong> Créez de nouveaux utilisateurs avec nom, email et mot de passe</li>
-            <li><strong>Modification:</strong> Modifiez les informations des utilisateurs existants</li>
-            <li><strong>Suppression:</strong> Supprimez des utilisateurs (vous ne pouvez pas supprimer votre propre compte)</li>
-            <li><strong>Email unique:</strong> Chaque utilisateur doit avoir une adresse email unique</li>
-            <li><strong>Sécurité:</strong> Les mots de passe sont gérés de manière sécurisée</li>
+            <li>
+              <strong>Création:</strong> Créez de nouveaux utilisateurs avec
+              nom, email et mot de passe
+            </li>
+            <li>
+              <strong>Modification:</strong> Modifiez les informations des
+              utilisateurs existants
+            </li>
+            <li>
+              <strong>Suppression:</strong> Supprimez des utilisateurs (vous ne
+              pouvez pas supprimer votre propre compte)
+            </li>
+            <li>
+              <strong>Email unique:</strong> Chaque utilisateur doit avoir une
+              adresse email unique
+            </li>
+            <li>
+              <strong>Sécurité:</strong> Les mots de passe sont gérés de manière
+              sécurisée
+            </li>
           </ul>
         </div>
       </div>

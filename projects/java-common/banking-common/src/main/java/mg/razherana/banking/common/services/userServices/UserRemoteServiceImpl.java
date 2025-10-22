@@ -95,4 +95,9 @@ public class UserRemoteServiceImpl implements UserRemoteService {
     return userService.createUserAdmin(email, password, role);
   }
 
+  @Override
+  public java.util.Map<Integer, String> getAllUsersForDropdown() {
+    return userService.getAllUsersForDropdown();
+  }
+
 }

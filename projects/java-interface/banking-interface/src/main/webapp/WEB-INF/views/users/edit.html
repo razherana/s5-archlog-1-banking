@@ -13,7 +13,7 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="../../logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -43,13 +43,20 @@
             </div>
             <div class="detail-row">
               <span class="label">Email Actuel:</span>
-              <span class="value" th:text="${userToEdit.email}">john@example.com</span>
+              <span class="value" th:text="${userToEdit.email}"
+                >john@example.com</span
+              >
             </div>
           </div>
         </div>
 
         <!-- Edit User Form -->
-        <form method="post" action="edit" class="account-form" th:if="${userToEdit}">
+        <form
+          method="post"
+          action="edit"
+          class="account-form"
+          th:if="${userToEdit}"
+        >
           <input type="hidden" name="id" th:value="${userToEdit.id}" />
 
           <div class="form-group">
@@ -76,7 +83,8 @@
               th:placeholder="${userToEdit.email}"
             />
             <small class="form-help">
-              Laissez vide pour conserver l'email actuel. Doit être unique si modifié.
+              Laissez vide pour conserver l'email actuel. Doit être unique si
+              modifié.
             </small>
           </div>
 
@@ -95,7 +103,9 @@
           </div>
 
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Enregistrer les Modifications</button>
+            <button type="submit" class="btn btn-primary">
+              Enregistrer les Modifications
+            </button>
             <a href="../users" class="btn btn-secondary">Annuler</a>
           </div>
         </form>
@@ -104,11 +114,26 @@
         <div class="info-section">
           <h3>Instructions de Modification</h3>
           <ul>
-            <li><strong>Modifications partielles:</strong> Vous pouvez modifier seulement certains champs</li>
-            <li><strong>Champs vides:</strong> Les champs laissés vides conserveront leur valeur actuelle</li>
-            <li><strong>Email unique:</strong> Si vous modifiez l'email, il doit rester unique dans le système</li>
-            <li><strong>Mot de passe:</strong> Ne modifiez le mot de passe que si nécessaire</li>
-            <li><strong>Sécurité:</strong> Vérifiez les informations avant de sauvegarder</li>
+            <li>
+              <strong>Modifications partielles:</strong> Vous pouvez modifier
+              seulement certains champs
+            </li>
+            <li>
+              <strong>Champs vides:</strong> Les champs laissés vides
+              conserveront leur valeur actuelle
+            </li>
+            <li>
+              <strong>Email unique:</strong> Si vous modifiez l'email, il doit
+              rester unique dans le système
+            </li>
+            <li>
+              <strong>Mot de passe:</strong> Ne modifiez le mot de passe que si
+              nécessaire
+            </li>
+            <li>
+              <strong>Sécurité:</strong> Vérifiez les informations avant de
+              sauvegarder
+            </li>
           </ul>
         </div>
       </div>

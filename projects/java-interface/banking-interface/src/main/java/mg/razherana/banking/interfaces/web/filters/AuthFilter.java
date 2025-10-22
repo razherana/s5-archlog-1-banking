@@ -22,6 +22,7 @@ public class AuthFilter extends HttpFilter {
 
     if (!req.getRequestURI().replace(req.getContextPath(), "").equals("/login.html")
         && (req.getSession(false) == null || req.getSession(false).getAttribute("user") == null)) {
+      LOG.severe("AuthFilter: Unauthorized access attempt to " + req.getRequestURI());
       res.sendRedirect(req.getContextPath() + "/login.html");
       return;
     }

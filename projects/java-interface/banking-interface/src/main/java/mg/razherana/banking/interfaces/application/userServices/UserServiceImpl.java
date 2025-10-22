@@ -17,7 +17,9 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.NoResultException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
@@ -307,7 +309,7 @@ public class UserServiceImpl implements UserService {
         // Cache the current user admin and their roles in session
         this.currentUserAdmin = userAdmin;
         this.currentUserAdminRoles = getActionRoleByRole(userAdmin.getRole());
-        
+
         // ALSO store in ThreadLocal context for cross-method access
         AuthenticationContext.setCurrentUserAdmin(userAdmin);
 
@@ -371,20 +373,21 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserAdmin getAuthedUser() {
-    // This is the magic method! Returns the current authenticated user from ThreadLocal context
+    // This is the magic method! Returns the current authenticated user from
+    // ThreadLocal context
     return AuthenticationContext.getCurrentUserAdmin();
   }
 
   @Override
   public UserAdmin createUserAdmin(String email, String password, int role) {
-    // Checks 
+    // Checks
     if (email == null || email.trim().isEmpty()) {
       throw new IllegalArgumentException("Email cannot be null or empty");
     }
     if (password == null || password.trim().isEmpty()) {
       throw new IllegalArgumentException("Password cannot be null or empty");
     }
-    
+
     UserAdmin userAdmin = new UserAdmin();
     userAdmin.setEmail(email.trim().toLowerCase());
     userAdmin.setPassword(password);
@@ -392,5 +395,18 @@ public class UserServiceImpl implements UserService {
 
     entityManager.persist(userAdmin);
     return userAdmin;
+  }
+
+  @Override
+  public Map<Integer, String> getAllUsersForDropdown() {
+    LOG.info("Getting all users for dropdown");
+    List<User> users = getAllUsers();
+    Map<Integer, String> userMap = new HashMap<>();
+
+    for (User user : users) {
+      userMap.put(user.getId(), user.getId() + " : " + user.getName());
+    }
+
+    return userMap;
   }
 }

@@ -1,6 +1,5 @@
 package mg.razherana.banking.interfaces.web.controllers.users;
 
-import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
@@ -30,12 +29,11 @@ public class DeleteUserController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User currentUser = (User) session.getAttribute("user");
     String userIdStr = request.getParameter("id");
 
     if (userIdStr == null || userIdStr.trim().isEmpty()) {
@@ -46,17 +44,15 @@ public class DeleteUserController extends HttpServlet {
     try {
       Integer userId = Integer.parseInt(userIdStr);
 
-      // Prevent self-deletion
-      if (userId.equals(currentUser.getId())) {
-        response.sendRedirect("../users?error=" + URLEncoder.encode("Vous ne pouvez pas supprimer votre propre compte", StandardCharsets.UTF_8));
-        return;
-      }
+      // No need to prevent self-deletion since we're now using UserAdmin for auth
+      // and deleting User entities for data
 
       // Delete the user
       userService.deleteUser(userId);
 
       LOG.info("User deleted successfully: ID " + userId);
-      response.sendRedirect("../users?success=" + URLEncoder.encode("Utilisateur supprimé avec succès", StandardCharsets.UTF_8));
+      response.sendRedirect(
+          "../users?success=" + URLEncoder.encode("Utilisateur supprimé avec succès", StandardCharsets.UTF_8));
 
     } catch (NumberFormatException e) {
       response.sendRedirect("../users?error=" + URLEncoder.encode("ID utilisateur invalide", StandardCharsets.UTF_8));
@@ -65,7 +61,8 @@ public class DeleteUserController extends HttpServlet {
       response.sendRedirect("../users?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     } catch (Exception e) {
       LOG.severe("Error deleting user: " + e.getMessage());
-      response.sendRedirect("../users?error=" + URLEncoder.encode("Erreur système lors de la suppression", StandardCharsets.UTF_8));
+      response.sendRedirect(
+          "../users?error=" + URLEncoder.encode("Erreur système lors de la suppression", StandardCharsets.UTF_8));
     }
   }
 }

@@ -5,6 +5,9 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountDetailDTOs.CompteData;
 
 import org.thymeleaf.context.WebContext;
@@ -38,17 +41,20 @@ public class AccountDetailController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String accountIdStr = request.getParameter("id");
 
     if (accountIdStr == null || accountIdStr.trim().isEmpty()) {
@@ -65,17 +71,11 @@ public class AccountDetailController extends HttpServlet {
         return;
       }
 
-      // Verify that the account belongs to the logged-in user
-      if (!account.getUserId().equals(user.getId())) {
-        response.sendRedirect("../comptes-courants?error=unauthorized_access");
-        return;
-      }
-
       // Get tax to pay amount
       BigDecimal taxToPay = compteCourantService.getTaxToPay(accountId, LocalDateTime.now());
 
       // Get all users for transfer functionality
-      List<User> allUsers = compteCourantService.getAllUsers();
+      List<User> allUsers = userService.getAllUsers();
 
       // Get all accounts for each user (for JavaScript filtering)
       List<CompteCourant> allAccountsOld = compteCourantService.getAllAccounts();
@@ -95,7 +95,7 @@ public class AccountDetailController extends HttpServlet {
       System.out.println("All accounts : " + allAccounts);
 
       // Set template variables
-      context.setVariable("userName", user.getName());
+      context.setVariable("userAdminName", userAdmin.getEmail());
       context.setVariable("account", account);
       context.setVariable("currentBalance", currentBalance);
       context.setVariable("taxToPay", taxToPay);
@@ -119,12 +119,12 @@ public class AccountDetailController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String accountIdStr = request.getParameter("accountId");
     String action = request.getParameter("action");
 
@@ -137,10 +137,12 @@ public class AccountDetailController extends HttpServlet {
       Integer accountId = Integer.parseInt(accountIdStr);
       CompteCourant account = compteCourantService.getAccountById(accountId);
 
-      if (account == null || !account.getUserId().equals(user.getId())) {
-        response.sendRedirect("../comptes-courants?error=unauthorized_access");
+      if (account == null) {
+        response.sendRedirect("../comptes-courants?error=account_not_found");
         return;
       }
+
+      // UserAdmin can access any account, no ownership check needed
 
       boolean success = false;
       String errorMessage = null;
@@ -179,7 +181,7 @@ public class AccountDetailController extends HttpServlet {
           break;
 
         case "transfer":
-          errorMessage = handleTransfer(request, account, user);
+          errorMessage = handleTransfer(request, account, userAdmin);
           success = (errorMessage == null);
 
           if (success)
@@ -237,6 +239,8 @@ public class AccountDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       return "Format de montant invalide";
+    } catch (Exception e) {
+      return ExceptionUtils.root(e).getMessage();
     }
   }
 
@@ -274,6 +278,8 @@ public class AccountDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       return "Format de montant invalide";
+    } catch (Exception e) {
+      return ExceptionUtils.root(e).getMessage();
     }
   }
 
@@ -290,15 +296,19 @@ public class AccountDetailController extends HttpServlet {
       }
     }
 
-    TransactionCourant result = compteCourantService.payTax(
-        account.getId(),
-        description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
-        actionDateTime);
-
-    return result != null ? null : "Failed to create tax payment transaction";
+    try {
+      TransactionCourant result = compteCourantService.payTax(
+          account.getId(),
+          description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
+          actionDateTime);
+  
+      return result != null ? null : "Failed to create tax payment transaction";
+    } catch (Exception e) {
+      return ExceptionUtils.root(e).getMessage();
+    }
   }
 
-  private String handleTransfer(HttpServletRequest request, CompteCourant account, User user) {
+  private String handleTransfer(HttpServletRequest request, CompteCourant account, UserAdmin userAdmin) {
     try {
       String destinationAccountIdStr = request.getParameter("destinationAccountId");
       String amountStr = request.getParameter("amount");
@@ -344,6 +354,8 @@ public class AccountDetailController extends HttpServlet {
 
     } catch (NumberFormatException e) {
       return "Format de données invalide";
+    } catch (Exception e) {
+      return ExceptionUtils.root(e).getMessage();
     }
   }
 }

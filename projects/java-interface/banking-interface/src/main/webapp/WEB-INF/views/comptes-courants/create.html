@@ -13,7 +13,7 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="../logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -38,6 +38,19 @@
 
         <!-- Create Account Form -->
         <form method="post" action="create" class="account-form">
+          <!-- User Selection Dropdown -->
+          <div class="form-group">
+            <label for="userId">Sélectionner un utilisateur:</label>
+            <select id="userId" name="userId" class="form-input" required>
+              <option value="">-- Choisir un utilisateur --</option>
+              <option th:each="user : ${usersForDropdown}" 
+                      th:value="${user.key}" 
+                      th:text="${user.value}">
+                User
+              </option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="taxe"
               >Taxe Mensuelle (MGA) <small>(optionnel)</small>:</label

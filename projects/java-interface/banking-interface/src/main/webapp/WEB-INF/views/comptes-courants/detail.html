@@ -12,7 +12,7 @@
     </div>
 
     <div class="user-info">
-      <span>Welcome, <strong th:text="${userName}">User</strong></span>
+      <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
       <a href="../logout" class="logout-link">Logout</a>
       <div style="clear: both"></div>
     </div>
@@ -261,9 +261,9 @@
                   <option
                     th:each="user : ${allUsers}"
                     th:value="${user.id}"
-                    th:text="${user.name + ' (' + user.email + ')'}"
+                    th:text="${user.name}"
                   >
-                    User Name (user@email.com)
+                    User Name
                   </option>
                 </select>
               </div>
@@ -514,11 +514,7 @@
           const option = document.createElement("option");
           option.value = account.id;
           option.textContent =
-            "Compte " +
-            account.id +
-            " (Taxe: " +
-            account.taxe +
-            " MGA/mois)";
+            "Compte " + account.id + " (Taxe: " + account.taxe + " MGA/mois)";
           accountSelect.appendChild(option);
         });
 

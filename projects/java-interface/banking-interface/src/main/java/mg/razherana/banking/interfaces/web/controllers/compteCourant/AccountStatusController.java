@@ -4,7 +4,7 @@ import mg.razherana.banking.interfaces.application.compteCourantServices.CompteC
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.AccountStatusDTO;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.TransactionDTO;
 
@@ -45,12 +45,12 @@ public class AccountStatusController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String accountIdStr = request.getParameter("accountId");
     String actionDateTimeStr = request.getParameter("actionDateTime");
 
@@ -73,11 +73,7 @@ public class AccountStatusController extends HttpServlet {
         return;
       }
 
-      // Verify that the account belongs to the logged-in user
-      if (!account.getUserId().equals(user.getId())) {
-        response.sendRedirect("../comptes-courants?error=unauthorized_access");
-        return;
-      }
+      // UserAdmin can view any account, no ownership check needed
 
       // Parse the action date and set time to end of day for status check
       LocalDateTime actionDateTime;
@@ -101,6 +97,7 @@ public class AccountStatusController extends HttpServlet {
 
       // Get transaction history filtered up to the status date
       List<TransactionCourant> transactionHistory = compteCourantService.getTransactionHistory(accountId);
+      // System.out.println(transactionHistory);
       List<TransactionCourant> filteredTransactions = transactionHistory.stream()
           .filter(t -> !t.getDate().isAfter(actionDateTime))
           .sorted((t1, t2) -> t2.getDate().compareTo(t1.getDate())) // Most recent first
@@ -141,7 +138,7 @@ public class AccountStatusController extends HttpServlet {
           .reduce(BigDecimal.ZERO, BigDecimal::add);
 
       // Set template variables
-      context.setVariable("userName", user.getName());
+      context.setVariable("userAdminName", userAdmin.getEmail());
       context.setVariable("BD_ZERO", BigDecimal.ZERO);
       context.setVariable("account", account);
       context.setVariable("accountBalance", accountBalance);

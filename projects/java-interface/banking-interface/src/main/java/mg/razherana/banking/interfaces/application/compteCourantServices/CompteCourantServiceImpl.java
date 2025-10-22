@@ -131,7 +131,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return transactionRemoteService.retrait(compte, montant, description, actionDateTime);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making withdrawal from account " + accountId, e);
-      return null;
+      throw e;
     }
   }
 

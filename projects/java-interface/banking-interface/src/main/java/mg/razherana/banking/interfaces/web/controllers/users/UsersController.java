@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.web.controllers.users;
 
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 
 import org.thymeleaf.context.WebContext;
@@ -37,12 +38,12 @@ public class UsersController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("login.html");
       return;
     }
 
-    User currentUser = (User) session.getAttribute("user");
+    UserAdmin currentUserAdmin = (UserAdmin) session.getAttribute("userAdmin");
 
     try {
       // Get all users
@@ -53,7 +54,7 @@ public class UsersController extends HttpServlet {
       WebContext context = new WebContext(application.buildExchange(request, response));
 
       // Set template variables
-      context.setVariable("userName", currentUser.getName());
+      context.setVariable("userAdminName", currentUserAdmin.getEmail());
       context.setVariable("users", allUsers);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));

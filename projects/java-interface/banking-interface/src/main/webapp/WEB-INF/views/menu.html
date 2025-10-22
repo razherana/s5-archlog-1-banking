@@ -25,7 +25,10 @@
       </script>
 
       <div class="user-info">
-        <span>Welcome, <strong id="userName" th:text="${userAdmin.name}"></strong></span>
+        <span
+          >Welcome,
+          <strong id="userAdminName" th:text="${userAdmin.email}"></strong
+        ></span>
         <a href="logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -66,19 +69,33 @@
 
       <div class="card">
         <h3 class="text-center">Check Balance</h3>
-        <p class="text-center">Select a user and a date/time to check balances (per-module and total).</p>
+        <p class="text-center">
+          Select a user and a date/time to check balances (per-module and
+          total).
+        </p>
 
         <form id="balanceForm" action="/solde" method="get">
-          <div style="margin-bottom: 0.5rem;">
+          <div style="margin-bottom: 0.5rem">
             <label for="userSelect">User</label>
-            <select id="userSelect" name="userId" required th:each="userV : ${users}">
-              <option th:value="${userV.id}" th:text="${userV.name}">Username (fake)</option>
+            <select id="userSelect" name="userId" class="form-input" required>
+              <option value="">Select a user...</option>
+              <option
+                th:each="userEntry : ${users}"
+                th:value="${userEntry.id}"
+                th:text="${userEntry.name}"
+              >
+                1 : John Doe
+              </option>
             </select>
           </div>
 
-          <div style="margin-bottom: 0.5rem;">
+          <div style="margin-bottom: 0.5rem">
             <label for="actionDateTime">Date/Time</label>
-            <input id="actionDateTime" name="actionDateTime" type="datetime-local" />
+            <input
+              id="actionDateTime"
+              name="actionDateTime"
+              type="datetime-local"
+            />
           </div>
 
           <div>

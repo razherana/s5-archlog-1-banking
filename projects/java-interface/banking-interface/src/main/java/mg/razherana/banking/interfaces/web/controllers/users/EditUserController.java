@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.web.controllers.users;
 
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 
 import org.thymeleaf.context.WebContext;
@@ -38,12 +39,12 @@ public class EditUserController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User currentUser = (User) session.getAttribute("user");
+    UserAdmin currentUserAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String userIdStr = request.getParameter("id");
 
     if (userIdStr == null || userIdStr.trim().isEmpty()) {
@@ -65,7 +66,7 @@ public class EditUserController extends HttpServlet {
       WebContext context = new WebContext(application.buildExchange(request, response));
 
       // Set template variables
-      context.setVariable("userName", currentUser.getName());
+      context.setVariable("userAdminName", currentUserAdmin.getEmail());
       context.setVariable("userToEdit", userToEdit);
       context.setVariable("error", request.getParameter("error"));
 
@@ -87,7 +88,7 @@ public class EditUserController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
@@ -103,23 +104,25 @@ public class EditUserController extends HttpServlet {
     try {
       Integer userId = Integer.parseInt(userIdStr);
 
-      // Update the user (empty password means keep existing password)
-      User updatedUser = userService.updateUser(
+      // Update the user (User entity for data, not for auth)
+      userService.updateUser(
           userId,
-          name != null && !name.trim().isEmpty() ? name.trim() : null
-      );
+          name != null && !name.trim().isEmpty() ? name.trim() : null);
 
-      LOG.info("User updated successfully: " + updatedUser.getName());
-      response.sendRedirect("../users?success=" + URLEncoder.encode("Utilisateur modifié avec succès", StandardCharsets.UTF_8));
+      LOG.info("User updated successfully for ID: " + userId);
+      response.sendRedirect(
+          "../users?success=" + URLEncoder.encode("Utilisateur modifié avec succès", StandardCharsets.UTF_8));
 
     } catch (NumberFormatException e) {
       response.sendRedirect("../users?error=" + URLEncoder.encode("ID utilisateur invalide", StandardCharsets.UTF_8));
     } catch (IllegalArgumentException e) {
       LOG.warning("Failed to update user: " + e.getMessage());
-      response.sendRedirect("edit?id=" + userIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
+      response
+          .sendRedirect("edit?id=" + userIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     } catch (Exception e) {
       LOG.severe("Error updating user: " + e.getMessage());
-      response.sendRedirect("edit?id=" + userIdStr + "&error=" + URLEncoder.encode("Erreur système lors de la modification", StandardCharsets.UTF_8));
+      response.sendRedirect("edit?id=" + userIdStr + "&error="
+          + URLEncoder.encode("Erreur système lors de la modification", StandardCharsets.UTF_8));
     }
   }
 }

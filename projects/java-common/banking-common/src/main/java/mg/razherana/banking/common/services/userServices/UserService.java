@@ -174,10 +174,18 @@ public interface UserService {
   /**
    * Create a new user admin.
    * 
-   * @param email the email of the user admin
+   * @param email    the email of the user admin
    * @param password the password of the user admin
-   * @param role the role of the user admin
+   * @param role     the role of the user admin
    * @return the created UserAdmin entity
    */
   UserAdmin createUserAdmin(String email, String password, int role);
+
+  /**
+   * Get all users formatted for dropdown display as "id : name".
+   * 
+   * @return Map where key is user ID and value is formatted display string "id :
+   *         name"
+   */
+  java.util.Map<Integer, String> getAllUsersForDropdown();
 }

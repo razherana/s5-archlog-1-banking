@@ -13,21 +13,45 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
 
       <div class="card">
-        <h2 class="text-center">Mes Comptes Courants</h2>
-        
+        <h2 class="text-center">Comptes Courants</h2>
+
         <p class="text-center" style="margin-bottom: 2rem">
           <a href="menu.html">← Retour au menu</a>
         </p>
 
+        <!-- User Selection Form -->
+        <form
+          action="comptes-courants"
+          method="get"
+          style="margin-bottom: 2rem"
+        >
+          <div style="margin-bottom: 1rem">
+            <label for="userId">Sélectionner un utilisateur:</label>
+            <select id="userId" name="userId" class="form-input" onchange="this.form.submit()">
+              <option value="">Choisir un utilisateur...</option>
+              <option
+                th:each="userEntry : ${usersForDropdown}"
+                th:value="${userEntry.key}"
+                th:text="${userEntry.value}"
+                th:selected="${userEntry.key.toString() == selectedUserId}"
+              >
+                1 : John Doe
+              </option>
+            </select>
+          </div>
+        </form>
+
         <!-- Success Messages -->
         <div th:if="${param.success}" class="alert alert-success">
-          <p th:if="${param.success[0] == 'account_created'}">Compte créé avec succès!</p>
+          <p th:if="${param.success[0] == 'account_created'}">
+            Compte créé avec succès!
+          </p>
         </div>
 
         <!-- Error Messages -->
@@ -35,21 +59,51 @@
           <p th:text="${param.error[0]}">Erreur</p>
         </div>
 
+        <div th:if="${error}" class="alert alert-error">
+          <p th:text="${error}">Erreur</p>
+        </div>
+
         <!-- Create Account Button -->
-        <div class="text-center" style="margin-bottom: 2rem;">
-          <a href="comptes-courants/create" class="btn btn-primary">
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty()}"
+          class="text-center"
+          style="margin-bottom: 2rem"
+        >
+          <a
+            th:href="@{comptes-courants/create(userId=${selectedUserId})}"
+            class="btn btn-primary"
+          >
             + Créer un Nouveau Compte
           </a>
         </div>
 
-        <div th:if="${#lists.isEmpty(accounts)}" class="alert alert-info">
-          <p>Aucun compte courant trouvé.</p>
-          <p class="text-center" style="margin-top: 1rem;">
-            <a href="comptes-courants/create" class="btn btn-primary">Créer votre premier compte</a>
+        <div
+          th:if="${selectedUserId == null or selectedUserId.isEmpty()}"
+          class="alert alert-info"
+        >
+          <p>
+            Veuillez sélectionner un utilisateur pour voir ses comptes courants.
           </p>
         </div>
 
-        <table th:if="${!#lists.isEmpty(accounts)}" class="accounts-table">
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and (accounts == null or #lists.isEmpty(accounts))}"
+          class="alert alert-info"
+        >
+          <p>Aucun compte courant trouvé pour cet utilisateur.</p>
+          <p class="text-center" style="margin-top: 1rem">
+            <a
+              th:href="@{comptes-courants/create(userId=${selectedUserId})}"
+              class="btn btn-primary"
+              >Créer le premier compte</a
+            >
+          </p>
+        </div>
+
+        <table
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and accounts != null and !#lists.isEmpty(accounts)}"
+          class="accounts-table"
+        >
           <thead>
             <tr>
               <th>ID de Compte</th>
@@ -62,9 +116,7 @@
           <tbody>
             <tr th:each="account : ${accounts}">
               <td th:text="${account.id}">12345</td>
-              <td class="positive-balance">
-                Voir détails
-              </td>
+              <td class="positive-balance">Voir détails</td>
               <td
                 th:text="${account.createdAt != null} ? ${#temporals.format(account.createdAt, 'dd/MM/yyyy HH:mm')} : 'N/A'"
               >
@@ -76,7 +128,10 @@
                 0.00 MGA
               </td>
               <td>
-                <a th:href="@{comptes-courants/detail(id=${account.id})}" class="btn btn-primary btn-small">
+                <a
+                  th:href="@{comptes-courants/detail(id=${account.id})}"
+                  class="btn btn-primary btn-small"
+                >
                   Gérer
                 </a>
               </td>

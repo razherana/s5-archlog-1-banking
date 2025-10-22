@@ -5,6 +5,9 @@
   <persistence-unit name="userPU" transaction-type="JTA">
     <jta-data-source>mysqlDatabase</jta-data-source>
     <class>mg.razherana.banking.common.entities.User</class>
+    <class>mg.razherana.banking.common.entities.UserAdmin</class>
+    <class>mg.razherana.banking.common.entities.ActionRole</class>
+    <class>mg.razherana.banking.common.entities.Department</class>
     <properties>
       <!-- Hibernate properties for MySQL -->
       <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>

@@ -26,7 +26,7 @@ public class UserAdmin {
   private Integer role;
 
   @ManyToOne
-  @JoinColumn(name = "customer_id")
+  @JoinColumn(name = "department_id")
   private Department department;
 
   public UserAdmin(Integer id, String email, String password, Integer role, Department department) {
