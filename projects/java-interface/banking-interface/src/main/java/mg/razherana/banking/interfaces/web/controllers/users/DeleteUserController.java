@@ -1,6 +1,8 @@
 package mg.razherana.banking.interfaces.web.controllers.users;
 
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -34,6 +36,7 @@ public class DeleteUserController extends HttpServlet {
       return;
     }
 
+    UserAdmin currentUserAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String userIdStr = request.getParameter("id");
 
     if (userIdStr == null || userIdStr.trim().isEmpty()) {
@@ -48,7 +51,7 @@ public class DeleteUserController extends HttpServlet {
       // and deleting User entities for data
 
       // Delete the user
-      userService.deleteUser(userId);
+      userService.deleteUser(currentUserAdmin, userId);
 
       LOG.info("User deleted successfully: ID " + userId);
       response.sendRedirect(
@@ -60,6 +63,7 @@ public class DeleteUserController extends HttpServlet {
       LOG.warning("Failed to delete user: " + e.getMessage());
       response.sendRedirect("../users?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error deleting user: " + e.getMessage());
       response.sendRedirect(
           "../users?error=" + URLEncoder.encode("Erreur système lors de la suppression", StandardCharsets.UTF_8));

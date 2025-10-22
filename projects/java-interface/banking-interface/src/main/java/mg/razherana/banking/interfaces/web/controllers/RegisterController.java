@@ -38,7 +38,7 @@ public class RegisterController extends HttpServlet {
     LOG.info("Registration attempt for email: " + email);
 
     try {
-      UserAdmin userAdmin = userService.createUserAdmin(email, password, role);
+      UserAdmin userAdmin = userService.createUserAdmin(null, email, password, role);
       if (userAdmin != null) {
         // Registration successful - auto-login
         HttpSession session = request.getSession();

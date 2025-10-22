@@ -52,10 +52,6 @@ public class UserServiceImpl implements UserService {
 
   private static final String BACKEND_DEPOT_URL = "http://127.0.0.4:8080/api";
 
-  // Session state for current authenticated UserAdmin
-  private UserAdmin currentUserAdmin;
-  private List<ActionRole> currentUserAdminRoles;
-
   @EJB
   private CompteCourantService compteCourantService;
 
@@ -67,19 +63,22 @@ public class UserServiceImpl implements UserService {
 
   @PostConstruct
   public void init() {
-    System.out.println("Stateful EJB created: " + this);
+    adminInfos = getAllUserAdminsWithDepAndRoles(null);
   }
 
   @PreDestroy
   public void cleanup() {
-    // Clear ThreadLocal context to prevent memory leaks
-    AuthenticationContext.clear();
     System.out.println("Stateful EJB destroyed: " + this);
   }
 
   @Override
-  public User findUserById(Integer userId) {
+  public User findUserById(UserAdmin userAdmin, Integer userId) {
     LOG.info("Finding user by ID: " + userId);
+
+    if (!hasAuthorization(userAdmin, "READ", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read users");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read users");
+    }
 
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
@@ -105,8 +104,14 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public List<User> getAllUsers() {
+  public List<User> getAllUsers(UserAdmin userAdmin) {
     LOG.info("Retrieving all users");
+
+    if (!hasAuthorization(userAdmin, "READ", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read users");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read users");
+    }
+
     TypedQuery<User> query = entityManager.createQuery(
         "SELECT u FROM User u ORDER BY u.createdAt DESC", User.class);
     List<User> users = query.getResultList();
@@ -116,8 +121,13 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public User createUser(String name) {
+  public User createUser(UserAdmin userAdmin, String name) {
     LOG.info("Creating user with name: " + name);
+
+    if (!hasAuthorization(userAdmin, "CREATE", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create users");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to create users");
+    }
 
     // Validation
     if (name == null || name.trim().isEmpty()) {
@@ -138,10 +148,15 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public User updateUser(Integer userId, String name) {
+  public User updateUser(UserAdmin userAdmin, Integer userId, String name) {
     LOG.info("Updating user with ID: " + userId);
 
-    User user = findUserById(userId);
+    if (!hasAuthorization(userAdmin, "UPDATE", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to update users");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to update users");
+    }
+
+    User user = findUserById(userAdmin, userId);
     if (user == null) {
       throw new IllegalArgumentException("User not found with ID: " + userId);
     }
@@ -160,10 +175,15 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
-  public void deleteUser(Integer userId) {
+  public void deleteUser(UserAdmin userAdmin, Integer userId) {
     LOG.info("Deleting user with ID: " + userId);
 
-    User user = findUserById(userId);
+    if (!hasAuthorization(userAdmin, "DELETE", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to delete users");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to delete users");
+    }
+
+    User user = findUserById(userAdmin, userId);
     if (user == null) {
       throw new IllegalArgumentException("User not found with ID: " + userId);
     }
@@ -175,15 +195,20 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public BigDecimal calculateTotalBalanceAcrossModules(Integer userId, String actionDateTime) {
+  public BigDecimal calculateTotalBalanceAcrossModules(UserAdmin userAdmin, Integer userId, String actionDateTime) {
     LOG.info("Calculating total balance across all modules for user: " + userId + " at " + actionDateTime);
+
+    if (!hasAuthorization(userAdmin, "READ", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read user balances");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read user balances");
+    }
 
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
     // Verify user exists
-    User user = findUserById(userId);
+    User user = findUserById(userAdmin, userId);
     if (user == null) {
       throw new IllegalArgumentException("User not found: " + userId);
     }
@@ -192,7 +217,7 @@ public class UserServiceImpl implements UserService {
 
     // 1. Get balance from Current Accounts module (java-courant)
     try {
-      BigDecimal currentAccountBalance = getCurrentAccountBalance(userId, actionDateTime);
+      BigDecimal currentAccountBalance = getCurrentAccountBalance(userAdmin, userId, actionDateTime);
       totalBalance = totalBalance.add(currentAccountBalance);
       LOG.info("Current accounts balance for user " + userId + ": " + currentAccountBalance);
     } catch (Exception e) {
@@ -203,7 +228,7 @@ public class UserServiceImpl implements UserService {
     // 2. Get balance from Loan module (java-pret) - this represents debt (negative
     // balance)
     try {
-      BigDecimal loanBalance = getLoanBalance(userId, actionDateTime);
+      BigDecimal loanBalance = getLoanBalance(userAdmin, userId, actionDateTime);
       // Loan balance represents debt, so we subtract it from total
       totalBalance = totalBalance.subtract(loanBalance);
       LOG.info("Loan balance (debt) for user " + userId + ": " + loanBalance);
@@ -214,7 +239,7 @@ public class UserServiceImpl implements UserService {
 
     // 3. Get balance from Deposit module (dotnet-depot)
     try {
-      BigDecimal depositBalance = getDepositBalance(userId, actionDateTime);
+      BigDecimal depositBalance = getDepositBalance(userAdmin, userId, actionDateTime);
       totalBalance = totalBalance.add(depositBalance);
       LOG.info("Deposit balance for user " + userId + ": " + depositBalance);
     } catch (Exception e) {
@@ -230,31 +255,46 @@ public class UserServiceImpl implements UserService {
    * Get current account balance from java-courant module via REST API
    */
   @Override
-  public BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTimeStr) {
+  public BigDecimal getCurrentAccountBalance(UserAdmin userAdmin, Integer userId, String actionDateTimeStr) {
+    if (!hasAuthorization(userAdmin, "READ", "compte_courants")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read current account balances");
+      throw new IllegalStateException(
+          "Unauthorized access: User does not have permission to read current account balances");
+    }
+
     LocalDateTime actionDateTime = null;
     if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
       actionDateTime = LocalDateTime.parse(actionDateTimeStr);
     }
-    return compteCourantService.getAccountBalanceByUserId(userId, actionDateTime);
+    return compteCourantService.getAccountBalanceByUserId(userAdmin, userId, actionDateTime);
   }
 
   /**
    * Get loan balance from java-pret module via REST API
    */
   @Override
-  public BigDecimal getLoanBalance(Integer userId, String actionDateTimeStr) {
+  public BigDecimal getLoanBalance(UserAdmin userAdmin, Integer userId, String actionDateTimeStr) {
+    if (!hasAuthorization(userAdmin, "READ", "compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read loan balances");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read loan balances");
+    }
+
     LocalDateTime actionDateTime = null;
     if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
       actionDateTime = LocalDateTime.parse(actionDateTimeStr);
     }
-    return comptePretService.getLoanBalanceByUserId(userId, actionDateTime);
+    return comptePretService.getLoanBalanceByUserId(userAdmin, userId, actionDateTime);
   }
 
   /**
    * Get deposit balance from dotnet-depot module via REST API
    */
   @Override
-  public BigDecimal getDepositBalance(Integer userId, String actionDateTime) {
+  public BigDecimal getDepositBalance(UserAdmin userAdmin, Integer userId, String actionDateTime) {
+    if (!hasAuthorization(userAdmin, "READ", "compte_depots")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read deposit balances");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read deposit balances");
+    }
     java.net.http.HttpClient httpClient = java.net.http.HttpClient.newHttpClient();
     try {
       String url = BACKEND_DEPOT_URL + "/ComptesDepots/solde/user/" + userId;
@@ -306,13 +346,6 @@ public class UserServiceImpl implements UserService {
       UserAdmin userAdmin = query.getSingleResult();
 
       if (userAdmin != null && password.equals(userAdmin.getPassword())) {
-        // Cache the current user admin and their roles in session
-        this.currentUserAdmin = userAdmin;
-        this.currentUserAdminRoles = getActionRoleByRole(userAdmin.getRole());
-
-        // ALSO store in ThreadLocal context for cross-method access
-        AuthenticationContext.setCurrentUserAdmin(userAdmin);
-
         LOG.info("Authentication successful for user admin: " + email);
         return userAdmin;
       }
@@ -333,7 +366,12 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public UserAdmin findUserAdminById(Integer id) {
+  public UserAdmin findUserAdminById(UserAdmin userAdmin, Integer id) {
+    if (!hasAuthorization(userAdmin, "READ", "user_admins")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read user admins");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read user admins");
+    }
+
     if (id == null) {
       throw new IllegalArgumentException("UserAdmin ID cannot be null");
     }
@@ -341,45 +379,12 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public boolean hasAuthorization(Integer userAdminId, String tableName, String action) {
-    if (userAdminId == null) {
-      throw new IllegalArgumentException("UserAdmin ID cannot be null");
+  public UserAdmin createUserAdmin(UserAdmin userAdmin, String email, String password, int role) {
+    if (!hasAuthorization(userAdmin, "CREATE", "user_admins")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create user admins");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to create user admins");
     }
 
-    if (tableName == null || tableName.trim().isEmpty()) {
-      throw new IllegalArgumentException("Table name cannot be null or empty");
-    }
-
-    if (action == null || action.trim().isEmpty()) {
-      throw new IllegalArgumentException("Action cannot be null or empty");
-    }
-
-    if (currentUserAdmin == null) {
-      throw new IllegalStateException("No authenticated UserAdmin in current session");
-    }
-
-    if (currentUserAdminRoles == null) {
-      throw new IllegalStateException("No cached roles for current UserAdmin in session");
-    }
-
-    // If the userAdminId matches the current session, use cached roles
-    if (currentUserAdmin.getId().equals(userAdminId))
-      if (currentUserAdminRoles != null)
-        for (ActionRole role : currentUserAdminRoles)
-          if (role.getTableName().equals(tableName) && role.getAction().equals(action))
-            return true;
-    return false;
-  }
-
-  @Override
-  public UserAdmin getAuthedUser() {
-    // This is the magic method! Returns the current authenticated user from
-    // ThreadLocal context
-    return AuthenticationContext.getCurrentUserAdmin();
-  }
-
-  @Override
-  public UserAdmin createUserAdmin(String email, String password, int role) {
     // Checks
     if (email == null || email.trim().isEmpty()) {
       throw new IllegalArgumentException("Email cannot be null or empty");
@@ -388,19 +393,25 @@ public class UserServiceImpl implements UserService {
       throw new IllegalArgumentException("Password cannot be null or empty");
     }
 
-    UserAdmin userAdmin = new UserAdmin();
-    userAdmin.setEmail(email.trim().toLowerCase());
-    userAdmin.setPassword(password);
-    userAdmin.setRole(role);
+    UserAdmin newUserAdmin = new UserAdmin();
+    newUserAdmin.setEmail(email.trim().toLowerCase());
+    newUserAdmin.setPassword(password);
+    newUserAdmin.setRole(role);
 
-    entityManager.persist(userAdmin);
-    return userAdmin;
+    entityManager.persist(newUserAdmin);
+    return newUserAdmin;
   }
 
   @Override
-  public Map<Integer, String> getAllUsersForDropdown() {
+  public Map<Integer, String> getAllUsersForDropdown(UserAdmin userAdmin) {
     LOG.info("Getting all users for dropdown");
-    List<User> users = getAllUsers();
+
+    if (!hasAuthorization(userAdmin, "READ", "users")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read users for dropdown");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read users for dropdown");
+    }
+
+    List<User> users = getAllUsers(userAdmin);
     Map<Integer, String> userMap = new HashMap<>();
 
     for (User user : users) {
@@ -408,5 +419,71 @@ public class UserServiceImpl implements UserService {
     }
 
     return userMap;
+  }
+
+  private HashMap<Integer, List<ActionRole>> getRoleWithActionRole() {
+    HashMap<Integer, List<ActionRole>> result = new HashMap<>();
+
+    TypedQuery<Integer> query = entityManager.createQuery(
+        "SELECT DISTINCT ua.role FROM UserAdmin ua", Integer.class);
+    List<Integer> roles = query.getResultList();
+
+    for (Integer role : roles) {
+      List<ActionRole> actionRoles = getActionRoleByRole(role);
+      result.put(role, actionRoles);
+    }
+
+    return result;
+  }
+
+  @Override
+  public HashMap<UserAdmin, List<ActionRole>> getAllUserAdminsWithDepAndRoles(UserAdmin userAdmin) {
+    if (!hasAuthorization(userAdmin, "READ", "user_admins")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read user admins with roles");
+      throw new IllegalStateException(
+          "Unauthorized access: User does not have permission to read user admins with roles");
+    }
+    HashMap<UserAdmin, List<ActionRole>> result = new HashMap<>();
+
+    var roleMap = getRoleWithActionRole();
+
+    TypedQuery<UserAdmin> query = entityManager.createQuery(
+        "SELECT ua FROM UserAdmin ua", UserAdmin.class);
+    List<UserAdmin> userAdmins = query.getResultList();
+
+    for (UserAdmin admin : userAdmins) {
+      List<ActionRole> actionRoles = roleMap.getOrDefault(admin.getRole(), List.of());
+      result.put(admin, actionRoles);
+    }
+
+    return result;
+  }
+
+  private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    if (userAdmin == null)
+      return true;
+
+    if (adminInfos == null) {
+      LOG.info("Loading admin infos for authorization checks");
+      adminInfos = getAllUserAdminsWithDepAndRoles(null);
+    }
+
+    var actionRoles = adminInfos.get(userAdmin);
+
+    if (actionRoles == null) {
+      LOG.warning("No action roles found for user admin: " + userAdmin.getId());
+      return false;
+    }
+
+    for (ActionRole actionRole : actionRoles) {
+      if (actionRole.getAction().equals(operationType)
+          && actionRole.getTableName().equals(tableName))
+        return true;
+    }
+
+    return false;
   }
 }

@@ -1,12 +1,16 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
-import jakarta.ejb.Stateless;
+import jakarta.ejb.Stateful;
+import jakarta.ejb.StatefulTimeout;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import mg.razherana.banking.common.entities.ActionRole;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.courant.application.remoteServices.UserServiceWrapper;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
@@ -14,7 +18,9 @@ import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -52,7 +58,8 @@ import java.util.logging.Logger;
  * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
-@Stateless
+@Stateful
+@StatefulTimeout(unit = TimeUnit.MINUTES, value = 30)
 public class CompteCourantServiceImpl implements CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());
 
@@ -71,7 +78,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
    */
   @Override
   public User findUser(Integer userId) {
-    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(userId);
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(null, userId);
 
     if (ogUser == null) {
       throw new IllegalArgumentException("User with ID " + userId + " not found");
@@ -345,4 +352,37 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     return totalTaxToPay.subtract(taxPaid).max(BigDecimal.ZERO);
   }
+
+  private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;
+
+  @PostConstruct
+  protected void init() {
+    LOG.info("CompteCourantServiceImpl initialized");
+  }
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    if (adminInfos == null) {
+      LOG.info("Loading admin infos for authorization checks");
+      adminInfos = userServiceWrapper.getUserRemoteService().getAllUserAdminsWithDepAndRoles(null);
+    }
+
+    var actionRoles = adminInfos.get(userAdmin);
+
+    System.out.println(actionRoles);
+
+    if (actionRoles == null) {
+      LOG.warning("No action roles found for user admin: " + userAdmin.getId());
+      return false;
+    }
+
+    for (ActionRole actionRole : actionRoles) {
+      if (actionRole.getAction().equals(operationType)
+          && actionRole.getTableName().equals(tableName))
+        return true;
+    }
+
+    return false;
+  }
+
 }

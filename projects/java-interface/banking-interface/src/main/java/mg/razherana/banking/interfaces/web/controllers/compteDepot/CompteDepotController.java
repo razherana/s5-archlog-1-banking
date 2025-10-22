@@ -5,6 +5,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -58,7 +59,7 @@ public class CompteDepotController extends HttpServlet {
 
     // Add variables to context
     webContext.setVariable("userAdminName", userAdmin.getEmail());
-    webContext.setVariable("usersForDropdown", userService.getAllUsersForDropdown());
+    webContext.setVariable("usersForDropdown", userService.getAllUsersForDropdown(userAdmin));
     webContext.setVariable("selectedUserId", userIdParam);
 
     // If userId is provided, fetch accounts for that user
@@ -67,11 +68,15 @@ public class CompteDepotController extends HttpServlet {
         Integer userId = Integer.parseInt(userIdParam);
         LOG.info("Fetching deposit accounts for user: " + userId);
 
-        List<CompteDepotDTO> comptes = compteDepotService.getAccountsByUserId(userId);
+        List<CompteDepotDTO> comptes = compteDepotService.getAccountsByUserId(userAdmin, userId);
         webContext.setVariable("comptes", comptes);
       } catch (NumberFormatException e) {
         LOG.warning("Invalid userId parameter: " + userIdParam);
         webContext.setVariable("error", "ID utilisateur invalide");
+      } catch (Exception e) {
+        e = ExceptionUtils.root(e);
+        LOG.severe("Error fetching deposit accounts: " + e.getMessage());
+        webContext.setVariable("error", "Erreur lors de la récupération des comptes de dépôt : " + e.getMessage());
       }
     }
 

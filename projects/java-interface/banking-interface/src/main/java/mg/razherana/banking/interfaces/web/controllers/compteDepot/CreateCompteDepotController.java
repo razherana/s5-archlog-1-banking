@@ -4,7 +4,11 @@ import mg.razherana.banking.interfaces.application.compteDepotServices.CompteDep
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.interfaces.dto.TypeCompteDepotDTO;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
+
+import java.util.Map;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -35,29 +39,36 @@ public class CreateCompteDepotController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect(request.getContextPath() + "/login");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
 
     try {
       // Get available deposit types
-      List<TypeCompteDepotDTO> depositTypes = compteDepotService.getAllDepositTypes();
+      List<TypeCompteDepotDTO> depositTypes = compteDepotService.getAllDepositTypes(userAdmin);
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication
           .buildApplication(getServletContext());
       WebContext webContext = new WebContext(application.buildExchange(request, response));
 
+      // Get all users for dropdown
+      Map<Integer, String> usersForDropdown = userService.getAllUsersForDropdown(userAdmin);
+
       // Add variables to context
-      webContext.setVariable("user", user);
+      webContext.setVariable("userAdminName", userAdmin.getEmail());
+      webContext.setVariable("usersForDropdown", usersForDropdown);
       webContext.setVariable("depositTypes", depositTypes);
       webContext.setVariable("error", request.getParameter("error"));
       webContext.setVariable("success", request.getParameter("success"));
@@ -80,12 +91,27 @@ public class CreateCompteDepotController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect(request.getContextPath() + "/login");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+
+    // Get userId from form parameter
+    String userIdParam = request.getParameter("userId");
+    if (userIdParam == null || userIdParam.trim().isEmpty()) {
+      response.sendRedirect("create?error=missing_user_id");
+      return;
+    }
+
+    Integer userId;
+    try {
+      userId = Integer.parseInt(userIdParam);
+    } catch (NumberFormatException e) {
+      response.sendRedirect("create?error=invalid_user_id");
+      return;
+    }
 
     try {
       // Extract form parameters
@@ -124,7 +150,7 @@ public class CreateCompteDepotController extends HttpServlet {
 
       // Create the account
       CompteDepotDTO createdAccount = compteDepotService.createAccount(
-          typeId, user.getId(), formattedEcheance, montant, formattedActionDateTime);
+          userAdmin, typeId, userId, formattedEcheance, montant, formattedActionDateTime);
 
       if (createdAccount != null) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?success=" +
@@ -139,9 +165,10 @@ public class CreateCompteDepotController extends HttpServlet {
       response.sendRedirect(request.getContextPath() + "/comptes-depots/create?error=" +
           java.net.URLEncoder.encode("Format de données invalide", java.nio.charset.StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error creating deposit account: " + e.getMessage());
       response.sendRedirect(request.getContextPath() + "/comptes-depots/create?error=" +
-          java.net.URLEncoder.encode("Erreur interne lors de la création", java.nio.charset.StandardCharsets.UTF_8));
+          java.net.URLEncoder.encode("Erreur interne lors de la création : " + e.getMessage(), java.nio.charset.StandardCharsets.UTF_8));
     }
   }
 }

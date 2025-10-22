@@ -2,6 +2,7 @@ package mg.razherana.banking.interfaces.web.controllers;
 
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 
 import org.thymeleaf.context.WebContext;
@@ -41,6 +42,7 @@ public class SoldeController extends HttpServlet {
       return;
     }
 
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String userIdParam = request.getParameter("userId");
     String actionDateTime = request.getParameter("actionDateTime");
 
@@ -51,14 +53,14 @@ public class SoldeController extends HttpServlet {
 
     try {
       Integer userId = Integer.parseInt(userIdParam);
-      User user = userService.findUserById(userId);
+      User user = userService.findUserById(userAdmin, userId);
 
       // Get individual module balances and total
       Map<String, Object> balanceData = new HashMap<>();
 
       try {
         // Use UserService to get detailed breakdown
-        BigDecimal currentAccountBalance = userService.getCurrentAccountBalance(userId, actionDateTime);
+        BigDecimal currentAccountBalance = userService.getCurrentAccountBalance(userAdmin, userId, actionDateTime);
         balanceData.put("currentAccountBalance", currentAccountBalance);
         balanceData.put("currentAccountError", null);
       } catch (Exception e) {
@@ -68,7 +70,7 @@ public class SoldeController extends HttpServlet {
       }
 
       try {
-        BigDecimal loanBalance = userService.getLoanBalance(userId, actionDateTime);
+        BigDecimal loanBalance = userService.getLoanBalance(userAdmin, userId, actionDateTime);
         balanceData.put("loanBalance", loanBalance);
         balanceData.put("loanError", null);
       } catch (Exception e) {
@@ -78,7 +80,7 @@ public class SoldeController extends HttpServlet {
       }
 
       try {
-        BigDecimal depositBalance = userService.getDepositBalance(userId, actionDateTime);
+        BigDecimal depositBalance = userService.getDepositBalance(userAdmin, userId, actionDateTime);
         balanceData.put("depositBalance", depositBalance);
         balanceData.put("depositError", null);
       } catch (Exception e) {
@@ -89,7 +91,7 @@ public class SoldeController extends HttpServlet {
 
       // Calculate total using UserService
       try {
-        BigDecimal totalBalance = userService.calculateTotalBalanceAcrossModules(userId, actionDateTime);
+        BigDecimal totalBalance = userService.calculateTotalBalanceAcrossModules(userAdmin, userId, actionDateTime);
         balanceData.put("totalBalance", totalBalance);
         balanceData.put("totalError", null);
       } catch (Exception e) {

@@ -5,7 +5,9 @@ import mg.razherana.banking.interfaces.application.compteCourantServices.CompteC
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.courant.entities.CompteCourant;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -40,17 +42,20 @@ public class AccountDepotDetailController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect(request.getContextPath() + "/login");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String accountIdStr = request.getParameter("id");
 
     if (accountIdStr == null || accountIdStr.trim().isEmpty()) {
@@ -61,7 +66,7 @@ public class AccountDepotDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteDepotDTO account = compteDepotService.getAccountById(accountId);
+      CompteDepotDTO account = compteDepotService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
@@ -69,15 +74,10 @@ public class AccountDepotDetailController extends HttpServlet {
         return;
       }
 
-      // Verify that the account belongs to the user
-      if (!account.getUserId().equals(user.getId())) {
-        response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-            URLEncoder.encode("Accès non autorisé", StandardCharsets.UTF_8));
-        return;
-      }
+      // UserAdmin can access any account, no ownership check needed
 
       // Get user's current accounts for withdrawal dropdown
-      List<CompteCourant> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
+      List<CompteCourant> currentAccounts = compteCourantService.getAccountsByUserId(userAdmin, account.getUserId());
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication
@@ -85,7 +85,7 @@ public class AccountDepotDetailController extends HttpServlet {
       WebContext webContext = new WebContext(application.buildExchange(request, response));
 
       // Add variables to context
-      webContext.setVariable("user", user);
+      webContext.setVariable("userAdminName", userAdmin.getEmail());
       webContext.setVariable("account", account);
       webContext.setVariable("currentAccounts", currentAccounts);
       webContext.setVariable("error", request.getParameter("error"));
@@ -107,12 +107,12 @@ public class AccountDepotDetailController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect(request.getContextPath() + "/login");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String accountIdStr = request.getParameter("accountId");
     String action = request.getParameter("action");
 
@@ -124,21 +124,22 @@ public class AccountDepotDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteDepotDTO account = compteDepotService.getAccountById(accountId);
+      CompteDepotDTO account = compteDepotService.getAccountById(userAdmin, accountId);
 
-      if (account == null || !account.getUserId().equals(user.getId())) {
+      if (account == null) {
         response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
-            URLEncoder.encode("Compte non trouvé ou accès non autorisé",
-                StandardCharsets.UTF_8));
+            URLEncoder.encode("Compte non trouvé", StandardCharsets.UTF_8));
         return;
       }
+
+      // UserAdmin can access any account, no ownership check needed
 
       String redirectUrl = request.getContextPath() + "/comptes-depots/detail?id=" + accountId;
       String result;
 
       switch (action) {
         case "withdraw":
-          result = handleWithdrawal(request, account);
+          result = handleWithdrawal(request, account, userAdmin);
           break;
         default:
           result = "error=" + URLEncoder.encode("Action non reconnue", StandardCharsets.UTF_8);
@@ -151,13 +152,14 @@ public class AccountDepotDetailController extends HttpServlet {
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
           URLEncoder.encode("ID de compte invalide", StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error processing deposit account action: " + e.getMessage());
       response.sendRedirect(request.getContextPath() + "/comptes-depots?error=" +
           URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     }
   }
 
-  private String handleWithdrawal(HttpServletRequest request, CompteDepotDTO account) {
+  private String handleWithdrawal(HttpServletRequest request, CompteDepotDTO account, UserAdmin userAdmin) {
     try {
       String actionDateTime = request.getParameter("actionDateTime");
       String targetAccountIdStr = request.getParameter("targetAccountId");
@@ -167,7 +169,7 @@ public class AccountDepotDetailController extends HttpServlet {
         targetAccountId = Integer.parseInt(targetAccountIdStr);
       }
 
-      String result = compteDepotService.withdrawFromAccount(account.getId(), targetAccountId, actionDateTime);
+      String result = compteDepotService.withdrawFromAccount(userAdmin, account.getId(), targetAccountId, actionDateTime);
 
       if (result.startsWith("Retrait effectué")) {
         return "success=" + URLEncoder.encode(result, StandardCharsets.UTF_8);
@@ -177,6 +179,10 @@ public class AccountDepotDetailController extends HttpServlet {
     } catch (NumberFormatException e) {
       return "error="
           + URLEncoder.encode("Format de données invalide", StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      LOG.severe("Error during withdrawal: " + e.getMessage());
+      return "error="
+          + URLEncoder.encode(ExceptionUtils.root(e).getMessage(), StandardCharsets.UTF_8);
     }
   }
 }

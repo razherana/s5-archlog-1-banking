@@ -4,6 +4,7 @@ import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
@@ -22,7 +23,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public interface ComptePretService {
+public interface ComptePretService extends AuthorizationService {
 
   /**
    * Find a user by ID using REST API call to java-interface.

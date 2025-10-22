@@ -3,9 +3,9 @@ package mg.razherana.banking.pret.application.comptePretService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
@@ -14,7 +14,6 @@ import mg.razherana.banking.pret.entities.User;
 
 @Stateless
 public class ComptePretServiceRemoteImpl implements ComptePretServiceRemote {
-
   @EJB
   private ComptePretService comptePretService;
 
@@ -92,5 +91,10 @@ public class ComptePretServiceRemoteImpl implements ComptePretServiceRemote {
   @Override
   public Echeance makePayment(Integer compteId, BigDecimal amount, LocalDateTime actionDateTime) {
     return comptePretService.makePayment(compteId, amount, actionDateTime);
+  }
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    return comptePretService.hasAuthorization(userAdmin, operationType, tableName);
   }
 }

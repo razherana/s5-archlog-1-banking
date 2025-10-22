@@ -5,6 +5,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.AccountStatusDTO;
 import mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs.TransactionDTO;
 
@@ -66,7 +67,7 @@ public class AccountStatusController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourant account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
         response.sendRedirect("../comptes-courants?error=Account not found");
@@ -92,11 +93,11 @@ public class AccountStatusController extends HttpServlet {
       }
 
       // Get account balance at the specified date
-      BigDecimal accountBalance = compteCourantService.getAccountBalance(accountId, actionDateTime);
-      BigDecimal taxToPay = compteCourantService.getTaxToPay(accountId, actionDateTime);
+      BigDecimal accountBalance = compteCourantService.getAccountBalance(userAdmin, accountId, actionDateTime);
+      BigDecimal taxToPay = compteCourantService.getTaxToPay(userAdmin, accountId, actionDateTime);
 
       // Get transaction history filtered up to the status date
-      List<TransactionCourant> transactionHistory = compteCourantService.getTransactionHistory(accountId);
+      List<TransactionCourant> transactionHistory = compteCourantService.getTransactionHistory(userAdmin, accountId);
       // System.out.println(transactionHistory);
       List<TransactionCourant> filteredTransactions = transactionHistory.stream()
           .filter(t -> !t.getDate().isAfter(actionDateTime))
@@ -160,10 +161,11 @@ public class AccountStatusController extends HttpServlet {
     } catch (NumberFormatException e) {
       response.sendRedirect("../comptes-courants?error=invalid_account_id");
     } catch (Exception e) {
-      LOG.severe("Error processing account status: " + e.getMessage());
-      e.printStackTrace();
+      var ex = ExceptionUtils.root(e);
+      LOG.severe("Error processing account status: " + ex.getMessage());
+      ex.printStackTrace();
       response.sendRedirect(
-          "detail?id=" + accountIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
+          "detail?id=" + accountIdStr + "&error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8));
     }
   }
 }

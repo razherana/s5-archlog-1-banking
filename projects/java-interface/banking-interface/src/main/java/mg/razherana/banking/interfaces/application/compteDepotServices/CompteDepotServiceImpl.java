@@ -1,5 +1,7 @@
 package mg.razherana.banking.interfaces.application.compteDepotServices;
 
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.interfaces.dto.TypeCompteDepotDTO;
@@ -52,8 +54,10 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public List<CompteDepotDTO> getAccountsByUserId(Integer userId) {
+  public List<CompteDepotDTO> getAccountsByUserId(UserAdmin userAdmin, Integer userId) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return empty list
+
       String url = COMPTES_ENDPOINT + "/user/" + userId;
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(url))
@@ -65,11 +69,14 @@ public class CompteDepotServiceImpl implements CompteDepotService {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {});
+        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(),
+            new TypeReference<List<CompteDepotDTO>>() {
+            });
         LOG.info("Successfully fetched " + accounts.size() + " deposit accounts for user: " + userId);
         return accounts;
       } else {
-        LOG.warning("Failed to get accounts for user " + userId + ": " + response.statusCode() + " - " + response.body());
+        LOG.warning(
+            "Failed to get accounts for user " + userId + ": " + response.statusCode() + " - " + response.body());
         return List.of();
       }
     } catch (Exception e) {
@@ -79,8 +86,9 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public CompteDepotDTO getAccountById(Integer accountId) {
+  public CompteDepotDTO getAccountById(UserAdmin userAdmin, Integer accountId) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return null
       String url = COMPTES_ENDPOINT + "/" + accountId;
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(url))
@@ -106,9 +114,10 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public CompteDepotDTO createAccount(Integer typeCompteDepotId, Integer userId, String dateEcheance,
+  public CompteDepotDTO createAccount(UserAdmin userAdmin, Integer typeCompteDepotId, Integer userId, String dateEcheance,
       BigDecimal montant, String actionDateTime) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "CREATE", "compte_depots")) return null
       Map<String, Object> requestBody = new HashMap<>();
       requestBody.put("typeCompteDepotId", typeCompteDepotId);
       requestBody.put("userId", userId);
@@ -126,7 +135,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
-      LOG.info("Creating deposit account for user " + userId + " with type " + typeCompteDepotId + " and amount " + montant);
+      LOG.info(
+          "Creating deposit account for user " + userId + " with type " + typeCompteDepotId + " and amount " + montant);
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 201) {
@@ -144,8 +154,9 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public String withdrawFromAccount(Integer accountId, Integer targetAccountId, String actionDateTime) {
+  public String withdrawFromAccount(UserAdmin userAdmin, Integer accountId, Integer targetAccountId, String actionDateTime) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "UPDATE", "compte_depots")) return error message
       Map<String, Object> requestBody = new HashMap<>();
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBody.put("actionDateTime", actionDateTime);
@@ -160,17 +171,17 @@ public class CompteDepotServiceImpl implements CompteDepotService {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
-      LOG.info("Processing withdrawal for deposit account: " + accountId + 
-               (targetAccountId != null ? " with transfer to current account: " + targetAccountId : ""));
+      LOG.info("Processing withdrawal for deposit account: " + accountId +
+          (targetAccountId != null ? " with transfer to current account: " + targetAccountId : ""));
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         String withdrawalMessage = "Retrait effectué avec succès. Détails: " + response.body();
-        
+
         // If targetAccountId is provided, make a deposit to that current account
         if (targetAccountId != null) {
           // First get the deposit account details to know the withdrawn amount
-          CompteDepotDTO account = getAccountById(accountId);
+          CompteDepotDTO account = getAccountById(userAdmin, accountId);
           if (account != null && account.getMontantTotal() != null) {
             LocalDateTime actionDateTimeParsed = LocalDateTime.now();
             if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
@@ -180,15 +191,15 @@ public class CompteDepotServiceImpl implements CompteDepotService {
                 LOG.log(Level.WARNING, "Invalid actionDateTime format, using current time: " + e.getMessage());
               }
             }
-            
+
             try {
               var depositResult = compteCourantService.makeDeposit(
-                  targetAccountId, 
-                  account.getMontantTotal(), 
-                  "Dépôt provenant du retrait du compte dépôt #" + accountId, 
-                  actionDateTimeParsed
-              );
-              
+                  userAdmin,
+                  targetAccountId,
+                  account.getMontantTotal(),
+                  "Dépôt provenant du retrait du compte dépôt #" + accountId,
+                  actionDateTimeParsed);
+
               if (depositResult != null) {
                 withdrawalMessage += " Dépôt automatique effectué sur le compte courant #" + targetAccountId;
               } else {
@@ -200,37 +211,39 @@ public class CompteDepotServiceImpl implements CompteDepotService {
             }
           }
         }
-        
+
         return withdrawalMessage;
       } else {
         return extractErrorMessage(response);
       }
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error withdrawing from account " + accountId + ": " + e.getMessage(), e);
-      return "Erreur lors du retrait: " + e.getMessage();
+      return "Erreur lors du retrait: " + ExceptionUtils.root(e).getMessage();
     }
   }
 
   @Override
-  public List<TypeCompteDepotDTO> getAllDepositTypes() {
+  public List<TypeCompteDepotDTO> getAllDepositTypes(UserAdmin userAdmin) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "type_comptes_depots")) return empty list
       LOG.info("Fetching all deposit types from service");
-      
+
       HttpRequest request = HttpRequest.newBuilder()
-              .uri(URI.create(BASE_URL + "/type-comptes-depots"))
-              .header("Content-Type", "application/json")
-              .GET()
-              .build();
+          .uri(URI.create(BASE_URL + "/typecomptesdepots"))
+          .header("Content-Type", "application/json")
+          .GET()
+          .build();
 
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      
+
       if (response.statusCode() == 200) {
-        List<TypeCompteDepotDTO> types = objectMapper.readValue(response.body(), 
-                  objectMapper.getTypeFactory().constructCollectionType(List.class, TypeCompteDepotDTO.class));
+        List<TypeCompteDepotDTO> types = objectMapper.readValue(response.body(),
+            objectMapper.getTypeFactory().constructCollectionType(List.class, TypeCompteDepotDTO.class));
         LOG.info("Successfully retrieved " + types.size() + " deposit types");
         return types;
       } else {
-        LOG.warning("Failed to retrieve deposit types. Status: " + response.statusCode() + ", Body: " + response.body());
+        LOG.warning(
+            "Failed to retrieve deposit types. Status: " + response.statusCode() + ", Body: " + response.body());
         return new ArrayList<>();
       }
     } catch (IOException | InterruptedException e) {
@@ -240,10 +253,11 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public TypeCompteDepotDTO getDepositTypeById(Integer typeId) {
+  public TypeCompteDepotDTO getDepositTypeById(UserAdmin userAdmin, Integer typeId) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "type_comptes_depots")) return null
       LOG.info("Fetching deposit type with ID: " + typeId);
-      
+
       String url = TYPES_ENDPOINT + "/" + typeId;
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(url))
@@ -261,7 +275,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
         LOG.warning("Deposit type with ID " + typeId + " not found");
         return null;
       } else {
-        LOG.warning("Failed to get deposit type " + typeId + ". Status: " + response.statusCode() + ", Body: " + response.body());
+        LOG.warning("Failed to get deposit type " + typeId + ". Status: " + response.statusCode() + ", Body: "
+            + response.body());
         return null;
       }
     } catch (Exception e) {
@@ -271,10 +286,11 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public List<CompteDepotDTO> getAllAccounts() {
+  public List<CompteDepotDTO> getAllAccounts(UserAdmin userAdmin) {
     try {
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return empty list
       LOG.info("Fetching all deposit accounts from service");
-      
+
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(COMPTES_ENDPOINT))
           .header("Content-Type", "application/json")
@@ -284,8 +300,9 @@ public class CompteDepotServiceImpl implements CompteDepotService {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
-        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(), new TypeReference<List<CompteDepotDTO>>() {
-        });
+        List<CompteDepotDTO> accounts = objectMapper.readValue(response.body(),
+            new TypeReference<List<CompteDepotDTO>>() {
+            });
         LOG.info("Successfully retrieved " + accounts.size() + " deposit accounts");
         return accounts;
       } else {

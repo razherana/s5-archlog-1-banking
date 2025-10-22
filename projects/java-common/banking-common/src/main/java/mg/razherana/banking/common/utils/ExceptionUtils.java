@@ -4,11 +4,11 @@ public class ExceptionUtils {
   private ExceptionUtils() {
   }
 
-  public static Throwable root(Throwable throwable) {
+  public static Exception root(Throwable throwable) {
     Throwable rootCause = throwable;
     while (rootCause.getCause() != null) {
       rootCause = rootCause.getCause();
     }
-    return rootCause;
+    return (Exception) rootCause;
   }
 }

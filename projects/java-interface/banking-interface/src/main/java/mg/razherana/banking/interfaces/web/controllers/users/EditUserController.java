@@ -4,6 +4,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -54,7 +55,7 @@ public class EditUserController extends HttpServlet {
 
     try {
       Integer userId = Integer.parseInt(userIdStr);
-      User userToEdit = userService.findUserById(userId);
+      User userToEdit = userService.findUserById(currentUserAdmin, userId);
 
       if (userToEdit == null) {
         response.sendRedirect("../users?error=" + URLEncoder.encode("Utilisateur introuvable", StandardCharsets.UTF_8));
@@ -78,6 +79,7 @@ public class EditUserController extends HttpServlet {
     } catch (NumberFormatException e) {
       response.sendRedirect("../users?error=" + URLEncoder.encode("ID utilisateur invalide", StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error loading user for edit: " + e.getMessage());
       response.sendRedirect("../users?error=" + URLEncoder.encode("Erreur système", StandardCharsets.UTF_8));
     }
@@ -93,6 +95,7 @@ public class EditUserController extends HttpServlet {
       return;
     }
 
+    UserAdmin currentUserAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String userIdStr = request.getParameter("id");
     String name = request.getParameter("name");
 
@@ -106,6 +109,7 @@ public class EditUserController extends HttpServlet {
 
       // Update the user (User entity for data, not for auth)
       userService.updateUser(
+          currentUserAdmin,
           userId,
           name != null && !name.trim().isEmpty() ? name.trim() : null);
 
@@ -120,6 +124,7 @@ public class EditUserController extends HttpServlet {
       response
           .sendRedirect("edit?id=" + userIdStr + "&error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error updating user: " + e.getMessage());
       response.sendRedirect("edit?id=" + userIdStr + "&error="
           + URLEncoder.encode("Erreur système lors de la modification", StandardCharsets.UTF_8));

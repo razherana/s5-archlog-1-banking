@@ -1,10 +1,12 @@
 package mg.razherana.banking.common.entities;
 
+import java.io.Serializable;
+
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "action_roles")
-public class ActionRole {
+public class ActionRole implements Serializable {
 
   public static enum Action {
     CREATE,
@@ -72,5 +74,8 @@ public class ActionRole {
     this.action = action;
   }
 
-  
+  @Override
+  public String toString() {
+    return "ActionRole [role=" + role + ", tableName=" + tableName + ", action=" + action + "]";
+  }
 }

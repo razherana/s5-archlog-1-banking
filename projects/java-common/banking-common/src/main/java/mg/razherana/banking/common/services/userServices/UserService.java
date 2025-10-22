@@ -2,10 +2,13 @@ package mg.razherana.banking.common.services.userServices;
 
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.common.entities.ActionRole;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * EJB interface for User management services.
@@ -25,49 +28,54 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public interface UserService {
+public interface UserService extends AuthorizationService {
 
   /**
    * Find a user by ID.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId the user ID
    * @return User entity or null if not found
    */
-  User findUserById(Integer userId);
+  User findUserById(UserAdmin userAdmin, Integer userId);
 
   /**
    * Get all users in the system.
    * 
+   * @param userAdmin the authenticated user admin
    * @return List of all users
    */
-  List<User> getAllUsers();
+  List<User> getAllUsers(UserAdmin userAdmin);
 
   /**
    * Create a new user.
    * 
+   * @param userAdmin the authenticated user admin
    * @param name the user's full name
    * @return created User entity
    * @throws IllegalArgumentException if validation fails or email already exists
    */
-  User createUser(String name);
+  User createUser(UserAdmin userAdmin, String name);
 
   /**
    * Update an existing user.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId the ID of the user to update
    * @param name   the new name (optional, can be null to keep existing)
    * @return updated User entity
    * @throws IllegalArgumentException if user not found or validation fails
    */
-  User updateUser(Integer userId, String name);
+  User updateUser(UserAdmin userAdmin, Integer userId, String name);
 
   /**
    * Delete a user by ID.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId the ID of the user to delete
    * @throws IllegalArgumentException if user not found
    */
-  void deleteUser(Integer userId);
+  void deleteUser(UserAdmin userAdmin, Integer userId);
 
   /**
    * Authenticate a user admin with email and password.
@@ -89,10 +97,11 @@ public interface UserService {
   /**
    * Find a user admin by ID.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userAdminId the user admin ID
    * @return UserAdmin entity or null if not found
    */
-  UserAdmin findUserAdminById(Integer userAdminId);
+  UserAdmin findUserAdminById(UserAdmin userAdmin, Integer userAdminId);
 
   /**
    * Get action roles by role number.
@@ -109,83 +118,76 @@ public interface UserService {
    * - Loan module (java-pret)
    * - Deposit module (dotnet-depot)
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId         the user ID
    * @param actionDateTime optional date time for calculation (ISO format:
    *                       yyyy-MM-ddTHH:mm:ss)
    * @return total balance across all modules
    * @throws IllegalArgumentException if user not found or API calls fail
    */
-  BigDecimal calculateTotalBalanceAcrossModules(Integer userId, String actionDateTime);
+  BigDecimal calculateTotalBalanceAcrossModules(UserAdmin userAdmin, Integer userId, String actionDateTime);
 
   /**
    * Get current account balance for a user from the java-courant module.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId         the user ID
    * @param actionDateTime optional date time for calculation (ISO format:
    *                       yyyy-MM-ddTHH:mm:ss)
    * @return current account balance
    * @throws RuntimeException if API call fails
    */
-  BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTime);
+  BigDecimal getCurrentAccountBalance(UserAdmin userAdmin, Integer userId, String actionDateTime);
 
   /**
    * Get loan balance for a user from the java-pret module.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId         the user ID
    * @param actionDateTime optional date time for calculation (ISO format:
    *                       yyyy-MM-ddTHH:mm:ss)
    * @return loan balance (remaining debt)
    * @throws RuntimeException if API call fails
    */
-  BigDecimal getLoanBalance(Integer userId, String actionDateTime);
+  BigDecimal getLoanBalance(UserAdmin userAdmin, Integer userId, String actionDateTime);
 
   /**
    * Get deposit balance for a user from the dotnet-depot module.
    * 
+   * @param userAdmin the authenticated user admin
    * @param userId         the user ID
    * @param actionDateTime optional date time for calculation (ISO format:
    *                       yyyy-MM-ddTHH:mm:ss)
    * @return deposit balance
    * @throws RuntimeException if API call fails
    */
-  BigDecimal getDepositBalance(Integer userId, String actionDateTime);
-
-  /**
-   * Test if the user admin has authorization for a specific action.
-   * 
-   * @param userAdminId the user admin ID
-   * @param tableName   the database table name
-   * @param action      the action to authorize (e.g., "CREATE", "READ", "UPDATE",
-   *                    "DELETE")
-   * @return true if authorized, false otherwise
-   */
-  boolean hasAuthorization(Integer userAdminId, String tableName, String action);
-
-  /**
-   * Get the currently authenticated UserAdmin from the authentication context.
-   * This is the magic method that allows other modules to access the current
-   * authenticated user without needing to pass it as a parameter.
-   * 
-   * @return the currently authenticated UserAdmin or null if no user is
-   *         authenticated
-   */
-  UserAdmin getAuthedUser();
+  BigDecimal getDepositBalance(UserAdmin userAdmin, Integer userId, String actionDateTime);
 
   /**
    * Create a new user admin.
    * 
+   * @param userAdmin the authenticated user admin
    * @param email    the email of the user admin
    * @param password the password of the user admin
    * @param role     the role of the user admin
    * @return the created UserAdmin entity
    */
-  UserAdmin createUserAdmin(String email, String password, int role);
+  UserAdmin createUserAdmin(UserAdmin userAdmin, String email, String password, int role);
 
   /**
    * Get all users formatted for dropdown display as "id : name".
    * 
+   * @param userAdmin the authenticated user admin
    * @return Map where key is user ID and value is formatted display string "id :
    *         name"
    */
-  java.util.Map<Integer, String> getAllUsersForDropdown();
+  Map<Integer, String> getAllUsersForDropdown(UserAdmin userAdmin);
+
+  /**
+   * Get all user admins in the system + infos.
+   * 
+   * @param userAdmin the authenticated user admin
+   * @return HashMap of UserAdmin to their list of ActionRoles.
+   */
+  HashMap<UserAdmin, List<ActionRole>> getAllUserAdminsWithDepAndRoles(UserAdmin userAdmin);
 }

@@ -1,6 +1,7 @@
 package mg.razherana.banking.common.services.userServices;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 
 import jakarta.ejb.EJB;
@@ -16,28 +17,28 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   private UserService userService;
 
   @Override
-  public User findUserById(Integer userId) {
-    return userService.findUserById(userId);
+  public User findUserById(UserAdmin userAdmin, Integer userId) {
+    return userService.findUserById(userAdmin, userId);
   }
 
   @Override
-  public List<User> getAllUsers() {
-    return userService.getAllUsers();
+  public List<User> getAllUsers(UserAdmin userAdmin) {
+    return userService.getAllUsers(userAdmin);
   }
 
   @Override
-  public User createUser(String name) {
-    return userService.createUser(name);
+  public User createUser(UserAdmin userAdmin, String name) {
+    return userService.createUser(userAdmin, name);
   }
 
   @Override
-  public User updateUser(Integer userId, String name) {
-    return userService.updateUser(userId, name);
+  public User updateUser(UserAdmin userAdmin, Integer userId, String name) {
+    return userService.updateUser(userAdmin, userId, name);
   }
 
   @Override
-  public void deleteUser(Integer userId) {
-    userService.deleteUser(userId);
+  public void deleteUser(UserAdmin userAdmin, Integer userId) {
+    userService.deleteUser(userAdmin, userId);
   }
 
   @Override
@@ -46,28 +47,23 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   }
 
   @Override
-  public BigDecimal calculateTotalBalanceAcrossModules(Integer userId, String actionDateTime) {
-    return userService.calculateTotalBalanceAcrossModules(userId, actionDateTime);
+  public BigDecimal calculateTotalBalanceAcrossModules(UserAdmin userAdmin, Integer userId, String actionDateTime) {
+    return userService.calculateTotalBalanceAcrossModules(userAdmin, userId, actionDateTime);
   }
 
   @Override
-  public BigDecimal getCurrentAccountBalance(Integer userId, String actionDateTime) {
-    return userService.getCurrentAccountBalance(userId, actionDateTime);
+  public BigDecimal getCurrentAccountBalance(UserAdmin userAdmin, Integer userId, String actionDateTime) {
+    return userService.getCurrentAccountBalance(userAdmin, userId, actionDateTime);
   }
 
   @Override
-  public BigDecimal getLoanBalance(Integer userId, String actionDateTime) {
-    return userService.getLoanBalance(userId, actionDateTime);
+  public BigDecimal getLoanBalance(UserAdmin userAdmin, Integer userId, String actionDateTime) {
+    return userService.getLoanBalance(userAdmin, userId, actionDateTime);
   }
 
   @Override
-  public BigDecimal getDepositBalance(Integer userId, String actionDateTime) {
-    return userService.getDepositBalance(userId, actionDateTime);
-  }
-
-  @Override
-  public boolean hasAuthorization(Integer userId, String tableName, String action) {
-    return userService.hasAuthorization(userId, tableName, action);
+  public BigDecimal getDepositBalance(UserAdmin userAdmin, Integer userId, String actionDateTime) {
+    return userService.getDepositBalance(userAdmin, userId, actionDateTime);
   }
 
   @Override
@@ -76,8 +72,8 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   }
 
   @Override
-  public UserAdmin findUserAdminById(Integer userAdminId) {
-    return userService.findUserAdminById(userAdminId);
+  public UserAdmin findUserAdminById(UserAdmin userAdmin, Integer userAdminId) {
+    return userService.findUserAdminById(userAdmin, userAdminId);
   }
 
   @Override
@@ -86,18 +82,22 @@ public class UserRemoteServiceImpl implements UserRemoteService {
   }
 
   @Override
-  public UserAdmin getAuthedUser() {
-    return userService.getAuthedUser();
+  public UserAdmin createUserAdmin(UserAdmin userAdmin, String email, String password, int role) {
+    return userService.createUserAdmin(userAdmin, email, password, role);
   }
 
   @Override
-  public UserAdmin createUserAdmin(String email, String password, int role) {
-    return userService.createUserAdmin(email, password, role);
+  public java.util.Map<Integer, String> getAllUsersForDropdown(UserAdmin userAdmin) {
+    return userService.getAllUsersForDropdown(userAdmin);
   }
 
   @Override
-  public java.util.Map<Integer, String> getAllUsersForDropdown() {
-    return userService.getAllUsersForDropdown();
+  public HashMap<UserAdmin, List<ActionRole>> getAllUserAdminsWithDepAndRoles(UserAdmin userAdmin) {
+    return userService.getAllUserAdminsWithDepAndRoles(userAdmin);
   }
 
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    return userService.hasAuthorization(userAdmin, operationType, tableName);
+  }
 }

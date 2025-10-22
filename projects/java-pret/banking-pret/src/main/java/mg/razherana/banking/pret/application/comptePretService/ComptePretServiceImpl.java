@@ -1,7 +1,9 @@
 package mg.razherana.banking.pret.application.comptePretService;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
-import jakarta.ejb.Stateless;
+import jakarta.ejb.Stateful;
+import jakarta.ejb.StatefulTimeout;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
@@ -11,13 +13,17 @@ import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.common.entities.ActionRole;
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.pret.application.remoteServices.UserServiceWrapper;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -32,7 +38,8 @@ import java.util.logging.Logger;
  * @version 1.0
  * @since 1.0
  */
-@Stateless
+@Stateful
+@StatefulTimeout(unit = TimeUnit.MINUTES, value = 30)
 public class ComptePretServiceImpl implements ComptePretService {
   private static final Logger LOG = Logger.getLogger(ComptePretServiceImpl.class.getName());
 
@@ -55,7 +62,7 @@ public class ComptePretServiceImpl implements ComptePretService {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
-    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(userId);
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(null, userId);
 
     if (ogUser == null) {
       throw new IllegalArgumentException("User with ID " + userId + " not found");
@@ -355,25 +362,6 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   /**
-   * Calculates the total expected amount to be paid over the life of the loan.
-   */
-  private BigDecimal getExpectedTotal(ComptePret loan) {
-    if (loan == null) {
-      throw new IllegalArgumentException("Loan cannot be null");
-    }
-
-    // Calculate number of months between start and end date
-    // Add 1 to include the starting month
-    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
-    if (totalMonths <= 0) {
-      throw new IllegalArgumentException("Invalid loan duration");
-    }
-
-    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
-    return monthlyPayment.multiply(BigDecimal.valueOf(totalMonths));
-  }
-
-  /**
    * Calculates the expected amount to be paid by a specific date.
    */
   @Override
@@ -400,22 +388,6 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
     return monthlyPayment.multiply(BigDecimal.valueOf(monthsElapsed));
-  }
-
-  private long monthPassed(LocalDateTime start, LocalDateTime end) {
-    if (start == null || end == null) {
-      throw new IllegalArgumentException("Start and end date cannot be null");
-    }
-
-    // If end date is before start, return 0
-    if (end.isBefore(start)) {
-      return 0;
-    }
-
-    // Calculate months elapsed since start
-    long calendarMonths = (end.getYear() - start.getYear()) * 12 +
-        (end.getMonthValue() - start.getMonthValue());
-    return calendarMonths < 0 ? 0 : calendarMonths;
   }
 
   /**
@@ -507,5 +479,72 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     LOG.info("Payment of " + amount + " made for loan " + compteId);
     return payment;
+  }
+
+  private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;
+
+  @PostConstruct
+  protected void init() {
+    LOG.info("CompteCourantServiceImpl initialized");
+  }
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    if(userAdmin == null)
+      return true;
+
+    if (adminInfos == null) {
+      adminInfos = userServiceWrapper.getUserRemoteService().getAllUserAdminsWithDepAndRoles(null);
+    }
+
+    var actionRoles = adminInfos.get(userAdmin);
+
+    if (actionRoles == null) {
+      LOG.warning("No action roles found for user admin: " + userAdmin.getId());
+      return false;
+    }
+
+    for (ActionRole actionRole : actionRoles) {
+      if (actionRole.getAction().equals(operationType)
+          && actionRole.getTableName().equals(tableName))
+        return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculates the total expected amount to be paid over the life of the loan.
+   */
+  private BigDecimal getExpectedTotal(ComptePret loan) {
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan cannot be null");
+    }
+
+    // Calculate number of months between start and end date
+    // Add 1 to include the starting month
+    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
+    if (totalMonths <= 0) {
+      throw new IllegalArgumentException("Invalid loan duration");
+    }
+
+    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
+    return monthlyPayment.multiply(BigDecimal.valueOf(totalMonths));
+  }
+
+  private long monthPassed(LocalDateTime start, LocalDateTime end) {
+    if (start == null || end == null) {
+      throw new IllegalArgumentException("Start and end date cannot be null");
+    }
+
+    // If end date is before start, return 0
+    if (end.isBefore(start)) {
+      return 0;
+    }
+
+    // Calculate months elapsed since start
+    long calendarMonths = (end.getYear() - start.getYear()) * 12 +
+        (end.getMonthValue() - start.getMonthValue());
+    return calendarMonths < 0 ? 0 : calendarMonths;
   }
 }

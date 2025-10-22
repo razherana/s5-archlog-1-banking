@@ -3,7 +3,9 @@ package mg.razherana.banking.interfaces.web.controllers.comptePret;
 import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -38,17 +40,20 @@ public class PaymentStatusController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String loanIdStr = request.getParameter("loanId");
     String actionDateTimeStr = request.getParameter("actionDateTime");
 
@@ -64,18 +69,14 @@ public class PaymentStatusController extends HttpServlet {
 
     try {
       Integer loanId = Integer.parseInt(loanIdStr);
-      ComptePretDTO loan = comptePretService.getLoanById(loanId);
+      ComptePretDTO loan = comptePretService.getLoanById(userAdmin, loanId);
 
       if (loan == null) {
         response.sendRedirect("../comptes-prets?error=loan_not_found");
         return;
       }
 
-      // Verify that the loan belongs to the logged-in user
-      if (!loan.getUserId().equals(user.getId())) {
-        response.sendRedirect("../comptes-prets?error=unauthorized_access");
-        return;
-      }
+      // UserAdmin can access any loan, no ownership check needed
 
       // Parse the action date and set time to end of day for status check
       LocalDateTime actionDateTime = LocalDateTime.parse(actionDateTimeStr + "T23:59:59");
@@ -91,8 +92,8 @@ public class PaymentStatusController extends HttpServlet {
       // Use API call to get payment status with the specific date
       // This leverages the backend's comprehensive payment calculation logic
       // instead of manually calculating values in the frontend
-      PaymentStatusDTO paymentStatus = comptePretService.getPaymentStatus(loanId, actionDateTime);
-      List<EcheanceDTO> paymentHistory = comptePretService.getPaymentHistory(loanId, actionDateTime);
+      PaymentStatusDTO paymentStatus = comptePretService.getPaymentStatus(userAdmin, loanId, actionDateTime);
+      List<EcheanceDTO> paymentHistory = comptePretService.getPaymentHistory(userAdmin, loanId, actionDateTime);
 
       // Extract values from API response or set defaults if null
       BigDecimal totalExpected = paymentStatus != null ? paymentStatus.getTotalExpected() : BigDecimal.ZERO;
@@ -122,7 +123,7 @@ public class PaymentStatusController extends HttpServlet {
       WebContext context = new WebContext(application.buildExchange(request, response));
 
       // Set template variables
-      context.setVariable("userName", user.getName());
+      context.setVariable("userAdminName", userAdmin.getEmail());
       context.setVariable("BD_ZERO", BigDecimal.ZERO);
       context.setVariable("loan", loan);
       context.setVariable("paymentStatus", paymentStatus);
@@ -143,6 +144,7 @@ public class PaymentStatusController extends HttpServlet {
     } catch (NumberFormatException e) {
       response.sendRedirect("../comptes-prets?error=invalid_loan_id");
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error processing payment status: " + e.getMessage());
       response.sendRedirect("detail?id=" + loanIdStr + "&error=" + e.getMessage());
     }

@@ -41,7 +41,7 @@ public class MenuController extends HttpServlet {
 
     // Add variables to context
     webContext.setVariable("userAdmin", userAdmin);
-    webContext.setVariable("users", userService.getAllUsers());
+    webContext.setVariable("users", userService.getAllUsers(userAdmin));
 
     // Process template
     resp.setContentType("text/html;charset=UTF-8");

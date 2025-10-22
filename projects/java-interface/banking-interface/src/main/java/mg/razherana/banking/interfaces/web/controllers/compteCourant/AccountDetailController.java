@@ -64,7 +64,7 @@ public class AccountDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourant account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
         response.sendRedirect("../comptes-courants?error=account_not_found");
@@ -72,21 +72,22 @@ public class AccountDetailController extends HttpServlet {
       }
 
       // Get tax to pay amount
-      BigDecimal taxToPay = compteCourantService.getTaxToPay(accountId, LocalDateTime.now());
+      BigDecimal taxToPay = compteCourantService.getTaxToPay(userAdmin, accountId, LocalDateTime.now());
 
       // Get all users for transfer functionality
-      List<User> allUsers = userService.getAllUsers();
+      List<User> allUsers = userService.getAllUsers(userAdmin);
 
       // Get all accounts for each user (for JavaScript filtering)
-      List<CompteCourant> allAccountsOld = compteCourantService.getAllAccounts();
+      List<CompteCourant> allAccountsOld = compteCourantService.getAllAccounts(userAdmin);
 
       var allAccounts = allAccountsOld.stream()
           .map(
-              ac -> new CompteData(ac.getId(), ac.getUserId(), compteCourantService.getAccountBalance(accountId, null)))
+              ac -> new CompteData(ac.getId(), ac.getUserId(),
+                  compteCourantService.getAccountBalance(userAdmin, accountId, null)))
           .toList();
 
       // Get current balance
-      BigDecimal currentBalance = compteCourantService.getAccountBalance(accountId, LocalDateTime.now());
+      BigDecimal currentBalance = compteCourantService.getAccountBalance(userAdmin, accountId, LocalDateTime.now());
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
@@ -135,7 +136,7 @@ public class AccountDetailController extends HttpServlet {
 
     try {
       Integer accountId = Integer.parseInt(accountIdStr);
-      CompteCourant account = compteCourantService.getAccountById(accountId);
+      CompteCourant account = compteCourantService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
         response.sendRedirect("../comptes-courants?error=account_not_found");
@@ -150,7 +151,7 @@ public class AccountDetailController extends HttpServlet {
 
       switch (action) {
         case "deposit":
-          errorMessage = handleDeposit(request, account);
+          errorMessage = handleDeposit(request, account, userAdmin);
           success = (errorMessage == null);
 
           if (success)
@@ -160,7 +161,7 @@ public class AccountDetailController extends HttpServlet {
           break;
 
         case "withdraw":
-          errorMessage = handleWithdrawal(request, account);
+          errorMessage = handleWithdrawal(request, account, userAdmin);
           success = (errorMessage == null);
           if (success)
             redirectUrl += "&success=withdrawal_success";
@@ -170,7 +171,7 @@ public class AccountDetailController extends HttpServlet {
           break;
 
         case "pay_tax":
-          errorMessage = handleTaxPayment(request, account);
+          errorMessage = handleTaxPayment(request, account, userAdmin);
           success = (errorMessage == null);
 
           if (success)
@@ -205,7 +206,7 @@ public class AccountDetailController extends HttpServlet {
     }
   }
 
-  private String handleDeposit(HttpServletRequest request, CompteCourant account) {
+  private String handleDeposit(HttpServletRequest request, CompteCourant account, UserAdmin userAdmin) {
     try {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
@@ -230,6 +231,7 @@ public class AccountDetailController extends HttpServlet {
       }
 
       TransactionCourant result = compteCourantService.makeDeposit(
+          userAdmin,
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Deposit via interface",
@@ -244,7 +246,7 @@ public class AccountDetailController extends HttpServlet {
     }
   }
 
-  private String handleWithdrawal(HttpServletRequest request, CompteCourant account) {
+  private String handleWithdrawal(HttpServletRequest request, CompteCourant account, UserAdmin userAdmin) {
     try {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
@@ -269,6 +271,7 @@ public class AccountDetailController extends HttpServlet {
       }
 
       TransactionCourant result = compteCourantService.makeWithdrawal(
+          userAdmin,
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Withdrawal via interface",
@@ -283,7 +286,7 @@ public class AccountDetailController extends HttpServlet {
     }
   }
 
-  private String handleTaxPayment(HttpServletRequest request, CompteCourant account) {
+  private String handleTaxPayment(HttpServletRequest request, CompteCourant account, UserAdmin userAdmin) {
     String description = request.getParameter("description");
     String actionDateTimeStr = request.getParameter("actionDateTime");
 
@@ -298,10 +301,11 @@ public class AccountDetailController extends HttpServlet {
 
     try {
       TransactionCourant result = compteCourantService.payTax(
+          userAdmin,
           account.getId(),
           description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
           actionDateTime);
-  
+
       return result != null ? null : "Failed to create tax payment transaction";
     } catch (Exception e) {
       return ExceptionUtils.root(e).getMessage();
@@ -344,6 +348,7 @@ public class AccountDetailController extends HttpServlet {
       }
 
       boolean success = compteCourantService.makeTransfer(
+          userAdmin,
           account.getId(),
           destinationAccountId,
           amount,

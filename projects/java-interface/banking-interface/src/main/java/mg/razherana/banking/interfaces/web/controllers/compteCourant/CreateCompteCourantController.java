@@ -5,6 +5,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public class CreateCompteCourantController extends HttpServlet {
     UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
 
     // Get all users for dropdown
-    Map<Integer, String> usersForDropdown = userService.getAllUsersForDropdown();
+    Map<Integer, String> usersForDropdown = userService.getAllUsersForDropdown(userAdmin);
 
     // Create Thymeleaf context
     JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
@@ -82,7 +83,7 @@ public class CreateCompteCourantController extends HttpServlet {
       return;
     }
 
-    // UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     
     // Get userId from form parameter
     String userIdParam = request.getParameter("userId");
@@ -131,7 +132,7 @@ public class CreateCompteCourantController extends HttpServlet {
       LOG.info("Creating account for user: " + userId + " with taxe: " + taxe + " at time: " + actionDateTime);
 
       // Create the account
-      CompteCourant createdAccount = compteCourantService.createAccount(userId, taxe, actionDateTime);
+      CompteCourant createdAccount = compteCourantService.createAccount(userAdmin, userId, taxe, actionDateTime);
 
       if (createdAccount != null) {
         LOG.info("Account created successfully with ID: " + createdAccount.getId());
@@ -142,8 +143,9 @@ public class CreateCompteCourantController extends HttpServlet {
       }
 
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error during account creation: " + e.getMessage());
-      response.sendRedirect("create?error=system_error");
+      response.sendRedirect("create?error=" + e.getMessage());
     }
   }
 }

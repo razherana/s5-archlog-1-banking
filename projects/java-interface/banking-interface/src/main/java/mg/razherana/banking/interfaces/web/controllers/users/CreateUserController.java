@@ -3,6 +3,7 @@ package mg.razherana.banking.interfaces.web.controllers.users;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -69,6 +70,7 @@ public class CreateUserController extends HttpServlet {
       return;
     }
 
+    UserAdmin currentUserAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String name = request.getParameter("name");
 
     // Basic validation
@@ -79,7 +81,7 @@ public class CreateUserController extends HttpServlet {
 
     try {
       // Create the user (User entity for data, not for auth)
-      userService.createUser(name.trim());
+      userService.createUser(currentUserAdmin, name.trim());
 
       LOG.info("User created successfully: " + name.trim());
       response.sendRedirect(
@@ -89,6 +91,7 @@ public class CreateUserController extends HttpServlet {
       LOG.warning("Failed to create user: " + e.getMessage());
       response.sendRedirect("create?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error creating user: " + e.getMessage());
       response.sendRedirect(
           "create?error=" + URLEncoder.encode("Erreur système lors de la création", StandardCharsets.UTF_8));

@@ -1,5 +1,6 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
+import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.User;
 import java.math.BigDecimal;
@@ -41,7 +42,7 @@ import java.util.List;
  * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
-public interface CompteCourantService {
+public interface CompteCourantService extends AuthorizationService {
   /**
    * Find a user by ID using REST API call to java-interface.
    * 

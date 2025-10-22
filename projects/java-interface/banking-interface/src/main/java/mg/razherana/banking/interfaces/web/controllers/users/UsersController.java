@@ -4,6 +4,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -47,7 +48,7 @@ public class UsersController extends HttpServlet {
 
     try {
       // Get all users
-      List<User> allUsers = userService.getAllUsers();
+      List<User> allUsers = userService.getAllUsers(currentUserAdmin);
 
       // Create Thymeleaf context
       JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
@@ -65,8 +66,9 @@ public class UsersController extends HttpServlet {
           .process("users/list", context, response.getWriter());
 
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error loading users: " + e.getMessage());
-      response.sendRedirect("menu.html?error=system_error");
+      response.sendRedirect("menu.html?error=" + e.getMessage());
     }
   }
 }

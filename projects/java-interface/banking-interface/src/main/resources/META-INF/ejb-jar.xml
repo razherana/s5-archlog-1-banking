@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ejb-jar xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="3.2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+                            http://xmlns.jcp.org/xml/ns/javaee/ejb-jar_3_2.xsd">
+
+  <assembly-descriptor>
+    <!-- Configure IllegalStateException as application exception -->
+    <application-exception>
+      <exception-class>java.lang.IllegalStateException</exception-class>
+      <rollback>false</rollback>      <!-- or false -->
+      <inherited>false</inherited>      <!-- affects subclasses too -->
+    </application-exception>
+
+    <!-- You can also configure other exceptions -->
+    <application-exception>
+      <exception-class>java.lang.IllegalArgumentException</exception-class>
+      <rollback>false</rollback>
+      <inherited>false</inherited>
+    </application-exception>
+  </assembly-descriptor>
+
+</ejb-jar>

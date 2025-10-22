@@ -5,7 +5,11 @@ import mg.razherana.banking.interfaces.application.compteCourantServices.CompteC
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 import mg.razherana.banking.courant.entities.CompteCourant;
-import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
+
+import java.util.Map;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -19,6 +23,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -40,32 +46,46 @@ public class CreateComptePretController extends HttpServlet {
   @EJB
   private ThymeleafService thymeleafService;
 
+  @EJB
+  private UserService userService;
+
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
-
-    User user = (User) session.getAttribute("user");
-
-    // Get loan types and current accounts for the user
-    List<TypeComptePretDTO> loanTypes = comptePretService.getAllLoanTypes();
-    List<CompteCourant> currentAccounts = compteCourantService.getAccountsByUserId(user.getId());
 
     // Create Thymeleaf context
     JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(getServletContext());
     WebContext context = new WebContext(application.buildExchange(request, response));
 
-    // Set template variables
-    context.setVariable("userName", user.getName());
-    context.setVariable("loanTypes", loanTypes);
-    context.setVariable("currentAccounts", currentAccounts);
-    context.setVariable("error", request.getParameter("error"));
-    context.setVariable("success", request.getParameter("success"));
+    try {
+      UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+
+      // Get loan types and all current accounts for dropdown selection
+      List<TypeComptePretDTO> loanTypes = comptePretService.getAllLoanTypes(userAdmin);
+      List<CompteCourant> allCurrentAccounts = compteCourantService.getAllAccounts(userAdmin);
+
+      // Get all users for dropdown
+      Map<Integer, String> usersForDropdown = userService.getAllUsersForDropdown(userAdmin);
+
+      // Set template variables
+      context.setVariable("userAdminName", userAdmin.getEmail());
+      context.setVariable("usersForDropdown", usersForDropdown);
+      context.setVariable("loanTypes", loanTypes);
+      context.setVariable("currentAccounts", allCurrentAccounts);
+      context.setVariable("error", request.getParameter("error"));
+      context.setVariable("success", request.getParameter("success"));
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+      LOG.severe("Error in CreateComptePretController doGet: " + e.getMessage());
+      response.sendRedirect("../comptes-prets?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
+      return;
+    }
 
     // Process template and write response
     response.setContentType("text/html;charset=UTF-8");
@@ -78,13 +98,27 @@ public class CreateComptePretController extends HttpServlet {
       throws ServletException, IOException {
 
     HttpSession session = request.getSession(false);
-    if (session == null || session.getAttribute("user") == null) {
+    if (session == null || session.getAttribute("userAdmin") == null) {
       response.sendRedirect("../login.html");
       return;
     }
 
-    User user = (User) session.getAttribute("user");
-    Integer userId = user.getId();
+    UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
+
+    // Get userId from form parameter
+    String userIdParam = request.getParameter("userId");
+    if (userIdParam == null || userIdParam.trim().isEmpty()) {
+      response.sendRedirect("create?error=missing_user_id");
+      return;
+    }
+
+    Integer userId;
+    try {
+      userId = Integer.parseInt(userIdParam);
+    } catch (NumberFormatException e) {
+      response.sendRedirect("create?error=invalid_user_id");
+      return;
+    }
 
     try {
       // Get form parameters
@@ -124,7 +158,7 @@ public class CreateComptePretController extends HttpServlet {
       }
 
       // Verify that the current account belongs to the user
-      CompteCourant currentAccount = compteCourantService.getAccountById(compteCourantId);
+      CompteCourant currentAccount = compteCourantService.getAccountById(userAdmin, compteCourantId);
       if (currentAccount == null || !currentAccount.getUserId().equals(userId)) {
         response.sendRedirect("create?error=invalid_current_account");
         return;
@@ -143,7 +177,7 @@ public class CreateComptePretController extends HttpServlet {
           " to be deposited in account: " + compteCourantId);
 
       // Create the loan
-      ComptePretDTO createdLoan = comptePretService.createLoan(loanRequest);
+      ComptePretDTO createdLoan = comptePretService.createLoan(userAdmin, loanRequest);
 
       if (createdLoan != null) {
         LOG.info("Loan created successfully: " + createdLoan.getId());
@@ -157,8 +191,9 @@ public class CreateComptePretController extends HttpServlet {
       LOG.warning("Invalid number format in loan creation: " + e.getMessage());
       response.sendRedirect("create?error=invalid_format");
     } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       LOG.severe("Error during loan creation: " + e.getMessage());
-      response.sendRedirect("create?error=system_error");
+      response.sendRedirect("create?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     }
   }
 }

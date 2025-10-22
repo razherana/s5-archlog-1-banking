@@ -60,7 +60,7 @@ public class UserResource {
   @GET
   public Response getAllUsers() {
     try {
-      List<User> users = userService.getAllUsers();
+      List<User> users = userService.getAllUsers(null);
       List<UserDTO> userDTOs = users.stream()
           .map(UserDTO::new)
           .collect(Collectors.toList());
@@ -89,7 +89,7 @@ public class UserResource {
   @Path("/{id}")
   public Response getUserById(@PathParam("id") Integer id) {
     try {
-      User user = userService.findUserById(id);
+      User user = userService.findUserById(null, id);
       if (user == null) {
         ErrorDTO error = new ErrorDTO("User not found", 404, "Not Found", "/users/" + id);
         return Response.status(Response.Status.NOT_FOUND)
@@ -128,7 +128,7 @@ public class UserResource {
             .entity(error).build();
       }
 
-      User user = userService.createUser(request.getName());
+      User user = userService.createUser(null, request.getName());
       UserDTO userDTO = new UserDTO(user);
 
       return Response.status(Response.Status.CREATED)
@@ -162,7 +162,7 @@ public class UserResource {
             .entity(error).build();
       }
 
-      User user = userService.updateUser(id, request.getName());
+      User user = userService.updateUser(null, id, request.getName());
       UserDTO userDTO = new UserDTO(user);
 
       return Response.ok(userDTO)
@@ -189,7 +189,7 @@ public class UserResource {
   @Path("/{id}")
   public Response deleteUser(@PathParam("id") Integer id) {
     try {
-      userService.deleteUser(id);
+      userService.deleteUser(null, id);
       return Response.noContent().build();
     } catch (EJBException e) {
       if (isClientError(e)) {

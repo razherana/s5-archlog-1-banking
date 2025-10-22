@@ -1,5 +1,6 @@
 package mg.razherana.banking.interfaces.application.comptePretServices;
 
+import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 import mg.razherana.banking.pret.application.comptePretService.ComptePretServiceRemote;
 import mg.razherana.banking.pret.entities.ComptePret;
@@ -44,7 +45,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public List<TypeComptePretDTO> getAllLoanTypes() {
+  public List<TypeComptePretDTO> getAllLoanTypes(UserAdmin userAdmin) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "type_compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read loan types");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read loan types");
+    }
     var loanTypes = comptePretRemoteService.getAllLoanTypes();
     return loanTypes.stream()
         .map(type -> {
@@ -72,7 +77,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public List<ComptePretDTO> getLoansByUserId(Integer userId) {
+  public List<ComptePretDTO> getLoansByUserId(UserAdmin userAdmin, Integer userId) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read loans");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read loans");
+    }
     var loans = comptePretRemoteService.getLoansByUserId(userId);
     List<ComptePretDTO> loanDTOs = new ArrayList<>();
     for (var loan : loans) {
@@ -86,7 +95,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public ComptePretDTO getLoanById(Integer loanId) {
+  public ComptePretDTO getLoanById(UserAdmin userAdmin, Integer loanId) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read loans");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read loans");
+    }
     var loan = comptePretRemoteService.findById(loanId);
     if (loan == null) {
       return null;
@@ -99,7 +112,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public ComptePretDTO createLoan(CreateComptePretRequest request) {
+  public ComptePretDTO createLoan(UserAdmin userAdmin, CreateComptePretRequest request) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "CREATE", "compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create loans");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to create loans");
+    }
     var createdLoanObj = comptePretRemoteService.createLoan(
         request.getUserId(),
         request.getTypeComptePretId(),
@@ -121,6 +138,7 @@ public class ComptePretServiceImpl implements ComptePretService {
       try {
         String description = "Prêt #" + createdLoan.getId() + " - Versement du montant emprunté";
         TransactionCourant depositTransaction = compteCourantService.makeDeposit(
+            userAdmin,
             request.getCompteCourantId(),
             request.getMontant(),
             description,
@@ -141,7 +159,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public EcheanceDTO makePayment(MakePaymentRequest request) {
+  public EcheanceDTO makePayment(UserAdmin userAdmin, MakePaymentRequest request) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "CREATE", "echeances")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create payments");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to create payments");
+    }
     Echeance payment = comptePretRemoteService.makePayment(
         request.getCompteId(),
         request.getMontant(),
@@ -160,12 +182,20 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public PaymentStatusDTO getPaymentStatus(Integer loanId) {
-    return getPaymentStatus(loanId, LocalDateTime.now());
+  public PaymentStatusDTO getPaymentStatus(UserAdmin userAdmin, Integer loanId) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "echeances")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read payment status");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read payment status");
+    }
+    return getPaymentStatus(userAdmin, loanId, LocalDateTime.now());
   }
 
   @Override
-  public PaymentStatusDTO getPaymentStatus(Integer loanId, LocalDateTime actionDateTime) {
+  public PaymentStatusDTO getPaymentStatus(UserAdmin userAdmin, Integer loanId, LocalDateTime actionDateTime) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "echeances")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read payment status");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read payment status");
+    }
     var ogStatus = comptePretRemoteService.getPaymentStatus(loanId, actionDateTime);
     if (ogStatus == null)
       throw new IllegalStateException("Failed to retrieve payment status");
@@ -181,7 +211,11 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public List<EcheanceDTO> getPaymentHistory(Integer loanId) {
+  public List<EcheanceDTO> getPaymentHistory(UserAdmin userAdmin, Integer loanId) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "echeances")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read payment history");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read payment history");
+    }
     var payments = comptePretRemoteService.getPaymentHistory(loanId);
     return payments.stream()
         .map(payment -> {
@@ -196,14 +230,22 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public List<EcheanceDTO> getPaymentHistory(Integer loanId, LocalDateTime actionDateTime) {
-    return getPaymentHistory(loanId).stream()
+  public List<EcheanceDTO> getPaymentHistory(UserAdmin userAdmin, Integer loanId, LocalDateTime actionDateTime) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "echeances")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read payment history");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read payment history");
+    }
+    return getPaymentHistory(userAdmin, loanId).stream()
         .filter(payment -> !payment.getDateEcheance().isAfter(actionDateTime))
         .toList();
   }
 
   @Override
-  public BigDecimal getLoanBalanceByUserId(Integer userId, LocalDateTime actionDateTime) {
+  public BigDecimal getLoanBalanceByUserId(UserAdmin userAdmin, Integer userId, LocalDateTime actionDateTime) {
+    if (!comptePretRemoteService.hasAuthorization(userAdmin, "READ", "compte_prets")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read loan balances");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read loan balances");
+    }
     return comptePretRemoteService.calculateTotalSoldeByUserId(userId, actionDateTime);
   }
 }

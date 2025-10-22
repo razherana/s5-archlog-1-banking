@@ -13,7 +13,7 @@
 
     <div class="container">
       <div class="user-info">
-        <span>Welcome, <strong th:text="${userName}">User</strong></span>
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
         <a href="../logout" class="logout-link">Logout</a>
         <div style="clear: both"></div>
       </div>
@@ -80,6 +80,19 @@
           action="create"
           class="account-form"
         >
+          <!-- User Selection Dropdown -->
+          <div class="form-group">
+            <label for="userId">Sélectionner un utilisateur <span class="required">*</span>:</label>
+            <select id="userId" name="userId" class="form-input" required>
+              <option value="">-- Choisir un utilisateur --</option>
+              <option th:each="user : ${usersForDropdown}" 
+                      th:value="${user.key}" 
+                      th:text="${user.value}">
+                User
+              </option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="typeComptePretId"
               >Type de Prêt <span class="required">*</span>:</label
@@ -132,9 +145,9 @@
             >
               <option value="">-- Sélectionnez un compte courant --</option>
               <option
-                th:each="account : ${currentAccounts}"
-                th:value="${account.id}"
-                th:text="${account.numeroCompte + ' (' + #numbers.formatDecimal(account.solde, 1, 2) + ' MGA)'}"
+                th:each="accountV : ${currentAccounts}"
+                th:value="${accountV.id}"
+                th:text="${accountV.id}"
               >
                 123456789 (1000.00 MGA)
               </option>

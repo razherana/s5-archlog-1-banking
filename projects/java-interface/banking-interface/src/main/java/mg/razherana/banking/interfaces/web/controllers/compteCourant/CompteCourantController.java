@@ -5,6 +5,7 @@ import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -56,7 +57,7 @@ public class CompteCourantController extends HttpServlet {
 
     // Set template variables
     context.setVariable("userAdminName", userAdmin.getEmail());
-    context.setVariable("usersForDropdown", userService.getAllUsersForDropdown());
+    context.setVariable("usersForDropdown", userService.getAllUsersForDropdown(userAdmin));
     context.setVariable("selectedUserId", userIdParam);
 
     // If userId is provided, fetch accounts for that user
@@ -65,11 +66,15 @@ public class CompteCourantController extends HttpServlet {
         Integer userId = Integer.parseInt(userIdParam);
         LOG.info("Fetching current accounts for user: " + userId);
 
-        List<CompteCourant> accounts = compteCourantService.getAccountsByUserId(userId);
+        List<CompteCourant> accounts = compteCourantService.getAccountsByUserId(userAdmin, userId);
         context.setVariable("accounts", accounts);
       } catch (NumberFormatException e) {
         LOG.warning("Invalid userId parameter: " + userIdParam);
         context.setVariable("error", "ID utilisateur invalide");
+      } catch (Exception e) {
+        e = ExceptionUtils.root(e);
+        LOG.severe("Error fetching current accounts: " + e.getMessage());
+        context.setVariable("error", e.getMessage());
       }
     }
 
