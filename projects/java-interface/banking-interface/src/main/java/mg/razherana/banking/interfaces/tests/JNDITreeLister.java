@@ -9,24 +9,32 @@ import java.util.Enumeration;
 
 public class JNDITreeLister {
 
+  public static void list(String url) {
+    new JNDITreeLister().listAllJNDINames(url);
+  }
+
   public static void list() {
     new JNDITreeLister().listAllJNDINames();
   }
 
   public void listAllJNDINames() {
+    listAllJNDINames("localhost");
+  }
+
+  public void listAllJNDINames(String url) {
     Context context = null;
     try {
       // TomEE remote connection properties
       Properties props = new Properties();
       props.put(Context.INITIAL_CONTEXT_FACTORY,
           "org.apache.openejb.client.RemoteInitialContextFactory");
-      props.put(Context.PROVIDER_URL, "http://localhost:8080/tomee/ejb");
+      props.put(Context.PROVIDER_URL, "http://" + url + ":8080/tomee/ejb");
       // props.put(Context.SECURITY_PRINCIPAL, "username"); // if needed
       // props.put(Context.SECURITY_CREDENTIALS, "password"); // if needed
 
       context = new InitialContext(props);
 
-      System.out.println("=== JNDI TREE ===");
+      System.out.println("===  " + url + " - JNDI TREE ===");
       listContext("", context);
 
     } catch (NamingException e) {

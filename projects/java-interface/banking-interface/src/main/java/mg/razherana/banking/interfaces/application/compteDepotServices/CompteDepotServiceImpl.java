@@ -3,6 +3,7 @@ package mg.razherana.banking.interfaces.application.compteDepotServices;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.interfaces.dto.TypeCompteDepotDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -47,6 +48,9 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @EJB
   private CompteCourantService compteCourantService;
 
+  @EJB
+  private ChangeService changeService;
+
   public CompteDepotServiceImpl() {
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
@@ -56,7 +60,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public List<CompteDepotDTO> getAccountsByUserId(UserAdmin userAdmin, Integer userId) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return empty list
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ",
+      // "compte_depots")) return empty list
 
       String url = COMPTES_ENDPOINT + "/user/" + userId;
       HttpRequest request = HttpRequest.newBuilder()
@@ -88,7 +93,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public CompteDepotDTO getAccountById(UserAdmin userAdmin, Integer accountId) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return null
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ",
+      // "compte_depots")) return null
       String url = COMPTES_ENDPOINT + "/" + accountId;
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create(url))
@@ -114,15 +120,39 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public CompteDepotDTO createAccount(UserAdmin userAdmin, Integer typeCompteDepotId, Integer userId, String dateEcheance,
-      BigDecimal montant, String actionDateTime) {
+  public CompteDepotDTO createAccount(UserAdmin userAdmin, Integer typeCompteDepotId, Integer userId,
+      String dateEcheance,
+      BigDecimal montant, String actionDateTime, String currency) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "CREATE", "compte_depots")) return null
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "CREATE",
+      // "compte_depots")) return null
+      
+      // Handle currency conversion
+      if (currency == null || currency.trim().isEmpty()) {
+        currency = "MGA";
+      }
+      
+      BigDecimal convertedMontant = montant;
+      if (!"MGA".equals(currency)) {
+        LocalDateTime actionDateTimeParsed = LocalDateTime.now();
+        if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
+          try {
+            actionDateTimeParsed = LocalDateTime.parse(actionDateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+          } catch (Exception e) {
+            LOG.log(Level.WARNING, "Invalid actionDateTime format, using current time: " + e.getMessage());
+          }
+        }
+        var change = changeService.getChange(currency, actionDateTimeParsed);
+        if (change != null) {
+          convertedMontant = montant.multiply(change);
+        }
+      }
+      
       Map<String, Object> requestBody = new HashMap<>();
       requestBody.put("typeCompteDepotId", typeCompteDepotId);
       requestBody.put("userId", userId);
       requestBody.put("dateEcheance", dateEcheance);
-      requestBody.put("montant", montant);
+      requestBody.put("montant", convertedMontant);
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBody.put("actionDateTime", actionDateTime);
       }
@@ -154,9 +184,11 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   }
 
   @Override
-  public String withdrawFromAccount(UserAdmin userAdmin, Integer accountId, Integer targetAccountId, String actionDateTime) {
+  public String withdrawFromAccount(UserAdmin userAdmin, Integer accountId, Integer targetAccountId,
+      String actionDateTime, String currency) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "UPDATE", "compte_depots")) return error message
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "UPDATE",
+      // "compte_depots")) return error message
       Map<String, Object> requestBody = new HashMap<>();
       if (actionDateTime != null && !actionDateTime.trim().isEmpty()) {
         requestBody.put("actionDateTime", actionDateTime);
@@ -192,13 +224,19 @@ public class CompteDepotServiceImpl implements CompteDepotService {
               }
             }
 
+            // Handle currency conversion
+            if (currency == null || currency.trim().isEmpty()) {
+              currency = "MGA";
+            }
+
             try {
               var depositResult = compteCourantService.makeDeposit(
                   userAdmin,
                   targetAccountId,
                   account.getMontantTotal(),
                   "Dépôt provenant du retrait du compte dépôt #" + accountId,
-                  actionDateTimeParsed);
+                  actionDateTimeParsed,
+                  currency);
 
               if (depositResult != null) {
                 withdrawalMessage += " Dépôt automatique effectué sur le compte courant #" + targetAccountId;
@@ -225,7 +263,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public List<TypeCompteDepotDTO> getAllDepositTypes(UserAdmin userAdmin) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "type_comptes_depots")) return empty list
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ",
+      // "type_comptes_depots")) return empty list
       LOG.info("Fetching all deposit types from service");
 
       HttpRequest request = HttpRequest.newBuilder()
@@ -255,7 +294,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public TypeCompteDepotDTO getDepositTypeById(UserAdmin userAdmin, Integer typeId) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "type_comptes_depots")) return null
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ",
+      // "type_comptes_depots")) return null
       LOG.info("Fetching deposit type with ID: " + typeId);
 
       String url = TYPES_ENDPOINT + "/" + typeId;
@@ -288,7 +328,8 @@ public class CompteDepotServiceImpl implements CompteDepotService {
   @Override
   public List<CompteDepotDTO> getAllAccounts(UserAdmin userAdmin) {
     try {
-      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ", "compte_depots")) return empty list
+      // TODO: Add authorization check - if (!hasAuthorization(userAdmin, "READ",
+      // "compte_depots")) return empty list
       LOG.info("Fetching all deposit accounts from service");
 
       HttpRequest request = HttpRequest.newBuilder()

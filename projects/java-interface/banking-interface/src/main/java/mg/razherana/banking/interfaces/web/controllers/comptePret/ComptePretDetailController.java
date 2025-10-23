@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -32,6 +33,9 @@ import java.util.logging.Logger;
 public class ComptePretDetailController extends HttpServlet {
 
   private static final Logger LOG = Logger.getLogger(ComptePretDetailController.class.getName());
+  
+  // Supported currencies for loans
+  private static final List<String> SUPPORTED_CURRENCIES = Arrays.asList("MGA", "EUR", "USD");
 
   @EJB
   private ComptePretService comptePretService;
@@ -84,6 +88,7 @@ public class ComptePretDetailController extends HttpServlet {
       context.setVariable("loan", loan);
       context.setVariable("paymentStatus", paymentStatus);
       context.setVariable("paymentHistory", paymentHistory);
+      context.setVariable("supportedCurrencies", SUPPORTED_CURRENCIES);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
 
@@ -151,9 +156,17 @@ public class ComptePretDetailController extends HttpServlet {
 
     String montantStr = request.getParameter("montant");
     String paymentDateStr = request.getParameter("paymentDate");
+    String currency = request.getParameter("currency");
 
     if (montantStr == null || montantStr.trim().isEmpty()) {
       response.sendRedirect("detail?id=" + loanId + "&error=missing_amount");
+      return;
+    }
+
+    // Validate currency
+    String currencyValidationError = validateCurrency(currency);
+    if (currencyValidationError != null) {
+      response.sendRedirect("detail?id=" + loanId + "&" + currencyValidationError);
       return;
     }
 
@@ -184,7 +197,7 @@ public class ComptePretDetailController extends HttpServlet {
       }
 
       // Make payment
-      EcheanceDTO payment = comptePretService.makePayment(userAdmin, paymentRequest);
+      EcheanceDTO payment = comptePretService.makePayment(userAdmin, paymentRequest, currency);
 
       if (payment != null) {
         response.sendRedirect("detail?id=" + loanId + "&success=payment_successful");
@@ -203,5 +216,12 @@ public class ComptePretDetailController extends HttpServlet {
 
       response.sendRedirect("detail?id=" + loanId + "&error=" + str);
     }
+  }
+
+  private String validateCurrency(String currency) {
+    if (currency != null && !currency.trim().isEmpty() && !SUPPORTED_CURRENCIES.contains(currency)) {
+      return "error=" + URLEncoder.encode("Devise non supportée: " + currency, StandardCharsets.UTF_8);
+    }
+    return null;
   }
 }

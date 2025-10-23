@@ -1,5 +1,6 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
+import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
 import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
@@ -30,6 +31,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   @EJB
   private UserService userService;
+
+  @EJB
+  private ChangeService changeService;
 
   private EJBLookupService remoteCourant;
   private CompteCourantRemoteService compteCourantRemoteService = null;
@@ -135,11 +139,24 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       Integer accountId,
       BigDecimal montant,
       String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime,
+      String currency) {
     try {
       if (!compteCourantRemoteService.hasAuthorization(userAdmin, "CREATE", "transaction_courants")) {
         LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create transactions");
         throw new IllegalStateException("Unauthorized access: User does not have permission to create transactions");
+      }
+
+      // Default to MGA if currency is null
+      if (currency == null) {
+        currency = "MGA";
+      }
+
+      // Apply currency conversion if not MGA
+      BigDecimal convertedAmount = montant;
+      if (!"MGA".equals(currency)) {
+        var change = changeService.getChange(currency, actionDateTime);
+        convertedAmount = montant.multiply(change);
       }
 
       CompteCourant compte = compteCourantRemoteService.findById(accountId);
@@ -148,7 +165,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return null;
       }
 
-      return transactionRemoteService.depot(compte, montant, description, actionDateTime);
+      return transactionRemoteService.depot(compte, convertedAmount, description, actionDateTime);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making deposit to account " + accountId, e);
       throw e;
@@ -158,11 +175,24 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   @Override
   public TransactionCourant makeWithdrawal(UserAdmin userAdmin, Integer accountId, BigDecimal montant,
       String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime,
+      String currency) {
     try {
       if (!compteCourantRemoteService.hasAuthorization(userAdmin, "CREATE", "transaction_courants")) {
         LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create transactions");
         throw new IllegalStateException("Unauthorized access: User does not have permission to create transactions");
+      }
+
+      // Default to MGA if currency is null
+      if (currency == null) {
+        currency = "MGA";
+      }
+
+      // Apply currency conversion if not MGA
+      BigDecimal convertedAmount = montant;
+      if (!"MGA".equals(currency)) {
+        var change = changeService.getChange(currency, actionDateTime);
+        convertedAmount = montant.multiply(change);
       }
 
       CompteCourant compte = compteCourantRemoteService.findById(accountId);
@@ -171,7 +201,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return null;
       }
 
-      return transactionRemoteService.retrait(compte, montant, description, actionDateTime);
+      return transactionRemoteService.retrait(compte, convertedAmount, description, actionDateTime);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making withdrawal from account " + accountId, e);
       throw e;
@@ -180,11 +210,24 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   @Override
   public TransactionCourant payTax(UserAdmin userAdmin, Integer accountId, String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime,
+      String currency) {
     try {
       if (!compteCourantRemoteService.hasAuthorization(userAdmin, "CREATE", "transaction_courants")) {
         LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create transactions");
         throw new IllegalStateException("Unauthorized access: User does not have permission to create transactions");
+      }
+
+      // Default to MGA if currency is null
+      if (currency == null) {
+        currency = "MGA";
+      }
+
+      // Note: Tax amount is calculated by the remote service based on account configuration
+      // Currency conversion would be applied to the calculated tax amount if needed
+      // For now, we just pass the currency information in the description
+      if (!"MGA".equals(currency)) {
+        description = description + " (Currency: " + currency + ")";
       }
 
       CompteCourant compte = compteCourantRemoteService.findById(accountId);
@@ -233,11 +276,24 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   @Override
   public boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId,
       BigDecimal amount,
-      String description, LocalDateTime actionDateTime) {
+      String description, LocalDateTime actionDateTime,
+      String currency) {
     try {
       if (!compteCourantRemoteService.hasAuthorization(userAdmin, "CREATE", "transaction_courants")) {
         LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create transactions");
         throw new IllegalStateException("Unauthorized access: User does not have permission to create transactions");
+      }
+
+      // Default to MGA if currency is null
+      if (currency == null) {
+        currency = "MGA";
+      }
+
+      // Apply currency conversion if not MGA
+      BigDecimal convertedAmount = amount;
+      if (!"MGA".equals(currency)) {
+        var change = changeService.getChange(currency, actionDateTime);
+        convertedAmount = amount.multiply(change);
       }
 
       CompteCourant compteSource = compteCourantRemoteService.findById(sourceAccountId);
@@ -253,7 +309,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return false;
       }
 
-      transactionRemoteService.transfert(compteSource, compteDestination, amount, description, actionDateTime);
+      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime);
       return true;
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);

@@ -44,18 +44,20 @@ public interface ComptePretService {
    * 
    * @param userAdmin The admin performing the action
    * @param request The loan creation request with current account selection
+   * @param currency The currency for the loan (defaults to 'MGA' if null)
    * @return The created loan or null if creation failed
    */
-  ComptePretDTO createLoan(UserAdmin userAdmin, CreateComptePretRequest request);
+  ComptePretDTO createLoan(UserAdmin userAdmin, CreateComptePretRequest request, String currency);
 
   /**
    * Makes a payment for a loan.
    * 
    * @param userAdmin The admin performing the action
    * @param request The payment request
+   * @param currency The currency for the payment (defaults to 'MGA' if null)
    * @return The payment record or null if payment failed
    */
-  EcheanceDTO makePayment(UserAdmin userAdmin, MakePaymentRequest request);
+  EcheanceDTO makePayment(UserAdmin userAdmin, MakePaymentRequest request, String currency);
 
   /**
    * Gets the payment status for a loan.

@@ -60,9 +60,10 @@ public interface CompteCourantService {
      * @param montant The amount to deposit
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
+     * @param currency The currency for the transaction (defaults to MGA if null)
      * @return The created transaction or null if failed
      */
-    TransactionCourant makeDeposit(UserAdmin userAdmin, Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime);
+    TransactionCourant makeDeposit(UserAdmin userAdmin, Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime, String currency);
     
     /**
      * Makes a withdrawal from an account.
@@ -72,9 +73,10 @@ public interface CompteCourantService {
      * @param montant The amount to withdraw
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
+     * @param currency The currency for the transaction (defaults to MGA if null)
      * @return The created transaction or null if failed
      */
-    TransactionCourant makeWithdrawal(UserAdmin userAdmin, Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime);
+    TransactionCourant makeWithdrawal(UserAdmin userAdmin, Integer accountId, BigDecimal montant, String description, LocalDateTime actionDateTime, String currency);
     
     /**
      * Pays tax for an account.
@@ -83,9 +85,10 @@ public interface CompteCourantService {
      * @param accountId The account ID
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
+     * @param currency The currency for the transaction (defaults to MGA if null)
      * @return The created transaction or null if failed
      */
-    TransactionCourant payTax(UserAdmin userAdmin, Integer accountId, String description, LocalDateTime actionDateTime);
+    TransactionCourant payTax(UserAdmin userAdmin, Integer accountId, String description, LocalDateTime actionDateTime, String currency);
     
     /**
      * Gets all users in the system.
@@ -104,9 +107,10 @@ public interface CompteCourantService {
      * @param amount The amount to transfer
      * @param description The transaction description
      * @param actionDateTime The action date/time (optional, defaults to current time)
+     * @param currency The currency for the transaction (defaults to MGA if null)
      * @return True if successful, false if failed
      */
-    boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId, BigDecimal amount, String description, LocalDateTime actionDateTime);
+    boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId, BigDecimal amount, String description, LocalDateTime actionDateTime, String currency);
 
     /**
      * Helper method to get all accounts from the banking-courant service.

@@ -6,6 +6,7 @@ import mg.razherana.banking.pret.application.comptePretService.ComptePretService
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
 import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 import jakarta.ejb.EJB;
@@ -31,6 +32,9 @@ public class ComptePretServiceImpl implements ComptePretService {
 
   @EJB
   private CompteCourantService compteCourantService;
+
+  @EJB
+  private ChangeService changeService;
 
   public ComptePretServiceImpl() {
     try {
@@ -112,15 +116,29 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public ComptePretDTO createLoan(UserAdmin userAdmin, CreateComptePretRequest request) {
+  public ComptePretDTO createLoan(UserAdmin userAdmin, CreateComptePretRequest request, String currency) {
     if (!comptePretRemoteService.hasAuthorization(userAdmin, "CREATE", "compte_prets")) {
       LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create loans");
       throw new IllegalStateException("Unauthorized access: User does not have permission to create loans");
     }
+    
+    // Handle currency conversion
+    if (currency == null || currency.trim().isEmpty()) {
+      currency = "MGA";
+    }
+    
+    BigDecimal convertedMontant = request.getMontant();
+    if (!"MGA".equals(currency)) {
+      var change = changeService.getChange(currency, request.getDateDebut());
+      if (change != null) {
+        convertedMontant = request.getMontant().multiply(change);
+      }
+    }
+    
     var createdLoanObj = comptePretRemoteService.createLoan(
         request.getUserId(),
         request.getTypeComptePretId(),
-        request.getMontant(),
+        convertedMontant,
         request.getDateDebut(),
         request.getDateFin());
 
@@ -142,7 +160,8 @@ public class ComptePretServiceImpl implements ComptePretService {
             request.getCompteCourantId(),
             request.getMontant(),
             description,
-            request.getDateDebut());
+            request.getDateDebut(),
+            currency);
 
         if (depositTransaction != null) {
           LOG.info("Loan amount deposited successfully to current account " + request.getCompteCourantId() +
@@ -159,14 +178,28 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   @Override
-  public EcheanceDTO makePayment(UserAdmin userAdmin, MakePaymentRequest request) {
+  public EcheanceDTO makePayment(UserAdmin userAdmin, MakePaymentRequest request, String currency) {
     if (!comptePretRemoteService.hasAuthorization(userAdmin, "CREATE", "echeances")) {
       LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to create payments");
       throw new IllegalStateException("Unauthorized access: User does not have permission to create payments");
     }
+    
+    // Handle currency conversion
+    if (currency == null || currency.trim().isEmpty()) {
+      currency = "MGA";
+    }
+    
+    BigDecimal convertedMontant = request.getMontant();
+    if (!"MGA".equals(currency)) {
+      var change = changeService.getChange(currency, request.getActionDateTime());
+      if (change != null) {
+        convertedMontant = request.getMontant().multiply(change);
+      }
+    }
+    
     Echeance payment = comptePretRemoteService.makePayment(
         request.getCompteId(),
-        request.getMontant(),
+        convertedMontant,
         request.getActionDateTime());
 
     if (payment != null) {

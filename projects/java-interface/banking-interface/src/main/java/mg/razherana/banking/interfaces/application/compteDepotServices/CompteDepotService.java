@@ -30,20 +30,21 @@ public interface CompteDepotService {
    */
   CompteDepotDTO getAccountById(UserAdmin userAdmin, Integer accountId);
 
-  /**
-   * Creates a new deposit account for a user.
+    /**
+   * Creates a new deposit account with specified parameters.
    * 
-   * @param userAdmin The admin performing the action
+   * @param userAdmin       The admin performing the action
    * @param typeCompteDepotId The type of deposit account
-   * @param userId            The ID of the user
-   * @param dateEcheance      The maturity date (ISO format string)
-   * @param montant           The initial deposit amount
-   * @param actionDateTime    The creation date/time (optional, defaults to
-   *                          current time)
+   * @param userId          The user ID for whom to create the account
+   * @param dateEcheance    The maturity date (yyyy-MM-dd format)
+   * @param montant         The deposit amount
+   * @param actionDateTime  The creation date/time (optional, defaults to
+   *                        current time)
+   * @param currency        The currency for the deposit (defaults to 'MGA' if null)
    * @return The created account or null if creation failed
    */
   CompteDepotDTO createAccount(UserAdmin userAdmin, Integer typeCompteDepotId, Integer userId, String dateEcheance,
-      BigDecimal montant, String actionDateTime);
+      BigDecimal montant, String actionDateTime, String currency);
 
   /**
    * Withdraws from a deposit account at maturity.
@@ -53,9 +54,10 @@ public interface CompteDepotService {
    * @param targetAccountId The target current account ID to deposit withdrawn funds (optional)
    * @param actionDateTime The withdrawal date/time (optional, defaults to current
    *                       time)
+   * @param currency        The currency for the withdrawal (defaults to 'MGA' if null)
    * @return Success message with withdrawal details or error message
    */
-  String withdrawFromAccount(UserAdmin userAdmin, Integer accountId, Integer targetAccountId, String actionDateTime);
+  String withdrawFromAccount(UserAdmin userAdmin, Integer accountId, Integer targetAccountId, String actionDateTime, String currency);
 
   /**
    * Gets all available deposit account types with their interest rates.

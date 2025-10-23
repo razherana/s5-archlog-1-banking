@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -32,6 +33,9 @@ import java.util.logging.Logger;
 public class AccountDepotDetailController extends HttpServlet {
 
   private static final Logger LOG = Logger.getLogger(AccountDepotDetailController.class.getName());
+  
+  // Supported currencies for deposit accounts
+  private static final List<String> SUPPORTED_CURRENCIES = Arrays.asList("MGA", "EUR", "USD");
 
   @EJB
   private CompteDepotService compteDepotService;
@@ -88,6 +92,7 @@ public class AccountDepotDetailController extends HttpServlet {
       webContext.setVariable("userAdminName", userAdmin.getEmail());
       webContext.setVariable("account", account);
       webContext.setVariable("currentAccounts", currentAccounts);
+      webContext.setVariable("supportedCurrencies", SUPPORTED_CURRENCIES);
       webContext.setVariable("error", request.getParameter("error"));
       webContext.setVariable("success", request.getParameter("success"));
 
@@ -163,13 +168,20 @@ public class AccountDepotDetailController extends HttpServlet {
     try {
       String actionDateTime = request.getParameter("actionDateTime");
       String targetAccountIdStr = request.getParameter("targetAccountId");
+      String currency = request.getParameter("currency");
+
+      // Validate currency
+      String currencyValidationError = validateCurrency(currency);
+      if (currencyValidationError != null) {
+        return currencyValidationError;
+      }
 
       Integer targetAccountId = null;
       if (targetAccountIdStr != null && !targetAccountIdStr.trim().isEmpty()) {
         targetAccountId = Integer.parseInt(targetAccountIdStr);
       }
 
-      String result = compteDepotService.withdrawFromAccount(userAdmin, account.getId(), targetAccountId, actionDateTime);
+      String result = compteDepotService.withdrawFromAccount(userAdmin, account.getId(), targetAccountId, actionDateTime, currency);
 
       if (result.startsWith("Retrait effectué")) {
         return "success=" + URLEncoder.encode(result, StandardCharsets.UTF_8);
@@ -184,5 +196,12 @@ public class AccountDepotDetailController extends HttpServlet {
       return "error="
           + URLEncoder.encode(ExceptionUtils.root(e).getMessage(), StandardCharsets.UTF_8);
     }
+  }
+
+  private String validateCurrency(String currency) {
+    if (currency != null && !currency.trim().isEmpty() && !SUPPORTED_CURRENCIES.contains(currency)) {
+      return "error=" + URLEncoder.encode("Devise non supportée: " + currency, StandardCharsets.UTF_8);
+    }
+    return null;
   }
 }

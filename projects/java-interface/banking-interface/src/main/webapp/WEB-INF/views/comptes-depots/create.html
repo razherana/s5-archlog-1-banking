@@ -153,6 +153,18 @@
           </div>
 
           <div class="form-group">
+            <label for="currency">Devise</label>
+            <select id="currency" name="currency" class="form-input">
+              <option value="MGA" selected>MGA (Ariary Malgache)</option>
+              <option th:each="curr : ${supportedCurrencies}" 
+                      th:if="${curr != 'MGA'}"
+                      th:value="${curr}" 
+                      th:text="${curr}">Currency</option>
+            </select>
+            <small class="form-help">Devise par défaut: MGA. Les autres devises seront converties automatiquement.</small>
+          </div>
+
+          <div class="form-group">
             <label for="dateEcheance"
               >Date d'échéance
               <span style="color: var(--error-color)">*</span></label

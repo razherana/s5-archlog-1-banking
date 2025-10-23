@@ -123,7 +123,7 @@
               <input type="hidden" name="action" value="deposit" />
 
               <div class="form-group">
-                <label for="deposit-amount">Montant (MGA):</label>
+                <label for="deposit-amount">Montant:</label>
                 <input
                   type="number"
                   id="deposit-amount"
@@ -134,6 +134,25 @@
                   class="form-input"
                   required
                 />
+              </div>
+
+              <div class="form-group">
+                <label for="deposit-currency">Devise:</label>
+                <select
+                  id="deposit-currency"
+                  name="currency"
+                  class="form-input"
+                  required
+                >
+                  <option
+                    th:each="currency : ${supportedCurrencies}"
+                    th:value="${currency}"
+                    th:text="${currency}"
+                    th:selected="${currency == 'MGA'}"
+                  >
+                    MGA
+                  </option>
+                </select>
               </div>
 
               <div class="form-group">
@@ -180,7 +199,7 @@
               <input type="hidden" name="action" value="withdraw" />
 
               <div class="form-group">
-                <label for="withdraw-amount">Montant (MGA):</label>
+                <label for="withdraw-amount">Montant:</label>
                 <input
                   type="number"
                   id="withdraw-amount"
@@ -199,6 +218,25 @@
                     >0.00 MGA</span
                   >
                 </small>
+              </div>
+
+              <div class="form-group">
+                <label for="withdraw-currency">Devise:</label>
+                <select
+                  id="withdraw-currency"
+                  name="currency"
+                  class="form-input"
+                  required
+                >
+                  <option
+                    th:each="currency : ${supportedCurrencies}"
+                    th:value="${currency}"
+                    th:text="${currency}"
+                    th:selected="${currency == 'MGA'}"
+                  >
+                    MGA
+                  </option>
+                </select>
               </div>
 
               <div class="form-group">
@@ -284,7 +322,7 @@
               </div>
 
               <div class="form-group">
-                <label for="transfer-amount">Montant (MGA):</label>
+                <label for="transfer-amount">Montant:</label>
                 <input
                   type="number"
                   id="transfer-amount"
@@ -303,6 +341,25 @@
                     >0.00 MGA</span
                   >
                 </small>
+              </div>
+
+              <div class="form-group">
+                <label for="transfer-currency">Devise:</label>
+                <select
+                  id="transfer-currency"
+                  name="currency"
+                  class="form-input"
+                  required
+                >
+                  <option
+                    th:each="currency : ${supportedCurrencies}"
+                    th:value="${currency}"
+                    th:text="${currency}"
+                    th:selected="${currency == 'MGA'}"
+                  >
+                    MGA
+                  </option>
+                </select>
               </div>
 
               <div class="form-group">
@@ -363,6 +420,28 @@
                 </div>
                 <small class="form-help">
                   Ce montant correspond aux taxes impayées pour ce compte.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="tax-currency">Devise:</label>
+                <select
+                  id="tax-currency"
+                  name="currency"
+                  class="form-input"
+                  required
+                >
+                  <option
+                    th:each="currency : ${supportedCurrencies}"
+                    th:value="${currency}"
+                    th:text="${currency}"
+                    th:selected="${currency == 'MGA'}"
+                  >
+                    MGA
+                  </option>
+                </select>
+                <small class="form-help">
+                  Note: Les taxes sont calculées automatiquement et converties si nécessaire.
                 </small>
               </div>
 

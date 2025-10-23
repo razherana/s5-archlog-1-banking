@@ -12,7 +12,7 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import mg.razherana.banking.interfaces.application.cacheManagerService.EJBCacheManager;
+import mg.razherana.banking.interfaces.application.cacheManagerServices.EJBCacheManager;
 
 @WebFilter("/*")
 public class ServerReloadFilter extends HttpFilter {

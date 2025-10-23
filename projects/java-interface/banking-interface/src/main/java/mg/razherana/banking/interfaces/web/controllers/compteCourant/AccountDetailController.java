@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -35,6 +36,10 @@ public class AccountDetailController extends HttpServlet {
 
   private static final Logger LOG = Logger.getLogger(AccountDetailController.class.getName());
 
+  // Hardcoded list of supported currencies
+  private static final List<String> SUPPORTED_CURRENCIES = Arrays.asList(
+      "MGA", "USD");
+
   @EJB
   private CompteCourantService compteCourantService;
 
@@ -43,6 +48,19 @@ public class AccountDetailController extends HttpServlet {
 
   @EJB
   private UserService userService;
+
+  /**
+   * Validates and returns the currency parameter, defaulting to MGA if null or
+   * invalid
+   */
+  private String validateCurrency(String currency) {
+    if (currency == null || currency.trim().isEmpty()) {
+      return "MGA";
+    }
+
+    // Accept any string value for now as specified
+    return currency.trim();
+  }
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -102,6 +120,7 @@ public class AccountDetailController extends HttpServlet {
       context.setVariable("taxToPay", taxToPay);
       context.setVariable("allUsers", allUsers);
       context.setVariable("allAccounts", allAccounts);
+      context.setVariable("supportedCurrencies", SUPPORTED_CURRENCIES);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
 
@@ -211,6 +230,7 @@ public class AccountDetailController extends HttpServlet {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
       String actionDateTimeStr = request.getParameter("actionDateTime");
+      String currency = request.getParameter("currency");
 
       if (montantStr == null || montantStr.trim().isEmpty()) {
         return "Montant requis";
@@ -220,6 +240,9 @@ public class AccountDetailController extends HttpServlet {
       if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
+
+      // Validate currency at controller layer
+      String validatedCurrency = validateCurrency(currency);
 
       LocalDateTime actionDateTime = LocalDateTime.now();
       if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
@@ -235,7 +258,8 @@ public class AccountDetailController extends HttpServlet {
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Deposit via interface",
-          actionDateTime);
+          actionDateTime,
+          validatedCurrency);
 
       return result != null ? null : "Failed to create deposit transaction";
 
@@ -251,6 +275,7 @@ public class AccountDetailController extends HttpServlet {
       String montantStr = request.getParameter("montant");
       String description = request.getParameter("description");
       String actionDateTimeStr = request.getParameter("actionDateTime");
+      String currency = request.getParameter("currency");
 
       if (montantStr == null || montantStr.trim().isEmpty()) {
         return "Montant requis";
@@ -260,6 +285,9 @@ public class AccountDetailController extends HttpServlet {
       if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
+
+      // Validate currency at controller layer
+      String validatedCurrency = validateCurrency(currency);
 
       LocalDateTime actionDateTime = LocalDateTime.now();
       if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
@@ -275,7 +303,8 @@ public class AccountDetailController extends HttpServlet {
           account.getId(),
           montant,
           description != null && !description.trim().isEmpty() ? description : "Withdrawal via interface",
-          actionDateTime);
+          actionDateTime,
+          validatedCurrency);
 
       return result != null ? null : "Failed to create withdrawal transaction";
 
@@ -289,6 +318,10 @@ public class AccountDetailController extends HttpServlet {
   private String handleTaxPayment(HttpServletRequest request, CompteCourant account, UserAdmin userAdmin) {
     String description = request.getParameter("description");
     String actionDateTimeStr = request.getParameter("actionDateTime");
+    String currency = request.getParameter("currency");
+
+    // Validate currency at controller layer
+    String validatedCurrency = validateCurrency(currency);
 
     LocalDateTime actionDateTime = LocalDateTime.now();
     if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
@@ -304,7 +337,8 @@ public class AccountDetailController extends HttpServlet {
           userAdmin,
           account.getId(),
           description != null && !description.trim().isEmpty() ? description : "Tax payment via interface",
-          actionDateTime);
+          actionDateTime,
+          validatedCurrency);
 
       return result != null ? null : "Failed to create tax payment transaction";
     } catch (Exception e) {
@@ -318,6 +352,7 @@ public class AccountDetailController extends HttpServlet {
       String amountStr = request.getParameter("amount");
       String description = request.getParameter("description");
       String actionDateTimeStr = request.getParameter("actionDateTime");
+      String currency = request.getParameter("currency");
 
       if (destinationAccountIdStr == null || destinationAccountIdStr.trim().isEmpty()) {
         return "Compte de destination requis";
@@ -338,6 +373,9 @@ public class AccountDetailController extends HttpServlet {
         return "Vous ne pouvez pas effectuer un transfert vers le même compte";
       }
 
+      // Validate currency at controller layer
+      String validatedCurrency = validateCurrency(currency);
+
       LocalDateTime actionDateTime = LocalDateTime.now();
       if (actionDateTimeStr != null && !actionDateTimeStr.trim().isEmpty()) {
         try {
@@ -353,7 +391,8 @@ public class AccountDetailController extends HttpServlet {
           destinationAccountId,
           amount,
           description != null && !description.trim().isEmpty() ? description : "Transfer via interface",
-          actionDateTime);
+          actionDateTime,
+          validatedCurrency);
 
       return success ? null : "Failed to create transfer";
 

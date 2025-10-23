@@ -156,9 +156,9 @@
                   <option
                     th:each="currentAccount : ${currentAccounts}"
                     th:value="${currentAccount.id}"
-                    th:text="|Compte #${currentAccount.id} - Solde: ${currentAccount.solde + ' MGA'}|"
+                    th:text="|Compte #${currentAccount.id}|"
                   >
-                    Compte #123 - Solde: 1000.00 MGA
+                    Compte #123
                   </option>
                 </select>
                 <small class="form-help">
@@ -182,6 +182,18 @@
                   Laissez vide pour utiliser la date et l'heure actuelles.
                   Utilisé principalement pour les tests et la rétroactivité.
                 </small>
+              </div>
+
+              <div class="form-group">
+                <label for="currency">Devise:</label>
+                <select id="currency" name="currency" class="form-input">
+                  <option value="MGA" selected>MGA (Ariary Malgache)</option>
+                  <option th:each="curr : ${supportedCurrencies}" 
+                          th:if="${curr != 'MGA'}"
+                          th:value="${curr}" 
+                          th:text="${curr}">Currency</option>
+                </select>
+                <small class="form-help">Devise par défaut: MGA. Les autres devises seront converties automatiquement.</small>
               </div>
 
               <div class="form-actions">

@@ -1,4 +1,4 @@
-package mg.razherana.banking.interfaces.application.cacheManagerService;
+package mg.razherana.banking.interfaces.application.cacheManagerServices;
 
 import java.util.ArrayList;
 import java.util.List;

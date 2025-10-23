@@ -1,29 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-   contributor license agreements.  See the NOTICE file distributed with
-   this work for additional information regarding copyright ownership.
-   The ASF licenses this file to You under the Apache License, Version 2.0
-   (the "License"); you may not use this file except in compliance with
-   the License.  You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>mg.razherana.banking</groupId>
-  <artifactId>banking-interface</artifactId>
+  <artifactId>banking-change</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
-  <name>banking-interface TomEE Webapp</name>
+  <name>banking-change TomEE Webapp</name>
   <url>http://tomee.apache.org</url>
 
   <properties>
@@ -41,81 +25,33 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- MySQL Connector -->
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
+      <groupId>org.apache.tomee</groupId>
+      <artifactId>openejb-client</artifactId>
+      <version>10.0.1</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Banking Change classes for remote EJB access -->
+    <!-- <dependency>
+      <groupId>mg.razherana.banking</groupId>
+      <artifactId>banking-common</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency> -->
+
+    <!-- MySQL Connector -->
+    <!-- <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
       <version>8.0.33</version>
       <scope>provided</scope>
-    </dependency>
+    </dependency> -->
 
     <!-- Hibernate for JPA implementation -->
     <dependency>
       <groupId>org.hibernate.orm</groupId>
       <artifactId>hibernate-core</artifactId>
       <version>6.1.7.Final</version>
-    </dependency>
-
-    <!-- Jackson for JSON processing -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.15.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>2.15.2</version>
-    </dependency>
-
-    <!-- Thymeleaf for templating -->
-    <dependency>
-      <groupId>org.thymeleaf</groupId>
-      <artifactId>thymeleaf</artifactId>
-      <version>3.1.2.RELEASE</version>
-    </dependency>
-
-    <!-- CDI API for dependency injection -->
-    <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.cdi-api</artifactId>
-      <version>4.0.1</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Banking Courant classes for remote EJB access -->
-    <dependency>
-      <groupId>mg.razherana.banking</groupId>
-      <artifactId>banking-courant</artifactId>
-      <version>1.0-SNAPSHOT</version>
-      <classifier>classes</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>mg.razherana.banking</groupId>
-      <artifactId>banking-pret</artifactId>
-      <version>1.0-SNAPSHOT</version>
-      <classifier>classes</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>mg.razherana.banking</groupId>
-      <artifactId>banking-change</artifactId>
-      <version>1.0-SNAPSHOT</version>
-      <classifier>classes</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>mg.razherana.banking</groupId>
-      <artifactId>banking-common</artifactId>
-      <version>1.0-SNAPSHOT</version>
-    </dependency>
-
-    <!-- TomEE OpenEJB Client for remote EJB calls -->
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>openejb-client</artifactId>
-      <version>10.0.1</version>
     </dependency>
   </dependencies>
 
@@ -154,9 +90,9 @@
               <classifier>classes</classifier>
               <includes>
                 <!-- Include only entities and remote interfaces -->
-                <include>**/entities/User.class</include>
-                <include>**/userServices/UserService.class</include>
-                <include>**/userServices/UserRemoteService.class</include>
+                <include>**/entities/**</include>
+                <include>**/services/changeServices/ChangeService.class</include>
+                <include>**/services/changeServices/ChangeRemoteService.class</include>
               </includes>
             </configuration>
           </execution>
@@ -167,23 +103,22 @@
         <artifactId>tomee-maven-plugin</artifactId>
         <version>10.1.0</version>
         <configuration>
-          <context>ROOT</context>
-          <args>-Xmx512m -Dtomee.remote.support=true</args>
           <config>src/main/tomee/conf</config>
+          <context>ROOT</context>
+          <args>-Xmx512m</args>
 
           <!-- Auto-reload configuration -->
-          <reloadOnUpdate>true</reloadOnUpdate>
-
-          <libs>
+          <!-- <libs>
             <lib>com.mysql:mysql-connector-j:8.0.33</lib>
-          </libs>
+          </libs> -->
+
+          <reloadOnUpdate>true</reloadOnUpdate>
 
           <deployOpenEjbApplication>true</deployOpenEjbApplication>
           <tomeeClassifier>plume</tomeeClassifier>
           <synchronization>
             <extensions>
               <extension>.class</extension>
-              <extension>.html</extension>
             </extensions>
           </synchronization>
           <reloadOnUpdate>true</reloadOnUpdate>

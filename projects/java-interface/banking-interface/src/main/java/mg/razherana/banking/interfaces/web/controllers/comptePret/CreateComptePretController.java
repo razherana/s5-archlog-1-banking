@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -36,6 +37,9 @@ import java.util.logging.Logger;
 public class CreateComptePretController extends HttpServlet {
 
   private static final Logger LOG = Logger.getLogger(CreateComptePretController.class.getName());
+  
+  // Supported currencies for loans
+  private static final List<String> SUPPORTED_CURRENCIES = Arrays.asList("MGA", "EUR", "USD");
 
   @EJB
   private ComptePretService comptePretService;
@@ -78,6 +82,7 @@ public class CreateComptePretController extends HttpServlet {
       context.setVariable("usersForDropdown", usersForDropdown);
       context.setVariable("loanTypes", loanTypes);
       context.setVariable("currentAccounts", allCurrentAccounts);
+      context.setVariable("supportedCurrencies", SUPPORTED_CURRENCIES);
       context.setVariable("error", request.getParameter("error"));
       context.setVariable("success", request.getParameter("success"));
     } catch (Exception e) {
@@ -127,6 +132,7 @@ public class CreateComptePretController extends HttpServlet {
       String dateDebutParam = request.getParameter("dateDebut");
       String dateFinParam = request.getParameter("dateFin");
       String compteCourantIdParam = request.getParameter("compteCourantId");
+      String currency = request.getParameter("currency");
 
       // Validate required fields
       if (typeComptePretIdParam == null || typeComptePretIdParam.trim().isEmpty() ||
@@ -145,6 +151,13 @@ public class CreateComptePretController extends HttpServlet {
 
       if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         response.sendRedirect("create?error=invalid_amount");
+        return;
+      }
+
+      // Validate currency
+      String currencyValidationError = validateCurrency(currency);
+      if (currencyValidationError != null) {
+        response.sendRedirect("create?" + currencyValidationError);
         return;
       }
 
@@ -177,7 +190,7 @@ public class CreateComptePretController extends HttpServlet {
           " to be deposited in account: " + compteCourantId);
 
       // Create the loan
-      ComptePretDTO createdLoan = comptePretService.createLoan(userAdmin, loanRequest);
+      ComptePretDTO createdLoan = comptePretService.createLoan(userAdmin, loanRequest, currency);
 
       if (createdLoan != null) {
         LOG.info("Loan created successfully: " + createdLoan.getId());
@@ -195,5 +208,12 @@ public class CreateComptePretController extends HttpServlet {
       LOG.severe("Error during loan creation: " + e.getMessage());
       response.sendRedirect("create?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8));
     }
+  }
+
+  private String validateCurrency(String currency) {
+    if (currency != null && !currency.trim().isEmpty() && !SUPPORTED_CURRENCIES.contains(currency)) {
+      return "error=" + URLEncoder.encode("Devise non supportée: " + currency, StandardCharsets.UTF_8);
+    }
+    return null;
   }
 }
