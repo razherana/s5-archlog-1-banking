@@ -10,7 +10,7 @@ The Banking Pret service is the third module in our banking system architecture,
 
 - **Framework**: Jakarta EE 10.0 with TomEE 10.1.0
 - **Database**: MySQL 8.0 (`s5_banking_pret`)
-- **Host**: `127.0.0.3:8080`
+- **Host**: `localhost:8083`
 - **API Base Path**: `/api`
 
 ## Features
@@ -43,7 +43,7 @@ banking-pret/
 │   ├── resources/META-INF/
 │   │   └── persistence.xml          # JPA configuration
 │   ├── tomee/conf/                  # TomEE configuration
-│   │   ├── server.xml               # Server config (127.0.0.3:8080)
+│   │   ├── server.xml               # Server config (localhost:8083)
 │   │   └── resources.xml            # Database configuration
 │   └── webapp/
 │       └── index.html               # Service information page
@@ -73,7 +73,7 @@ The service uses a dedicated MySQL database `s5_banking_pret` with:
 
 ## Integration
 
-- **User Management**: Integrates with java-interface service at `127.0.0.2:8080/api`
+- **User Management**: Integrates with java-interface service at `localhost:8082/api`
 - **REST Communication**: Uses Jakarta REST Client for inter-service communication
 - **UserDTO Mapping**: Handles UserDTO responses from java-interface and maps to local User entity
 
@@ -109,7 +109,7 @@ mvn tomee:run
 mvn clean install tomee:run
 ```
 
-The service will be available at: `http://127.0.0.3:8080`
+The service will be available at: `http://localhost:8083`
 
 ### Testing
 
@@ -124,7 +124,7 @@ chmod +x tests/pret-integration-tests.sh
 
 This service requires the following services to be running:
 
-1. **java-interface** (`127.0.0.2:8080`) - For user management
+1. **java-interface** (`localhost:8082`) - For user management
 2. **MySQL Server** - For data persistence
 
 ## Architecture Notes

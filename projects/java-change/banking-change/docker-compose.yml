@@ -5,10 +5,9 @@ services:
       dockerfile: Dockerfile
     container_name: banking-change-service
     ports:
-      # Map container port 8080 to host 127.0.0.5:8080 to maintain same access pattern
-      - "127.0.0.5:8080:8080"
+      - "127.0.0.1:8080:8080"
       # Map shutdown port  
-      - "127.0.0.5:8005:8005"
+      # - "127.0.0.1:8005:8005"
     volumes:
       # Mount logs directory for easier debugging
       - ./logs:/usr/local/tomee/logs

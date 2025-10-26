@@ -38,7 +38,7 @@ import java.util.logging.Level;
 public class CompteDepotServiceImpl implements CompteDepotService {
 
   private static final Logger LOG = Logger.getLogger(CompteDepotServiceImpl.class.getName());
-  private static final String BASE_URL = "http://127.0.0.4:8080/api";
+  private static final String BASE_URL = "http://localhost:8084/api";
   private static final String COMPTES_ENDPOINT = BASE_URL + "/ComptesDepots";
   private static final String TYPES_ENDPOINT = BASE_URL + "/TypeComptesDepots";
 

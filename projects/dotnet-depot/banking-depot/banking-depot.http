@@ -1,4 +1,4 @@
-@banking_depot_HostAddress = http://127.0.0.4:8080
+@banking_depot_HostAddress = http://localhost:8084
 
 GET {{banking_depot_HostAddress}}/weatherforecast/
 Accept: application/json

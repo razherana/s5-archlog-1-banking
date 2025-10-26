@@ -5,7 +5,7 @@ namespace BankingDepot.Services.Implementations
 {
   /// <summary>
   /// Service implementation for validating users via external Java service.
-  /// Communicates with the Java current account service at 127.0.0.2:8080.
+  /// Communicates with the Java current account service at localhost:8082.
   /// </summary>
   public class UserValidationService : IUserValidationService
   {
@@ -17,7 +17,7 @@ namespace BankingDepot.Services.Implementations
     {
       _httpClient = httpClient;
       _logger = logger;
-      _javaServiceBaseUrl = configuration.GetValue<string>("JavaService:BaseUrl") ?? "http://127.0.0.2:8080/api";
+      _javaServiceBaseUrl = configuration.GetValue<string>("JavaService:BaseUrl") ?? "http://localhost:8082/api";
     }
 
     public async Task<bool> ValidateUserExistsAsync(int userId)

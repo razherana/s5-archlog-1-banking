@@ -3,7 +3,10 @@ services:
     image: openjdk:17
     container_name: java-courant
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8081:8080"
+      # - "127.0.0.1:8006:8005"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./target/apache-tomee:/usr/local/tomee
     working_dir: /usr/local/tomee

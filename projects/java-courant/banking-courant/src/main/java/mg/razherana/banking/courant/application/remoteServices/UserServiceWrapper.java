@@ -10,7 +10,7 @@ public class UserServiceWrapper {
 
   public UserServiceWrapper() {
     try {
-      this.lookupService = new EJBLookupService("127.0.0.2");
+      this.lookupService = new EJBLookupService("host.docker.internal:8082");
       this.userRemoteService = lookupService.lookupStatefulBean(
           "global/UserRemoteServiceImpl!mg.razherana.banking.common.services.userServices.UserRemoteService",
           UserRemoteService.class);

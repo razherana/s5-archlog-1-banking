@@ -60,7 +60,7 @@ banking-depot/
 
 **Prerequisites**:
 
-- Java current account service running on `127.0.0.2:8080`
+- Java current account service running on `localhost:8082`
 - Valid user IDs in the Java service
 - Account types must exist
 
@@ -121,7 +121,7 @@ banking-depot/
 ### Prerequisites
 
 1. **ASP.NET Core Service**: The banking-depot service must be running on `http://localhost:5000` or `https://localhost:5001`
-2. **Java Current Account Service**: Must be running on `http://127.0.0.2:8080` for user validation
+2. **Java Current Account Service**: Must be running on `http://localhost:8082` for user validation
 3. **Database**: MySQL database `s5_archlog_1_banking_depot` must be accessible
 4. **Dependencies**: `curl` and `jq` must be installed for JSON processing
 
@@ -135,7 +135,7 @@ banking-depot/
    dotnet run
 
    # In another terminal, verify Java service is running
-   curl http://127.0.0.2:8080/api/users/1
+   curl http://localhost:8082/api/users/1
    ```
 
 2. **Prepare Test Data**:
@@ -242,7 +242,7 @@ The test suite uses predefined test data including:
 
 This test suite validates integration with:
 
-- **Java Current Account Service**: User validation at `127.0.0.2:8080/api/users/{id}`
+- **Java Current Account Service**: User validation at `localhost:8082/api/users/{id}`
 - **MySQL Database**: Data persistence and retrieval
 - **ASP.NET Core**: API endpoints and business logic
 

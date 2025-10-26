@@ -42,7 +42,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   public CompteCourantServiceImpl() {
     try {
       JNDITreeLister.list();
-      this.remoteCourant = new EJBLookupService();
+      this.remoteCourant = new EJBLookupService("localhost:8081");
 
       this.compteCourantRemoteService = remoteCourant.lookupStatefulBean(
           "global/CompteCourantRemoteServiceImpl!mg.razherana.banking.courant.application.compteCourantService.CompteCourantRemoteService",

@@ -38,7 +38,7 @@ public class ComptePretServiceImpl implements ComptePretService {
 
   public ComptePretServiceImpl() {
     try {
-      this.remotePret = new EJBLookupService("127.0.0.3");
+      this.remotePret = new EJBLookupService("localhost:8083");
       this.comptePretRemoteService = remotePret.lookupStatefulBean(
           "global/ComptePretServiceRemoteImpl!mg.razherana.banking.pret.application.comptePretService.ComptePretServiceRemote",
           ComptePretServiceRemote.class);

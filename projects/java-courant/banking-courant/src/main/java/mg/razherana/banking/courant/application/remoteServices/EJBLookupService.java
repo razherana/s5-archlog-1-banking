@@ -14,7 +14,7 @@ public class EJBLookupService {
     Properties props = new Properties();
     props.put(Context.INITIAL_CONTEXT_FACTORY,
         "org.apache.openejb.client.RemoteInitialContextFactory");
-    props.put(Context.PROVIDER_URL, "http://" + url + ":8080/tomee/ejb");
+    props.put(Context.PROVIDER_URL, "http://" + url + "/tomee/ejb");
 
     this.context = new InitialContext(props);
   }

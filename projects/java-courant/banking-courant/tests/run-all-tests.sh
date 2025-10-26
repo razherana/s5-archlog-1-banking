@@ -5,7 +5,7 @@
 
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TESTS_DIR="$BASE_DIR"
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://localhost:8081/api"
 
 echo "🏦 Banking API Test Suite Runner"
 echo "================================="

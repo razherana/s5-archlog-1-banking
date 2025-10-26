@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Banking API Integration Test - Complete Workflow
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://localhost:8081/api"
 TEST_NAME="Full Banking Workflow Integration Test"
 
 echo "=== $TEST_NAME ==="

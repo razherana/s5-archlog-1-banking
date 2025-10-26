@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
 
   private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
 
-  private static final String BACKEND_DEPOT_URL = "http://127.0.0.4:8080/api";
+  private static final String BACKEND_DEPOT_URL = "http://localhost:8084/api";
 
   @EJB
   private CompteCourantService compteCourantService;

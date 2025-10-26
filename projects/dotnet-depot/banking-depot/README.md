@@ -89,7 +89,7 @@ The module uses its own MySQL database: `s5_archlog_1_banking_depot`
 ```json
 {
   "JavaService": {
-    "BaseUrl": "http://127.0.0.2:8080/api"
+    "BaseUrl": "http://localhost:8082/api"
   }
 }
 ```
@@ -100,7 +100,7 @@ The module uses its own MySQL database: `s5_archlog_1_banking_depot`
 
 - .NET 9.0 SDK
 - MySQL Server
-- Java current account service running on `127.0.0.2:8080`
+- Java current account service running on `localhost:8082`
 
 ### Build & Run
 
@@ -173,7 +173,7 @@ banking-depot/
 
 ### External Dependencies
 
-- **Java Current Account Service**: User validation via HTTP calls to `127.0.0.2:8080/api/users/{id}`
+- **Java Current Account Service**: User validation via HTTP calls to `localhost:8082/api/users/{id}`
 
 ### Error Handling
 
