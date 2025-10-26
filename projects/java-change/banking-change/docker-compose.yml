@@ -1,0 +1,34 @@
+services:
+  banking-change:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banking-change-service
+    ports:
+      # Map container port 8080 to host 127.0.0.5:8080 to maintain same access pattern
+      - "127.0.0.5:8080:8080"
+      # Map shutdown port  
+      - "127.0.0.5:8005:8005"
+    volumes:
+      # Mount logs directory for easier debugging
+      - ./logs:/usr/local/tomee/logs
+      # Optional: Mount for development (uncomment if needed)
+      - ./target/apache-tomee:/usr/local/tomee
+      # - ./src/main/tomee/conf:/usr/local/tomee/conf
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  banking-network:
+    driver: bridge
+    ipam:
+      config:
+        # Use custom subnet to support the 127.0.0.5 addressing scheme
+        - subnet: 172.20.0.0/16

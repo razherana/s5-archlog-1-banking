@@ -1,0 +1,22 @@
+# Ignore unnecessary files during Docker build
+target/apache-tomee/
+*.log
+logs/
+.git/
+.gitignore
+README.md
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven specific
+dependency-reduced-pom.xml

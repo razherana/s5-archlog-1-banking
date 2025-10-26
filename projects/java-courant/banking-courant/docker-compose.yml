@@ -1,0 +1,13 @@
+services:
+  tomee:
+    image: openjdk:17
+    container_name: java-courant
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./target/apache-tomee:/usr/local/tomee
+    working_dir: /usr/local/tomee
+    command: ["bin/catalina.sh", "run"]
+    environment:
+      - JAVA_OPTS=-Xmx512m
+    restart: unless-stopped
