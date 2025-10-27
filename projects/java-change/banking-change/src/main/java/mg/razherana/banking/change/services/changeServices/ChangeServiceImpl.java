@@ -100,4 +100,9 @@ public class ChangeServiceImpl implements ChangeService {
 
     return BigDecimal.ONE;
   }
+
+  @Override
+  public List<Change> getAllChanges() {
+    return changes.values().stream().flatMap(List::stream).toList();
+  }
 }

@@ -156,6 +156,21 @@
               </div>
 
               <div class="form-group">
+                <label for="deposit-currency-api">Devise (depuis API):</label>
+                <select
+                  id="deposit-currency-api"
+                  name="currencyApi"
+                  class="form-input"
+                  required
+                >
+                  <option value="">-- Chargement des devises... --</option>
+                </select>
+                <small class="form-help">
+                  Devises chargées depuis l'API de change (localhost:8080/api/changes)
+                </small>
+              </div>
+
+              <div class="form-group">
                 <label for="deposit-description"
                   >Description (optionnel):</label
                 >
@@ -237,6 +252,21 @@
                     MGA
                   </option>
                 </select>
+              </div>
+
+              <div class="form-group">
+                <label for="withdraw-currency-api">Devise (depuis API):</label>
+                <select
+                  id="withdraw-currency-api"
+                  name="currencyApi"
+                  class="form-input"
+                  required
+                >
+                  <option value="">-- Chargement des devises... --</option>
+                </select>
+                <small class="form-help">
+                  Devises chargées depuis l'API de change (localhost:8080/api/changes)
+                </small>
               </div>
 
               <div class="form-group">
@@ -363,6 +393,21 @@
               </div>
 
               <div class="form-group">
+                <label for="transfer-currency-api">Devise (depuis API):</label>
+                <select
+                  id="transfer-currency-api"
+                  name="currencyApi"
+                  class="form-input"
+                  required
+                >
+                  <option value="">-- Chargement des devises... --</option>
+                </select>
+                <small class="form-help">
+                  Devises chargées depuis l'API de change (localhost:8080/api/changes)
+                </small>
+              </div>
+
+              <div class="form-group">
                 <label for="transfer-description"
                   >Description (optionnel):</label
                 >
@@ -442,6 +487,21 @@
                 </select>
                 <small class="form-help">
                   Note: Les taxes sont calculées automatiquement et converties si nécessaire.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="tax-currency-api">Devise (depuis API):</label>
+                <select
+                  id="tax-currency-api"
+                  name="currencyApi"
+                  class="form-input"
+                  required
+                >
+                  <option value="">-- Chargement des devises... --</option>
+                </select>
+                <small class="form-help">
+                  Devises chargées depuis l'API de change (localhost:8080/api/changes)
                 </small>
               </div>
 
@@ -599,6 +659,62 @@
 
         accountSelect.disabled = false;
       }
+
+      // Global variable to store API currencies
+      let apiCurrencies = [];
+
+      // Function to fetch currencies from API
+      async function fetchApiCurrencies() {
+        try {
+          const response = await fetch('http://localhost:8080/api/changes');
+          if (response.ok) {
+            apiCurrencies = await response.json();
+            console.log('API Currencies loaded:', apiCurrencies);
+            return apiCurrencies;
+          } else {
+            console.error('Failed to fetch API currencies:', response.status);
+            return [];
+          }
+        } catch (error) {
+          console.error('Error fetching API currencies:', error);
+          return [];
+        }
+      }
+
+      // Function to populate API currency selects
+      function populateApiCurrencySelects() {
+        const selectors = [
+          'deposit-currency-api',
+          'withdraw-currency-api',
+          'transfer-currency-api',
+          'tax-currency-api'
+        ];
+
+        selectors.forEach(selectorId => {
+          const selectElement = document.getElementById(selectorId);
+          if (selectElement) {
+            // Clear existing options
+            selectElement.innerHTML = '<option value="">-- Sélectionner une devise --</option>';
+            
+            // Add API currencies
+            apiCurrencies.forEach(currency => {
+              const option = document.createElement('option');
+              option.value = currency.name;
+              option.textContent = `${currency.name} (${currency.value})`;
+              if (currency.name === 'MGA') {
+                option.selected = true;
+              }
+              selectElement.appendChild(option);
+            });
+          }
+        });
+      }
+
+      // Load API currencies when page loads
+      document.addEventListener('DOMContentLoaded', async function() {
+        await fetchApiCurrencies();
+        populateApiCurrencySelects();
+      });
     </script>
 
     <style>
