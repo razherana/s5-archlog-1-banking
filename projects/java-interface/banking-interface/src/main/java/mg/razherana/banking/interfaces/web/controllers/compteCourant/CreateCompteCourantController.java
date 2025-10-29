@@ -1,8 +1,8 @@
 package mg.razherana.banking.interfaces.web.controllers.compteCourant;
 
+import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
-import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
 import mg.razherana.banking.common.utils.ExceptionUtils;

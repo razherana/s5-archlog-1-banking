@@ -12,9 +12,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 
 @WebServlet({ "/menu", "/menu.html" })
 public class MenuController extends HttpServlet {

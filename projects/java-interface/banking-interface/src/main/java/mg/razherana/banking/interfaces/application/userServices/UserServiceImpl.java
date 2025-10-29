@@ -4,6 +4,8 @@ import mg.razherana.banking.common.entities.ActionRole;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.ejb.EJB;
@@ -22,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
-import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 
 /**
  * Local EJB implementation for User management operations.
@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
 
   private static final Logger LOG = Logger.getLogger(UserServiceImpl.class.getName());
 
-  private static final String BACKEND_DEPOT_URL = "http://localhost:8084/api";
+  private static final String BACKEND_DEPOT_URL = "http://host.docker.internal:8084/api";
 
   @EJB
   private CompteCourantService compteCourantService;

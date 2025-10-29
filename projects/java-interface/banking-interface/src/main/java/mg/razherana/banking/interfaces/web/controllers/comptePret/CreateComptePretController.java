@@ -1,7 +1,7 @@
 package mg.razherana.banking.interfaces.web.controllers.comptePret;
 
-import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 import mg.razherana.banking.courant.entities.CompteCourant;

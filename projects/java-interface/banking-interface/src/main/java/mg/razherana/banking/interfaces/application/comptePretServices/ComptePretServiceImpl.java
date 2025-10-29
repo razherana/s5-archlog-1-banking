@@ -1,13 +1,13 @@
 package mg.razherana.banking.interfaces.application.comptePretServices;
 
 import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
+import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
+import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.interfaces.dto.comptePret.*;
 import mg.razherana.banking.pret.application.comptePretService.ComptePretServiceRemote;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
-import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
-import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
-import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
@@ -38,7 +38,7 @@ public class ComptePretServiceImpl implements ComptePretService {
 
   public ComptePretServiceImpl() {
     try {
-      this.remotePret = new EJBLookupService("localhost:8083");
+      this.remotePret = new EJBLookupService("host.docker.internal:8083");
       this.comptePretRemoteService = remotePret.lookupStatefulBean(
           "global/ComptePretServiceRemoteImpl!mg.razherana.banking.pret.application.comptePretService.ComptePretServiceRemote",
           ComptePretServiceRemote.class);

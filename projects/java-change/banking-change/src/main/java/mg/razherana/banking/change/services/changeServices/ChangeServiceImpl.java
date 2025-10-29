@@ -40,6 +40,18 @@ public class ChangeServiceImpl implements ChangeService {
             "dateStart": "1950-01-01T00:00:00",
             "dateEnd": "2100-06-30T23:59:59"
           }
+        ],
+        "IN": [
+          {
+            "value": 82.5,
+            "dateStart": "2024-01-01T00:00:00",
+            "dateEnd": "2024-12-31T23:59:59"
+          },
+          {
+            "value": 83.0,
+            "dateStart": "2025-01-01T00:00:00",
+            "dateEnd": "2025-12-31T23:59:59"
+          }
         ]
       }
               """;

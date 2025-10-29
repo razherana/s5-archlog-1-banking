@@ -2,8 +2,8 @@ package mg.razherana.banking.interfaces.application.compteDepotServices;
 
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.utils.ExceptionUtils;
-import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
+import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.dto.CompteDepotDTO;
 import mg.razherana.banking.interfaces.dto.TypeCompteDepotDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,7 +38,7 @@ import java.util.logging.Level;
 public class CompteDepotServiceImpl implements CompteDepotService {
 
   private static final Logger LOG = Logger.getLogger(CompteDepotServiceImpl.class.getName());
-  private static final String BASE_URL = "http://localhost:8084/api";
+  private static final String BASE_URL = "http://host.docker.internal:8084/api";
   private static final String COMPTES_ENDPOINT = BASE_URL + "/ComptesDepots";
   private static final String TYPES_ENDPOINT = BASE_URL + "/TypeComptesDepots";
 

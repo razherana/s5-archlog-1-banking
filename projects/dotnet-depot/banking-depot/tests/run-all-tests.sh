@@ -5,7 +5,7 @@
 
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TESTS_DIR="$BASE_DIR"
-BASE_URL="http://localhost:8084/api"
+BASE_URL="http://0.0.0.0:8084/api"
 JAVA_SERVICE_URL="http://localhost:8082/api"
 
 echo "🏦 Banking Depot API Test Suite Runner"

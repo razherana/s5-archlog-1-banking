@@ -19,8 +19,8 @@ public class ChangeServiceImpl implements ChangeService {
 
   public ChangeServiceImpl() {
     try {
-      JNDITreeLister.list("localhost:8080");
-      this.ejbLookupService = new EJBLookupService("localhost:8080");
+      JNDITreeLister.list("host.docker.internal:8080");
+      this.ejbLookupService = new EJBLookupService("host.docker.internal:8080");
 
       this.changeRemoteService = ejbLookupService.lookupStatefulBean(
           "global/ChangeRemoteServiceImpl!mg.razherana.banking.change.services.changeServices.ChangeRemoteService",

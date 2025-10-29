@@ -18,7 +18,7 @@ public class JNDITreeLister {
   }
 
   public void listAllJNDINames() {
-    listAllJNDINames("localhost");
+    listAllJNDINames("host.docker.internal");
   }
 
   public void listAllJNDINames(String url) {

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Account Management API Tests
-BASE_URL="http://localhost:8084/api"
+BASE_URL="http://0.0.0.0:8084/api"
 JAVA_SERVICE_URL="http://localhost:8082/api"
 TEST_NAME="Account Management Tests"
 

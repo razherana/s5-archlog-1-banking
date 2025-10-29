@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Type Management API Tests
-BASE_URL="http://localhost:8084/api"
+BASE_URL="http://0.0.0.0:8084/api"
 TEST_NAME="Type Management Tests"
 
 echo "=== $TEST_NAME ==="

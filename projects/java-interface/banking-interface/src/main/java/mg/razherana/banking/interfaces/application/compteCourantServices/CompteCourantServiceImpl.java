@@ -1,10 +1,10 @@
 package mg.razherana.banking.interfaces.application.compteCourantServices;
 
-import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
-import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.interfaces.application.changeServices.ChangeService;
+import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupService;
 import mg.razherana.banking.interfaces.tests.JNDITreeLister;
 import mg.razherana.banking.courant.application.compteCourantService.CompteCourantRemoteService;
 import mg.razherana.banking.courant.application.transactionService.TransactionRemoteService;
@@ -42,7 +42,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   public CompteCourantServiceImpl() {
     try {
       JNDITreeLister.list();
-      this.remoteCourant = new EJBLookupService("localhost:8081");
+      this.remoteCourant = new EJBLookupService("host.docker.internal:8081");
 
       this.compteCourantRemoteService = remoteCourant.lookupStatefulBean(
           "global/CompteCourantRemoteServiceImpl!mg.razherana.banking.courant.application.compteCourantService.CompteCourantRemoteService",

@@ -1,9 +1,9 @@
 package mg.razherana.banking.interfaces.web.controllers;
 
-import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 import mg.razherana.banking.common.entities.User;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.common.services.userServices.UserService;
+import mg.razherana.banking.interfaces.application.template.ThymeleafService;
 
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
