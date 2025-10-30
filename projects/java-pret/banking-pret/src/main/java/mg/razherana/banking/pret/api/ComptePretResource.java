@@ -1,10 +1,10 @@
 package mg.razherana.banking.pret.api;
 
 import jakarta.ejb.EJB;
-import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.pret.application.comptePretService.ComptePretService;
 import mg.razherana.banking.pret.dto.*;
 import mg.razherana.banking.pret.dto.requests.CreateComptePretRequest;
@@ -29,22 +29,20 @@ public class ComptePretResource {
   private ComptePretService comptePretService;
 
   /**
-   * Helper method to handle EJBException and extract the underlying cause.
+   * Helper method to handle Exception and extract the underlying cause.
    * Returns true if the exception should be treated as a 400 Bad Request,
    * false if it should be treated as a 500 Internal Server Error.
    */
-  private boolean isClientError(EJBException ejbException) {
-    Throwable cause = ejbException.getCause();
-    return cause instanceof IllegalArgumentException;
+  private boolean isClientError(Exception exc) {
+    return exc instanceof IllegalArgumentException || exc instanceof IllegalStateException;
   }
 
   /**
-   * Helper method to get the appropriate error message from an EJBException.
+   * Helper method to get the appropriate error message from an Exception.
    */
-  private String getErrorMessage(EJBException ejbException) {
-    Throwable cause = ejbException.getCause();
-    if (cause instanceof IllegalArgumentException) {
-      return cause.getMessage();
+  private String getErrorMessage(Exception exc) {
+    if (isClientError(exc)) {
+      return exc.getMessage();
     }
     return "Internal server error";
   }
@@ -58,7 +56,9 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(loanDTOs).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting all loans: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret");
@@ -92,7 +92,9 @@ public class ComptePretResource {
       ComptePretDTO loanDTO = new ComptePretDTO(loan);
       return Response.status(201).entity(loanDTO).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error creating loan: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret");
@@ -126,7 +128,9 @@ public class ComptePretResource {
 
       return Response.ok(loanDTO).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting loan: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/" + id);
@@ -152,7 +156,9 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(loanDTOs).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting user loans: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/user/" + userId);
@@ -196,7 +202,9 @@ public class ComptePretResource {
 
       return Response.ok(responseJson).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error calculating total loan balance: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/solde/user/" + userId);
@@ -232,7 +240,9 @@ public class ComptePretResource {
       PaymentStatusDTO status = comptePretService.getPaymentStatus(id, actionDateTime);
       return Response.ok(status).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting payment status: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request",
@@ -264,7 +274,9 @@ public class ComptePretResource {
           .collect(Collectors.toList());
       return Response.ok(paymentDTOs).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting payment history: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request",
@@ -303,7 +315,9 @@ public class ComptePretResource {
           payment.getDateEcheance());
       return Response.status(201).entity(paymentDTO).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error making payment: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/make-payment");
@@ -327,7 +341,9 @@ public class ComptePretResource {
       List<TypeComptePret> loanTypes = comptePretService.getAllLoanTypes();
       return Response.ok(loanTypes).build();
 
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       if (isClientError(e)) {
         LOG.warning("Client error getting loan types: " + getErrorMessage(e));
         ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/comptes-pret/types");
