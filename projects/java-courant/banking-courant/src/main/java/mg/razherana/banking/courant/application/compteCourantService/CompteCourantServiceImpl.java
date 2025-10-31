@@ -291,7 +291,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
     var result = listValid.stream()
-        .filter(t -> t.getSpecialActionEnum().equals(SpecialAction.TAXE))
+        .filter(t -> SpecialAction.TAXE.equals(t.getSpecialActionEnum()))
         .map(t -> t.getMontant())
         .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
@@ -317,7 +317,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
     var result = listValid.stream()
-        .filter(t -> t.getSpecialActionEnum().equals(SpecialAction.TAXE))
+        .filter(t -> SpecialAction.TAXE.equals(t.getSpecialActionEnum()))
         .filter(t -> !t.getDate().isAfter(actionDateTime))
         .map(t -> t.getMontant())
         .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
