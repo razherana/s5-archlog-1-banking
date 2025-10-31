@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.Resource;
 import jakarta.ejb.EJB;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -24,7 +23,6 @@ import mg.razherana.banking.courant.dto.requests.virements.VirementDuJourDTO;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
 
-@Resource
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/virements")
@@ -100,16 +98,8 @@ public class VirementResource {
   @Path("/valider")
   public Response valider(@Valid ValiderVirementRequest request) {
     try {
-      TransactionCourant virement = transactionService.findById(request.getId());
-
-      if (virement == null) {
-        ErrorDTO error = new ErrorDTO("Virement not found", 404, "Not Found", "/transactions/valider");
-        return Response.status(Response.Status.NOT_FOUND)
-            .entity(error).build();
-      }
-
       TransactionCourant validatedVirement = transactionService.validerVirement(
-          virement, request.getDateValidation());
+          request.getId(), request.getDateValidation());
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(validatedVirement);
 

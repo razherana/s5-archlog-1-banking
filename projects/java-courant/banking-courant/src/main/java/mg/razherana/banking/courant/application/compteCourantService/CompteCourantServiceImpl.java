@@ -196,13 +196,13 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
     BigDecimal incoming = listValid.stream()
-        .filter(t -> t.getReceiver().getId().equals(compte.getId()))
+        .filter(t -> t.getReceiver() != null && t.getReceiver().getId().equals(compte.getId()))
         .map(t -> t.getMontant())
         .reduce(BigDecimal.ZERO,
             (t1, t2) -> t1.add(t2));
 
     BigDecimal outgoing = listValid.stream()
-        .filter(t -> t.getSender().getId().equals(compte.getId()))
+        .filter(t -> t.getSender() != null && t.getSender().getId().equals(compte.getId()))
         .map(t -> t.getMontant())
         .reduce(BigDecimal.ZERO,
             (t1, t2) -> t1.add(t2));

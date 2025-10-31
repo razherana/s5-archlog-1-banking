@@ -199,8 +199,13 @@ public class TransactionServiceImpl implements TransactionService {
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public TransactionCourant validerVirement(TransactionCourant virement, LocalDateTime date) {
-    if (virement.getValidationDate() != null)
+  public TransactionCourant validerVirement(int virementId, LocalDateTime date) {
+    TransactionCourant virement = entityManager.find(TransactionCourant.class, virementId);
+    if (virement == null) {
+      throw new IllegalArgumentException("Le virement n'existe pas");
+    }
+
+    if (virement.getValidationDate() != null) 
       throw new IllegalArgumentException("Le virement a déjà été confirmé");
 
     virement.setValidationDate(date);

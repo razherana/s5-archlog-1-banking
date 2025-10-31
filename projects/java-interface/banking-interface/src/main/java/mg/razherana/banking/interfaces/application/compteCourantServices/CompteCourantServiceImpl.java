@@ -165,7 +165,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return null;
       }
 
-      return transactionRemoteService.depot(compte, convertedAmount, description, actionDateTime);
+      return transactionRemoteService.depot(compte, convertedAmount, description, actionDateTime, currency);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making deposit to account " + accountId, e);
       throw e;
@@ -201,7 +201,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return null;
       }
 
-      return transactionRemoteService.retrait(compte, convertedAmount, description, actionDateTime);
+      return transactionRemoteService.retrait(compte, convertedAmount, description, actionDateTime, currency);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making withdrawal from account " + accountId, e);
       throw e;
@@ -236,7 +236,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return null;
       }
 
-      return transactionRemoteService.payTax(compte, description, actionDateTime);
+      return transactionRemoteService.payTax(compte, description, actionDateTime, currency);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error paying tax for account " + accountId, e);
       throw e;
@@ -269,7 +269,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return compteCourantRemoteService.getComptes();
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error getting all accounts", e);
-      return new ArrayList<>();
+      throw e;
     }
   }
 
@@ -309,11 +309,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return false;
       }
 
-      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime);
+      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime, currency);
       return true;
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);
-      return false;
+      throw e;
     }
   }
 
@@ -334,7 +334,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return transactionRemoteService.getTransactionsByCompte(compte);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error getting transaction history for account " + accountId, e);
-      return new ArrayList<>();
+      throw e;
     }
   }
 
@@ -355,7 +355,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return compteCourantRemoteService.calculateSolde(compte, statusDate);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error calculating balance for account " + accountId, e);
-      return BigDecimal.ZERO;
+      throw e;
     }
   }
 
@@ -370,7 +370,22 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       return compteCourantRemoteService.calculateTotalSoldeByUserId(userId, actionDateTime);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error calculating total balance for user " + userId, e);
-      return BigDecimal.ZERO;
+      throw e;
+    }
+  }
+
+  @Override
+  public TransactionCourant validateTransaction(UserAdmin userAdmin, Integer transactionId, LocalDateTime validationDate) {
+    try {
+      if (!compteCourantRemoteService.hasAuthorization(userAdmin, "UPDATE", "transaction_courants")) {
+        LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to validate transactions");
+        throw new IllegalStateException("Unauthorized access: User does not have permission to validate transactions");
+      }
+
+      return transactionRemoteService.validerVirement(transactionId, validationDate);
+    } catch (Exception e) {
+      LOG.log(Level.SEVERE, "Error validating transaction " + transactionId, e);
+      throw e;
     }
   }
 }

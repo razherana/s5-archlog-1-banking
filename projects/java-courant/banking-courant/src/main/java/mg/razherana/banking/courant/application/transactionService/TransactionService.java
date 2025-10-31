@@ -37,7 +37,7 @@ public interface TransactionService {
   public void transfert(CompteCourant compteSource, CompteCourant compteDestination,
       BigDecimal montant, String description, LocalDateTime actionDateTime, String devise);
 
-  public TransactionCourant validerVirement(TransactionCourant virement, LocalDateTime date);
+  public TransactionCourant validerVirement(int virementId, LocalDateTime date);
 
   public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte);
 

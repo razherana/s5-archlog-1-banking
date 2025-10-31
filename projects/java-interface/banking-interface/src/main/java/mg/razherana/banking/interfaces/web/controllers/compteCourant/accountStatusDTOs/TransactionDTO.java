@@ -11,6 +11,8 @@ public class TransactionDTO extends TransactionCourant {
     this.setReceiver(transaction.getReceiver());
     this.setMontant(transaction.getMontant());
     this.setDate(transaction.getDate());
+    this.setChange(transaction.getChange());
+    this.setValidationDate(transaction.getValidationDate());
     this.setSpecialAction(transaction.getSpecialAction());
   }
 

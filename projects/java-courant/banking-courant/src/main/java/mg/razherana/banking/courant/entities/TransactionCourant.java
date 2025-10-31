@@ -104,7 +104,7 @@ public class TransactionCourant implements Serializable {
    * Currency change identifier for this transaction (e.g., 'MGA', 'USD').
    * Stored as a string in the database column named `change`.
    */
-  @Column(name = "change", nullable = true)
+  @Column(name = "devise", nullable = true)
   private String change;
 
   /**

@@ -148,4 +148,14 @@ public interface CompteCourantService {
      * @return Total balance of user
      */
     BigDecimal getAccountBalanceByUserId(UserAdmin userAdmin, Integer userId, LocalDateTime actionDateTime);
+
+    /**
+     * Validates a transaction (sets validation date).
+     * 
+     * @param userAdmin The admin performing the action
+     * @param transactionId The transaction ID to validate
+     * @param validationDate The validation date/time
+     * @return The validated transaction
+     */
+    TransactionCourant validateTransaction(UserAdmin userAdmin, Integer transactionId, LocalDateTime validationDate);
 }

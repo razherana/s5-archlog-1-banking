@@ -77,7 +77,7 @@ public class TransactionRemoteServiceImpl implements TransactionRemoteService {
   }
 
   @Override
-  public TransactionCourant validerVirement(TransactionCourant virement, LocalDateTime date) {
-    return transactionService.validerVirement(virement, date);
+  public TransactionCourant validerVirement(int virementId, LocalDateTime date) {
+    return transactionService.validerVirement(virementId, date);
   }
 }

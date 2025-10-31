@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `transaction_courants` (
     `sender_id` INT NULL,
     `receiver_id` INT NULL,
     `montant` DECIMAL(15, 2) NOT NULL,
+    `change` VARCHAR(10) NULL,
     `validation_date` DATETIME NULL,
     `date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

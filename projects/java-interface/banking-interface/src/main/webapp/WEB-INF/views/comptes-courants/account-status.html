@@ -176,6 +176,7 @@
                 <th>Type</th>
                 <th>Montant</th>
                 <th>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -226,6 +227,15 @@
                   >
                 </td>
                 <td th:text="${transaction.formattedDate}">19/10/2025 10:30</td>
+                <td>
+                  <span th:if="${transaction.validationDate != null}">-</span>
+                  <form th:if="${transaction.validationDate == null}" method="post" action="validate-transaction" style="display: inline;">
+                    <input type="hidden" name="transactionId" th:value="${transaction.id}" />
+                    <input type="hidden" name="accountId" th:value="${account.id}" />
+                    <input type="hidden" name="actionDateTime" th:value="${#temporals.format(actionDateTime, 'yyyy-MM-dd')}" />
+                    <button type="submit" class="btn btn-sm btn-success" title="Valider cette transaction">Valider</button>
+                  </form>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -297,9 +307,22 @@
         margin-top: 1rem;
       }
 
-      .transaction-history th {
-        color: #f8f9fa;
-        font-weight: 600;
+      .btn-sm {
+        padding: 4px 8px;
+        font-size: 0.85em;
+        border-radius: 3px;
+      }
+
+      .btn-success {
+        background-color: #28a745;
+        color: white;
+        border: 1px solid #28a745;
+        cursor: pointer;
+      }
+
+      .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
       }
 
       .transaction-history td {

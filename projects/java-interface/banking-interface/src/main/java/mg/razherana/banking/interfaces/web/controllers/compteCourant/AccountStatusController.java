@@ -109,7 +109,7 @@ public class AccountStatusController extends HttpServlet {
       WebContext context = new WebContext(application.buildExchange(request, response));
 
       BigDecimal taxPaid = filteredTransactions.stream()
-          .filter(t -> t.getSpecialAction().equals(TransactionCourant.SpecialAction.TAXE.getDatabaseName()))
+          .filter(t -> TransactionCourant.SpecialAction.TAXE.getDatabaseName().equals(t.getSpecialAction()))
           .map(e -> e.getMontant())
           .reduce(BigDecimal.ZERO, BigDecimal::add);
 
