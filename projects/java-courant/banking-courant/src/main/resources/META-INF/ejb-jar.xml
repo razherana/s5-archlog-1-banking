@@ -7,13 +7,20 @@
     <!-- Configure IllegalStateException as application exception -->
     <application-exception>
       <exception-class>java.lang.IllegalStateException</exception-class>
-      <rollback>false</rollback>      <!-- or false -->
-      <inherited>false</inherited>      <!-- affects subclasses too -->
+      <rollback>false</rollback>
+      <inherited>false</inherited>
     </application-exception>
 
     <!-- You can also configure other exceptions -->
     <application-exception>
       <exception-class>java.lang.IllegalArgumentException</exception-class>
+      <rollback>false</rollback>
+      <inherited>false</inherited>
+    </application-exception>
+
+    <!-- Jakarta validation -->
+    <application-exception>
+      <exception-class>jakarta.validation.ConstraintViolationException</exception-class>
       <rollback>false</rollback>
       <inherited>false</inherited>
     </application-exception>

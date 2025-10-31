@@ -2,8 +2,10 @@ package mg.razherana.banking.courant.application.compteCourantService;
 
 import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.User;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -85,6 +87,12 @@ public interface CompteCourantService extends AuthorizationService {
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe);
 
   public void delete(Integer id);
+
+  public List<TransactionCourant> getVirementToday(CompteCourant compte, LocalDate actionDate);
+
+  default public List<TransactionCourant> getVirementToday(CompteCourant compte) {
+    return getVirementToday(compte, LocalDate.now());
+  }
 
   // Taxes application logic
 

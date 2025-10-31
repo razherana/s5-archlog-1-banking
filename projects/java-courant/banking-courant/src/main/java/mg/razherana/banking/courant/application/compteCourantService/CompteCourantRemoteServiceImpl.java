@@ -4,9 +4,11 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.User;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -112,6 +114,11 @@ public class CompteCourantRemoteServiceImpl implements CompteCourantRemoteServic
   @Override
   public BigDecimal getTaxToPay(CompteCourant compte, LocalDateTime actionDateTime) {
     return compteCourantService.getTaxToPay(compte, actionDateTime);
+  }
+
+  @Override
+  public List<TransactionCourant> getVirementToday(CompteCourant compte, LocalDate actionDate) {
+    return compteCourantService.getVirementToday(compte, actionDate);
   }
 
   @Override

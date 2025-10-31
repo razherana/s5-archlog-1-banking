@@ -1,3 +1,4 @@
+-- Active: 1738011862925@@127.0.0.1@3306@s5_archlog_1_banking_courant
 CREATE TABLE IF NOT EXISTS `compte_courants` (
     `id` INT NOT NULL AUTO_INCREMENT,
     -- Montant - par mois
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `transaction_courants` (
     `sender_id` INT NULL,
     `receiver_id` INT NULL,
     `montant` DECIMAL(15, 2) NOT NULL,
+    `validation_date` DATETIME NULL,
     `date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`sender_id`) REFERENCES `compte_courants` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE,

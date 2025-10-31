@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Remote implementation of the TransactionService that delegates to the local service.
+ * Remote implementation of the TransactionService that delegates to the local
+ * service.
  * 
  * <p>
  * This stateless EJB provides remote access to transaction operations by
@@ -34,41 +35,49 @@ import java.util.List;
 @Stateless
 public class TransactionRemoteServiceImpl implements TransactionRemoteService {
 
-    @EJB
-    private TransactionService transactionService;
+  @EJB
+  private TransactionService transactionService;
 
-    @Override
-    public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description, LocalDateTime actionDateTime) {
-        return transactionService.depot(compte, montant, description, actionDateTime);
-    }
+  @Override
+  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description,
+      LocalDateTime actionDateTime, String devise) {
+    return transactionService.depot(compte, montant, description, actionDateTime, devise);
+  }
 
-    @Override
-    public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description, LocalDateTime actionDateTime) {
-        return transactionService.retrait(compte, montant, description, actionDateTime);
-    }
+  @Override
+  public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
+      LocalDateTime actionDateTime, String devise) {
+    return transactionService.retrait(compte, montant, description, actionDateTime, devise);
+  }
 
-    @Override
-    public TransactionCourant payTax(CompteCourant compte, String description, LocalDateTime actionDateTime) {
-        return transactionService.payTax(compte, description, actionDateTime);
-    }
+  @Override
+  public TransactionCourant payTax(CompteCourant compte, String description, LocalDateTime actionDateTime, String devise) {
+    return transactionService.payTax(compte, description, actionDateTime, devise);
+  }
 
-    @Override
-    public void transfert(CompteCourant compteSource, CompteCourant compteDestination, BigDecimal montant, String description, LocalDateTime actionDateTime) {
-        transactionService.transfert(compteSource, compteDestination, montant, description, actionDateTime);
-    }
+  @Override
+  public void transfert(CompteCourant compteSource, CompteCourant compteDestination, BigDecimal montant,
+      String description, LocalDateTime actionDateTime, String devise) {
+    transactionService.transfert(compteSource, compteDestination, montant, description, actionDateTime, devise);
+  }
 
-    @Override
-    public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte) {
-        return transactionService.getTransactionsByCompte(compte);
-    }
+  @Override
+  public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte) {
+    return transactionService.getTransactionsByCompte(compte);
+  }
 
-    @Override
-    public List<TransactionCourant> getAllTransactions() {
-        return transactionService.getAllTransactions();
-    }
+  @Override
+  public List<TransactionCourant> getAllTransactions() {
+    return transactionService.getAllTransactions();
+  }
 
-    @Override
-    public TransactionCourant findById(Integer id) {
-        return transactionService.findById(id);
-    }
+  @Override
+  public TransactionCourant findById(Integer id) {
+    return transactionService.findById(id);
+  }
+
+  @Override
+  public TransactionCourant validerVirement(TransactionCourant virement, LocalDateTime date) {
+    return transactionService.validerVirement(virement, date);
+  }
 }

@@ -34,6 +34,9 @@ public class PayTaxRequest {
   /** Date/time for tax calculation (defaults to current time if not provided) */
   private LocalDateTime actionDateTime;
 
+  /** Currency code for the tax payment (e.g., "MGA", "USD") */
+  private String devise;
+
   /**
    * Gets the ID of the account paying taxes.
    * 
@@ -71,5 +74,23 @@ public class PayTaxRequest {
 
   public void setActionDateTime(LocalDateTime actionDateTime) {
     this.actionDateTime = actionDateTime;
+  }
+
+  /**
+   * Gets the currency code for the tax payment.
+   * 
+   * @return the currency code (e.g., "MGA", "USD")
+   */
+  public String getDevise() {
+    return devise;
+  }
+
+  /**
+   * Sets the currency code for the tax payment.
+   * 
+   * @param devise the currency code
+   */
+  public void setDevise(String devise) {
+    this.devise = devise;
   }
 }

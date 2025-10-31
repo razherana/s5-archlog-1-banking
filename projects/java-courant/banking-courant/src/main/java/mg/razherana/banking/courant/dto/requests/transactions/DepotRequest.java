@@ -33,6 +33,9 @@ public class DepotRequest {
   /** Optional action date/time for the deposit (for backdating) */
   private LocalDateTime actionDateTime;
 
+  /** Currency code for the deposit (e.g., "MGA", "USD") */
+  private String devise;
+
   /**
    * Gets the ID of the account to receive the deposit.
    * 
@@ -78,5 +81,23 @@ public class DepotRequest {
 
   public void setActionDateTime(LocalDateTime actionDateTime) {
     this.actionDateTime = actionDateTime;
+  }
+
+  /**
+   * Gets the currency code for the deposit.
+   * 
+   * @return the currency code (e.g., "MGA", "USD")
+   */
+  public String getDevise() {
+    return devise;
+  }
+
+  /**
+   * Sets the currency code for the deposit.
+   * 
+   * @param devise the currency code
+   */
+  public void setDevise(String devise) {
+    this.devise = devise;
   }
 }

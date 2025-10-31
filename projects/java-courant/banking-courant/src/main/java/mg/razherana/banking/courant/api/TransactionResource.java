@@ -1,6 +1,7 @@
 package mg.razherana.banking.courant.api;
 
 import jakarta.ejb.EJB;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -40,7 +41,9 @@ public class TransactionResource {
    * false if it should be treated as a 500 Internal Server Error.
    */
   private boolean isClientError(Exception exc) {
-    return exc instanceof IllegalArgumentException;
+    return exc instanceof IllegalArgumentException
+        || exc instanceof IllegalStateException
+        || exc instanceof ConstraintViolationException;
   }
 
   /**
@@ -175,7 +178,7 @@ public class TransactionResource {
       }
 
       TransactionCourant transaction = transactionService.depot(
-          compte, request.getMontant(), request.getDescription(), request.getActionDateTime());
+          compte, request.getMontant(), request.getDescription(), request.getActionDateTime(), request.getDevise());
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
       return Response.status(Response.Status.CREATED)
@@ -226,7 +229,7 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       TransactionCourant transaction = transactionService.retrait(
-          compte, request.getMontant(), request.getDescription(), actionDateTime);
+          compte, request.getMontant(), request.getDescription(), actionDateTime, request.getDevise());
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
       return Response.status(Response.Status.CREATED)
@@ -287,7 +290,7 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       transactionService.transfert(compteSource, compteDestination,
-          request.getMontant(), request.getDescription(), actionDateTime);
+          request.getMontant(), request.getDescription(), actionDateTime, request.getDevise());
 
       MessageDTO message = new MessageDTO("Transfer completed successfully");
       return Response.status(Response.Status.CREATED)
@@ -332,7 +335,7 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       TransactionCourant transaction = transactionService.payTax(
-          compte, request.getDescription(), actionDateTime);
+          compte, request.getDescription(), actionDateTime, request.getDevise());
 
       if (transaction == null) {
         MessageDTO message = new MessageDTO("No tax to pay");

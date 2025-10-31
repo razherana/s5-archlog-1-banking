@@ -12,11 +12,14 @@ import jakarta.persistence.TypedQuery;
 import mg.razherana.banking.common.entities.ActionRole;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.courant.application.remoteServices.UserServiceWrapper;
+import mg.razherana.banking.courant.application.transactionService.TransactionService;
 import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.User;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +71,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
   @EJB
   private UserServiceWrapper userServiceWrapper;
+
+  @EJB
+  private TransactionService transactionService;
 
   /**
    * Find a user by ID using REST API call to java-interface.
@@ -184,30 +190,26 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     LOG.info("Calculating solde for compte ID: " + compte.getId());
 
     if (actionDateTime == null) {
-      System.out.println("ETo eeeee");
       actionDateTime = LocalDateTime.now();
     }
 
-    System.out.println("calculateSolde = " + actionDateTime);
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
-    // Sum of incoming transactions (where this compte is receiver)
-    TypedQuery<BigDecimal> incomingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.receiver = :compte AND t.date <= :actionDateTime",
-        BigDecimal.class);
-    incomingQuery.setParameter("compte", compte);
-    incomingQuery.setParameter("actionDateTime", actionDateTime);
-    BigDecimal incoming = incomingQuery.getSingleResult();
+    BigDecimal incoming = listValid.stream()
+        .filter(t -> t.getReceiver().getId().equals(compte.getId()))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO,
+            (t1, t2) -> t1.add(t2));
 
-    // Sum of outgoing transactions (where this compte is sender)
-    TypedQuery<BigDecimal> outgoingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.date <= :actionDateTime",
-        BigDecimal.class);
-    outgoingQuery.setParameter("compte", compte);
-    outgoingQuery.setParameter("actionDateTime", actionDateTime);
-    BigDecimal outgoing = outgoingQuery.getSingleResult();
+    BigDecimal outgoing = listValid.stream()
+        .filter(t -> t.getSender().getId().equals(compte.getId()))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO,
+            (t1, t2) -> t1.add(t2));
 
     BigDecimal solde = incoming.subtract(outgoing);
     LOG.info("Calculated solde: " + solde + " (incoming: " + incoming + ", outgoing: " + outgoing + ")");
+
     return solde;
   }
 
@@ -286,14 +288,20 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       throw new IllegalArgumentException("Compte cannot be null");
     }
 
-    TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.specialAction = :action",
-        BigDecimal.class);
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
-    query.setParameter("compte", compte);
-    query.setParameter("action", SpecialAction.TAXE.getDatabaseName());
+    var result = listValid.stream()
+        .filter(t -> t.getSpecialActionEnum().equals(SpecialAction.TAXE))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
-    return query.getSingleResult();
+    return result;
+  }
+
+  private List<TransactionCourant> getListValid(List<TransactionCourant> list) {
+    return list.stream()
+        .filter(t -> t.isValid())
+        .toList();
   }
 
   @Override
@@ -306,15 +314,15 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       throw new IllegalArgumentException("Action date cannot be null");
     }
 
-    TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.specialAction = :action AND t.date <= :actionDateTime",
-        BigDecimal.class);
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
-    query.setParameter("compte", compte);
-    query.setParameter("action", SpecialAction.TAXE.getDatabaseName());
-    query.setParameter("actionDateTime", actionDateTime);
+    var result = listValid.stream()
+        .filter(t -> t.getSpecialActionEnum().equals(SpecialAction.TAXE))
+        .filter(t -> !t.getDate().isAfter(actionDateTime))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
-    return query.getSingleResult();
+    return result;
   }
 
   @Override
@@ -351,6 +359,18 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     BigDecimal taxPaid = getTaxPaidDate(compte, actionDateTime);
 
     return totalTaxToPay.subtract(taxPaid).max(BigDecimal.ZERO);
+  }
+
+  @Override
+  public List<TransactionCourant> getVirementToday(CompteCourant compte, LocalDate actionDate) {
+    if (actionDate == null)
+      return getVirementToday(compte);
+
+    var result = getListValid(transactionService.getTransactionsByCompte(compte));
+
+    return result.stream()
+        .filter(t -> t.getDate().toLocalDate().isEqual(actionDate))
+        .toList();
   }
 
   private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;

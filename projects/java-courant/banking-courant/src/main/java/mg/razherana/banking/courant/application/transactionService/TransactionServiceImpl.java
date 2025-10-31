@@ -40,8 +40,8 @@ public class TransactionServiceImpl implements TransactionService {
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description, 
-      LocalDateTime actionDateTime) {
+  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description,
+      LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing depot of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
@@ -55,8 +55,10 @@ public class TransactionServiceImpl implements TransactionService {
     transaction.setSender(null); // System/external source
     transaction.setSpecialAction(SpecialAction.DEPOSIT.getDatabaseName());
     transaction.setReceiver(compte);
+    transaction.setChange(devise);
     transaction.setMontant(montant);
     transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -67,7 +69,7 @@ public class TransactionServiceImpl implements TransactionService {
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing retrait of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
@@ -91,8 +93,10 @@ public class TransactionServiceImpl implements TransactionService {
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.WITHDRAWAL.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
+    transaction.setChange(devise);
     transaction.setMontant(montant);
     transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -103,7 +107,7 @@ public class TransactionServiceImpl implements TransactionService {
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public TransactionCourant payTax(CompteCourant compte, String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime, String devise) {
     BigDecimal montant = compteCourantService.getTaxToPay(compte, actionDateTime);
 
     LOG.info("Processing tax payment of " + montant + " for compte " + compte.getId());
@@ -131,8 +135,10 @@ public class TransactionServiceImpl implements TransactionService {
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.TAXE.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
+    transaction.setChange(devise);
     transaction.setMontant(montant);
     transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -143,7 +149,7 @@ public class TransactionServiceImpl implements TransactionService {
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public void transfert(CompteCourant compteSource, CompteCourant compteDestination,
-      BigDecimal montant, String description, LocalDateTime actionDateTime) {
+      BigDecimal montant, String description, LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing transfert of " + montant + " from compte " + compteSource.getId()
         + " to compte " + compteDestination.getId());
 
@@ -170,8 +176,10 @@ public class TransactionServiceImpl implements TransactionService {
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compteSource);
     transaction.setReceiver(compteDestination);
+    transaction.setChange(devise);
     transaction.setMontant(montant);
     transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(null);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -187,6 +195,22 @@ public class TransactionServiceImpl implements TransactionService {
     query.setParameter("compte", compte);
 
     return query.getResultList();
+  }
+
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
+  public TransactionCourant validerVirement(TransactionCourant virement, LocalDateTime date) {
+    if (virement.getValidationDate() != null)
+      throw new IllegalArgumentException("Le virement a déjà été confirmé");
+
+    virement.setValidationDate(date);
+
+    entityManager.merge(virement);
+    entityManager.flush();
+
+    LOG.info("Virement validated succesfully");
+
+    return virement;
   }
 
   @Override
