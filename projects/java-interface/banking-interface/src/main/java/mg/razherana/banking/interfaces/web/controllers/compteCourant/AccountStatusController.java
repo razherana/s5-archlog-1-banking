@@ -101,7 +101,10 @@ public class AccountStatusController extends HttpServlet {
       // System.out.println(transactionHistory);
       List<TransactionCourant> filteredTransactions = transactionHistory.stream()
           .filter(t -> !t.getDate().isAfter(actionDateTime))
-          .sorted((t1, t2) -> t2.getDate().compareTo(t1.getDate())) // Most recent first
+          .filter(t -> t.getReceiver() == null
+              || !t.getReceiver().getId().equals(accountId)
+              || t.isValid())
+          .sorted((t1, t2) -> t1.getDate().compareTo(t2.getDate()))
           .toList();
 
       // Create Thymeleaf context

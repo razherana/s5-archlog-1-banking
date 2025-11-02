@@ -228,11 +228,18 @@
                 </td>
                 <td th:text="${transaction.formattedDate}">19/10/2025 10:30</td>
                 <td>
-                  <span th:if="${transaction.validationDate != null}">-</span>
-                  <form th:if="${transaction.validationDate == null}" method="post" action="validate-transaction" style="display: inline;">
+                  <!-- Invalidation Form -->
+                  <form th:if="${transaction.shouldShowInvalidateButton()}" method="post" action="invalidate-transaction" style="display: inline;">
                     <input type="hidden" name="transactionId" th:value="${transaction.id}" />
                     <input type="hidden" name="accountId" th:value="${account.id}" />
-                    <input type="hidden" name="actionDateTime" th:value="${#temporals.format(actionDateTime, 'yyyy-MM-dd')}" />
+                    <button type="submit" class="btn btn-sm btn-danger" title="Invalider cette transaction">Invalider</button>
+                  </form>
+
+                  <!-- Validation Form -->
+                  <form th:if="${transaction.shouldShowValidateButton(account.id)}" method="post" action="validate-transaction" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="hidden" name="transactionId" th:value="${transaction.id}" />
+                    <input type="hidden" name="accountId" th:value="${account.id}" />
+                    <input type="datetime-local" class="form-control" name="actionDateTime" />
                     <button type="submit" class="btn btn-sm btn-success" title="Valider cette transaction">Valider</button>
                   </form>
                 </td>

@@ -1,5 +1,7 @@
 package mg.razherana.banking.courant.api;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -18,6 +20,7 @@ import mg.razherana.banking.courant.application.compteCourantService.CompteCoura
 import mg.razherana.banking.courant.application.transactionService.TransactionService;
 import mg.razherana.banking.courant.dto.ErrorDTO;
 import mg.razherana.banking.courant.dto.TransactionCourantDTO;
+import mg.razherana.banking.courant.dto.requests.transactions.InvaliderVirementRequest;
 import mg.razherana.banking.courant.dto.requests.transactions.ValiderVirementRequest;
 import mg.razherana.banking.courant.dto.requests.virements.VirementDuJourDTO;
 import mg.razherana.banking.courant.entities.CompteCourant;
@@ -68,6 +71,9 @@ public class VirementResource {
             .entity(error).build();
       }
 
+      if (request.getDate() == null)
+        request.setDate(LocalDate.now());
+
       List<TransactionCourant> transactions = compteCourantService.getVirementToday(compte, request.getDate());
 
       List<TransactionCourantDTO> transactionDTOs = transactions.stream()
@@ -98,8 +104,39 @@ public class VirementResource {
   @Path("/valider")
   public Response valider(@Valid ValiderVirementRequest request) {
     try {
+      if (request.getDateValidation() == null) {
+        request.setDateValidation(LocalDateTime.now());
+      }
+
       TransactionCourant validatedVirement = transactionService.validerVirement(
           request.getId(), request.getDateValidation());
+
+      TransactionCourantDTO transactionDTO = new TransactionCourantDTO(validatedVirement);
+
+      return Response.status(Response.Status.OK)
+          .entity(transactionDTO).build();
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+      int statusCode = isClientError(e) ? 400 : 500;
+      String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
+      String errorMessage = getErrorMessage(e);
+
+      LOG.severe("EJB error processing transfert: " + e.getMessage());
+
+      ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions/transfert");
+      return Response.status(statusCode)
+          .type(MediaType.APPLICATION_JSON)
+          .entity(error).build();
+    }
+  }
+
+  @POST
+  @Path("/invalider")
+  public Response invalider(@Valid InvaliderVirementRequest request) {
+    try {
+      TransactionCourant validatedVirement = transactionService.validerVirement(
+          request.getId(),
+          null);
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(validatedVirement);
 

@@ -1,6 +1,7 @@
 package mg.razherana.banking.interfaces.web.controllers.compteCourant.accountStatusDTOs;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import mg.razherana.banking.courant.entities.TransactionCourant;
 
@@ -64,5 +65,14 @@ public class TransactionDTO extends TransactionCourant {
 
   public String getFormattedDate() {
     return this.getDate().format(formatter);
+  }
+
+  public boolean shouldShowValidateButton(Integer accountId) {
+    // check if the transaction is ours
+    return this.getValidationDate() == null && getSpecialAction() == null && Objects.equals(accountId, getSenderId());
+  }
+
+  public boolean shouldShowInvalidateButton() {
+    return this.getValidationDate() != null && getSpecialAction() == null;
   }
 }

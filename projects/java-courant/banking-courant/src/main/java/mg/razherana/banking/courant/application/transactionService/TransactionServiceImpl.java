@@ -4,6 +4,7 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -189,10 +190,18 @@ public class TransactionServiceImpl implements TransactionService {
   @Override
   public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte) {
     LOG.info("Getting transactions for compte " + compte.getId());
+
+    EntityGraph<TransactionCourant> graph = entityManager.createEntityGraph(TransactionCourant.class);
+    graph.addSubgraph("sender");
+    graph.addSubgraph("receiver");
+
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
-        "SELECT t FROM TransactionCourant t WHERE t.sender = :compte OR t.receiver = :compte ORDER BY t.date DESC",
+        "SELECT t FROM TransactionCourant t " +
+            "WHERE t.sender = :compte OR t.receiver = :compte " +
+            "ORDER BY t.date DESC",
         TransactionCourant.class);
     query.setParameter("compte", compte);
+    query.setHint("jakarta.persistence.loadgraph", graph);
 
     return query.getResultList();
   }
@@ -205,15 +214,18 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Le virement n'existe pas");
     }
 
-    if (virement.getValidationDate() != null) 
-      throw new IllegalArgumentException("Le virement a déjà été confirmé");
+    if (virement.getValidationDate() != null && date != null)
+      throw new IllegalArgumentException("Le virement a déjà été validé");
+
+    if (date == null && virement.getValidationDate() == null)
+      throw new IllegalArgumentException("Le virement a déjà été non validé");
 
     virement.setValidationDate(date);
 
     entityManager.merge(virement);
     entityManager.flush();
 
-    LOG.info("Virement validated succesfully");
+    LOG.info("Virement validated/invalidated succesfully");
 
     return virement;
   }
@@ -222,7 +234,10 @@ public class TransactionServiceImpl implements TransactionService {
   public List<TransactionCourant> getAllTransactions() {
     LOG.info("Getting all transactions");
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
-        "SELECT t FROM TransactionCourant t ORDER BY t.date DESC",
+        "SELECT t FROM TransactionCourant t " +
+            "LEFT JOIN FETCH t.sender " +
+            "LEFT JOIN FETCH t.receiver " +
+            "ORDER BY t.date DESC",
         TransactionCourant.class);
 
     return query.getResultList();

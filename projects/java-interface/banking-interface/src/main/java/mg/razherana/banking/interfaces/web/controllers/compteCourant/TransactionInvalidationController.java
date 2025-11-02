@@ -14,16 +14,15 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
 /**
  * Web Controller for validating transactions.
  */
-@WebServlet("/comptes-courants/validate-transaction")
-public class TransactionValidationController extends HttpServlet {
+@WebServlet("/comptes-courants/invalidate-transaction")
+public class TransactionInvalidationController extends HttpServlet {
 
-  private static final Logger LOG = Logger.getLogger(TransactionValidationController.class.getName());
+  private static final Logger LOG = Logger.getLogger(TransactionInvalidationController.class.getName());
 
   @EJB
   private CompteCourantService compteCourantService;
@@ -41,7 +40,6 @@ public class TransactionValidationController extends HttpServlet {
     UserAdmin userAdmin = (UserAdmin) session.getAttribute("userAdmin");
     String transactionIdStr = request.getParameter("transactionId");
     String accountIdStr = request.getParameter("accountId");
-    String actionDateTimeStr = request.getParameter("actionDateTime");
 
     if (transactionIdStr == null || transactionIdStr.trim().isEmpty()) {
       response.sendRedirect("account-status?error=Transaction ID missing");
@@ -53,26 +51,12 @@ public class TransactionValidationController extends HttpServlet {
       return;
     }
 
-    if (actionDateTimeStr == null || actionDateTimeStr.trim().isEmpty()) {
-      response.sendRedirect("account-status?error=Date missing");
-      return;
-    }
-
-    LocalDateTime actionDateTime;
-
-    try {
-      actionDateTime = LocalDateTime.parse(actionDateTimeStr);
-    } catch (Exception e) {
-      response.sendRedirect("account-status?error=Invalid date format");
-      return;
-    }
-
     try {
       Integer transactionId = Integer.parseInt(transactionIdStr);
       Integer accountId = Integer.parseInt(accountIdStr);
 
       // Validate the transaction
-      compteCourantService.validateTransaction(userAdmin, transactionId, actionDateTime);
+      compteCourantService.validateTransaction(userAdmin, transactionId, null);
 
       LOG.info("Transaction " + transactionId + " validated successfully by user " + userAdmin.getEmail());
 
