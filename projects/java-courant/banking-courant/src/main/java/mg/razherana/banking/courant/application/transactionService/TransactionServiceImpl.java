@@ -230,6 +230,36 @@ public class TransactionServiceImpl implements TransactionService {
     return virement;
   }
 
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
+  public TransactionCourant updateTransaction(Integer idTransaction, BigDecimal montant, String change) {
+    TransactionCourant virement = entityManager.find(TransactionCourant.class, idTransaction);
+    if (virement == null) {
+      throw new IllegalArgumentException("Le virement n'existe pas");
+    }
+
+    if (montant != null) {
+      if (montant.compareTo(BigDecimal.ZERO) <= 0)
+        throw new IllegalArgumentException("Le montant doit etre positif");
+
+      virement.setMontant(montant);
+    }
+
+    if (change != null) {
+      if (change.isBlank())
+        throw new IllegalArgumentException("La devise n'existe pas");
+
+      virement.setChange(change);
+    }
+
+    entityManager.merge(virement);
+    entityManager.flush();
+
+    LOG.info("Virement updated succesfully");
+
+    return virement;
+  }
+
   @Override
   public List<TransactionCourant> getAllTransactions() {
     LOG.info("Getting all transactions");

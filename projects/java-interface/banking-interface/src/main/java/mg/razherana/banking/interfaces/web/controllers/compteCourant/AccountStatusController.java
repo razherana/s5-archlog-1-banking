@@ -164,6 +164,8 @@ public class AccountStatusController extends HttpServlet {
     } catch (NumberFormatException e) {
       response.sendRedirect("../comptes-courants?error=invalid_account_id");
     } catch (Exception e) {
+      e.printStackTrace();
+      
       var ex = ExceptionUtils.root(e);
       LOG.severe("Error processing account status: " + ex.getMessage());
       ex.printStackTrace();

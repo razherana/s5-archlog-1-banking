@@ -80,4 +80,9 @@ public class TransactionRemoteServiceImpl implements TransactionRemoteService {
   public TransactionCourant validerVirement(int virementId, LocalDateTime date) {
     return transactionService.validerVirement(virementId, date);
   }
+
+  @Override
+  public TransactionCourant updateTransaction(Integer idTransaction, BigDecimal montant, String change) {
+    return transactionService.updateTransaction(idTransaction, montant, change);
+  }
 }

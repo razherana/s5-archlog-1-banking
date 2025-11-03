@@ -223,7 +223,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         currency = "MGA";
       }
 
-      // Note: Tax amount is calculated by the remote service based on account configuration
+      // Note: Tax amount is calculated by the remote service based on account
+      // configuration
       // Currency conversion would be applied to the calculated tax amount if needed
       // For now, we just pass the currency information in the description
       if (!"MGA".equals(currency)) {
@@ -309,7 +310,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return false;
       }
 
-      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime, currency);
+      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime,
+          currency);
       return true;
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);
@@ -375,9 +377,10 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   }
 
   @Override
-  public TransactionCourant validateTransaction(UserAdmin userAdmin, Integer transactionId, LocalDateTime validationDate) {
+  public TransactionCourant validateTransaction(UserAdmin userAdmin, Integer transactionId,
+      LocalDateTime validationDate) {
     try {
-      if (!compteCourantRemoteService.hasAuthorization(userAdmin, "UPDATE", "transaction_courants")) {
+      if (!compteCourantRemoteService.hasAuthorization(userAdmin, "VALIDATE", "transaction_courants")) {
         LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to validate transactions");
         throw new IllegalStateException("Unauthorized access: User does not have permission to validate transactions");
       }
@@ -387,5 +390,44 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       LOG.log(Level.SEVERE, "Error validating transaction " + transactionId, e);
       throw e;
     }
+  }
+
+  @Override
+  public TransactionCourant updateTransaction(UserAdmin userAdmin, Integer idTransaction, BigDecimal montant,
+      String change) {
+    if (!compteCourantRemoteService.hasAuthorization(userAdmin, "UPDATE", "transaction_courants")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to update transactions");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to update transactions");
+    }
+
+    // Get montant based on change
+    var transaction = transactionRemoteService.findById(idTransaction);
+
+    if (transaction == null)
+      throw new IllegalArgumentException("La transaction n'existe pas");
+
+    // Get OG montant or updated
+    BigDecimal newMontant = montant;
+
+    if (newMontant == null)
+      newMontant = transaction.getMontant();
+
+    // Apply conversion between changes
+    if (change != null) {
+      var transactionDate = transaction.getDate();
+
+      var ogChange = changeService.getChange(transaction.getChange(), transactionDate);
+      var newChange = changeService.getChange(change, transactionDate);
+
+      LOG.info("Original Change: " + ogChange + ", New Change: " + newChange);
+      LOG.info("Original Montant: " + newMontant);
+
+
+      newMontant = newMontant.divide(ogChange).multiply(newChange);
+
+      LOG.info("Converted Montant: " + newMontant);
+    }
+
+    return transactionRemoteService.updateTransaction(idTransaction, newMontant, change);
   }
 }

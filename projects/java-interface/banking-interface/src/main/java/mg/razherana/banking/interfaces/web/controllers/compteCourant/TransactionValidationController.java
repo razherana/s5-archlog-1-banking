@@ -44,17 +44,17 @@ public class TransactionValidationController extends HttpServlet {
     String actionDateTimeStr = request.getParameter("actionDateTime");
 
     if (transactionIdStr == null || transactionIdStr.trim().isEmpty()) {
-      response.sendRedirect("account-status?error=Transaction ID missing");
+      response.sendRedirect("/comptes-courants/detail?id=" + accountIdStr + "&error=Transaction ID missing");
       return;
     }
 
     if (accountIdStr == null || accountIdStr.trim().isEmpty()) {
-      response.sendRedirect("account-status?error=Account ID missing");
+      response.sendRedirect("/comptes-courants/detail?id=" + accountIdStr + "&error=Account ID missing");
       return;
     }
 
     if (actionDateTimeStr == null || actionDateTimeStr.trim().isEmpty()) {
-      response.sendRedirect("account-status?error=Date missing");
+      response.sendRedirect("/comptes-courants/detail?id=" + accountIdStr + "&error=Date missing");
       return;
     }
 
@@ -63,7 +63,7 @@ public class TransactionValidationController extends HttpServlet {
     try {
       actionDateTime = LocalDateTime.parse(actionDateTimeStr);
     } catch (Exception e) {
-      response.sendRedirect("account-status?error=Invalid date format");
+      response.sendRedirect("/comptes-courants/detail?id=" + accountIdStr + "&error=Invalid date format");
       return;
     }
 

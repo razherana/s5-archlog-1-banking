@@ -17,6 +17,7 @@ INSERT INTO `action_roles` (`role`, `table_name`, `action`) VALUES
 (3, 'transaction_courants', 'CREATE'),
 (3, 'transaction_courants', 'UPDATE'),
 (3, 'transaction_courants', 'DELETE'),
+(3, 'transaction_courants', 'VALIDATE'),
 
 (3, 'type_compte_depots', 'READ'),
 (3, 'type_compte_depots', 'CREATE'),

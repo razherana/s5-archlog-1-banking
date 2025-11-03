@@ -44,4 +44,6 @@ public interface TransactionService {
   public List<TransactionCourant> getAllTransactions();
 
   public TransactionCourant findById(Integer id);
+
+  public TransactionCourant updateTransaction(Integer idTransaction, BigDecimal montant, String change);
 }
