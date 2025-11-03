@@ -28,17 +28,6 @@ public class TransactionServiceImpl implements TransactionService {
   @EJB
   private CompteCourantService compteCourantService;
 
-  private void checkTaxesAndThrow(CompteCourant compte, LocalDateTime actionDateTime) {
-    if (!compteCourantService.isTaxPaid(compte, actionDateTime)) {
-      var amount = compteCourantService.getTaxToPay(compte, actionDateTime);
-
-      LOG.warning("Compte " + compte.getId() + " has unpaid taxes, amount: " + amount);
-
-      throw new IllegalArgumentException("Taxes must be paid before making a transaction, please pay the amount of "
-          + amount + " MGA");
-    }
-  }
-
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description,
@@ -170,6 +159,14 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Check if source and destination comptes are different
+    if (compteSource.getId().equals(compteDestination.getId())) {
+      throw new IllegalArgumentException("Source and destination comptes must be different");
+    }
+
+    // Check daily transfer limit
+    checkVirementJournalierAndThrow(compteSource, montant, actionDateTime);
+
     // Use provided actionDateTime or current time if not specified
     LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
 
@@ -210,6 +207,7 @@ public class TransactionServiceImpl implements TransactionService {
   @Override
   public TransactionCourant validerVirement(int virementId, LocalDateTime date) {
     TransactionCourant virement = entityManager.find(TransactionCourant.class, virementId);
+
     if (virement == null) {
       throw new IllegalArgumentException("Le virement n'existe pas");
     }
@@ -219,6 +217,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     if (date == null && virement.getValidationDate() == null)
       throw new IllegalArgumentException("Le virement a déjà été non validé");
+
+    // Check daily transfer limit of the virement to validate
+    checkVirementJournalierAndThrow(virement.getSender(), virement.getMontant(), virement.getDate());
 
     virement.setValidationDate(date);
 
@@ -252,6 +253,9 @@ public class TransactionServiceImpl implements TransactionService {
       virement.setChange(change);
     }
 
+    // Reset validation date to null on update
+    virement.setValidationDate(null);
+
     entityManager.merge(virement);
     entityManager.flush();
 
@@ -280,5 +284,36 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Transaction ID cannot be null");
     }
     return entityManager.find(TransactionCourant.class, id);
+  }
+
+  private void checkTaxesAndThrow(CompteCourant compte, LocalDateTime actionDateTime) {
+    if (!compteCourantService.isTaxPaid(compte, actionDateTime)) {
+      var amount = compteCourantService.getTaxToPay(compte, actionDateTime);
+
+      LOG.warning("Compte " + compte.getId() + " has unpaid taxes, amount: " + amount);
+
+      throw new IllegalArgumentException("Taxes must be paid before making a transaction, please pay the amount of "
+          + amount + " MGA");
+    }
+  }
+
+  private void checkVirementJournalierAndThrow(CompteCourant compteSource, BigDecimal montant,
+      LocalDateTime actionDateTime) {
+    // Get all transfers made today
+    var virementsToday = compteCourantService.getVirementToday(compteSource, actionDateTime.toLocalDate());
+
+    // Calculate total amount transferred today
+    BigDecimal totalVirementsToday = virementsToday.stream()
+        .map(TransactionCourant::getMontant)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // Add current montant to total
+    totalVirementsToday = totalVirementsToday.add(montant);
+
+    // Check if virement journalier limit is not exceeded
+    if (totalVirementsToday.compareTo(compteSource.getLimiteVirementJournalier()) > 0) {
+      throw new IllegalArgumentException("Limite de virement journalier dépassée de " +
+          compteSource.getLimiteVirementJournalier() + " MGA");
+    }
   }
 }

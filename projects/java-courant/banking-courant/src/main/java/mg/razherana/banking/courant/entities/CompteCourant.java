@@ -49,6 +49,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "compte_courants")
 public class CompteCourant implements Serializable {
+  private final static BigDecimal limiteVirementJournalier = new BigDecimal("1000000");
+
   /**
    * Unique identifier for the current account.
    * Auto-generated using database identity strategy.
@@ -80,6 +82,10 @@ public class CompteCourant implements Serializable {
    */
   @Column(name = "created_at")
   private LocalDateTime createdAt;
+
+  public BigDecimal getLimiteVirementJournalier() {
+    return limiteVirementJournalier;
+  }
 
   /**
    * Gets the unique identifier of the current account.
