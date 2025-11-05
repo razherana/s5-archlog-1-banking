@@ -118,7 +118,7 @@ public class TransactionCourant implements Serializable {
    * Can be null for deposit transactions (external source).
    * Lazy fetched for performance optimization.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne
   @JoinColumn(name = "sender_id", nullable = true)
   private CompteCourant sender;
 
@@ -127,7 +127,7 @@ public class TransactionCourant implements Serializable {
    * Can be null for withdrawal transactions (external destination).
    * Lazy fetched for performance optimization.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne
   @JoinColumn(name = "receiver_id", nullable = true)
   private CompteCourant receiver;
 
