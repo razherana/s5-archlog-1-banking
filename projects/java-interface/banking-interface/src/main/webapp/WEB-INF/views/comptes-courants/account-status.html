@@ -228,45 +228,6 @@
                 </td>
                 <td th:text="${transaction.formattedDate}">19/10/2025 10:30</td>
                 <td>
-                  <!-- Invalidation Form -->
-                  <form
-                    th:if="${transaction.shouldShowInvalidateButton()}"
-                    method="post"
-                    action="invalidate-transaction"
-                    style="display: inline"
-                  >
-                    <input
-                      type="hidden"
-                      name="transactionId"
-                      th:value="${transaction.id}"
-                    />
-                    <input
-                      type="hidden"
-                      name="accountId"
-                      th:value="${account.id}"
-                    />
-                    <button
-                      type="submit"
-                      class="btn btn-sm btn-danger"
-                      title="Invalider cette transaction"
-                    >
-                      Invalider
-                    </button>
-                  </form>
-
-                  <!-- Validation Button -->
-                  <button
-                    th:if="${transaction.shouldShowValidateButton(account.id)}"
-                    type="button"
-                    class="btn btn-sm btn-success"
-                    title="Valider cette transaction"
-                    th:data-transaction-id="${transaction.id}"
-                    th:data-account-id="${account.id}"
-                    onclick="openValidateModal(this)"
-                  >
-                    Valider
-                  </button>
-
                   <!-- Update Transaction Form -->
                   <button
                     type="button"
