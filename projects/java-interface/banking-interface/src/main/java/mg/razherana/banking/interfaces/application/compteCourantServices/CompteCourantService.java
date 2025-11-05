@@ -3,6 +3,8 @@ package mg.razherana.banking.interfaces.application.compteCourantServices;
 import mg.razherana.banking.common.entities.UserAdmin;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
+import mg.razherana.banking.courant.entities.TransactionEtat;
+import mg.razherana.banking.courant.entities.TransactionEtat.TransactionEtatEnum;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -178,7 +180,23 @@ public interface CompteCourantService {
    * @param idTransaction
    * @param montant
    * @param change
-   * @return 
+   * @return
    */
   TransactionCourant updateTransaction(UserAdmin userAdmin, Integer idTransaction, BigDecimal montant, String change);
+
+  /**
+   * Retrieves a transaction by its identifier.
+   */
+  TransactionCourant getTransactionById(UserAdmin userAdmin, Integer transactionId);
+
+  /**
+   * Loads the state history associated with a transaction.
+   */
+  List<TransactionEtat> getTransactionEtats(UserAdmin userAdmin, Integer transactionId);
+
+  /**
+   * Updates the state of a transaction to a specific status.
+   */
+  TransactionCourant updateTransactionEtat(UserAdmin userAdmin, Integer transactionId, TransactionEtatEnum newEtat,
+      LocalDateTime actionDateTime);
 }

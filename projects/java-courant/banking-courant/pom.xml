@@ -128,6 +128,8 @@
                 <include>**/compteCourantService/CompteCourantRemoteService.class</include>
                 <include>**/transactionService/TransactionService.class</include>
                 <include>**/transactionService/TransactionRemoteService.class</include>
+                <include>**/virementService/VirementService.class</include>
+                <include>**/virementService/VirementRemoteService.class</include>
               </includes>
             </configuration>
           </execution>

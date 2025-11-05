@@ -1,0 +1,49 @@
+- validationvirement:
+    - id
+    - idObject
+    - dateValidation
+    - utilisateur
+
+- virement:
+    - Updatena ny etat rehefa validena
+    - Misy etat. Etat nbr:
+        - 1: en attente
+        - ...: Mety misy etat hafa (validen'i chef aloha etc)
+        - 11: validé
+
+- FraisConf:
+    - table:
+        - type_compte (courant, depot, pret)
+        - montant_inf: nbr. Si montant >= montant_inf and montant <= montant_sup, dia io frais io no ampiharina
+        - montant_sup: nbr
+        - frais_montant: nbr (nullable)
+        - frais_pourcentage: nbr (nullable)
+    - regles:
+        - raha montant >= montant_inf and montant <= montant_sup dia appliquena
+        - frais_montant sy frais_pourcentage dia mety misy na iray na roa
+        - frais total a payer = frais_montant + (frais_pourcentage / 100 * montant_virement)
+
+- Validation:
+    -
+
+- Scenario:
+    - Creation virement:
+        - Controle:
+            - Simple:
+                - Any @ controllers manao throws
+                - Resaka null etc
+            - Complexe:
+                - Maka change
+                - Check hoe mihoatra ny virement quotidienne limite
+                - Vue: Virement validé
+        - Persistence
+    - Validation virement:
+        - Maka From ConfFrais de mahazo object Frais:
+            - Object Frais
+            - Inserer Frais
+            - Mahazo object Validation
+            - Inserer anaty Historique
+            - Mettre a jour Etat Virement
+
+        - Asina source anaty Virement, dia miconnecter rehetra ny ligne anaty table
+        - Anaty class Virement zany, lasa misy hoe getVirementLié()

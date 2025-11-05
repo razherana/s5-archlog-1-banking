@@ -58,10 +58,10 @@ public class TransactionInvalidationController extends HttpServlet {
       // Validate the transaction
       compteCourantService.validateTransaction(userAdmin, transactionId, null);
 
-      LOG.info("Transaction " + transactionId + " validated successfully by user " + userAdmin.getEmail());
+      LOG.info("Transaction " + transactionId + " set back to pending by user " + userAdmin.getEmail());
 
       // Redirect back to account status page with success message
-      String successMsg = "Transaction validée avec succès.";
+      String successMsg = "Transaction invalidée avec succès.";
       String encodedSuccess = URLEncoder.encode(successMsg, StandardCharsets.UTF_8);
       response.sendRedirect("/comptes-courants/detail?id=" + accountId + "&success=" + encodedSuccess);
 

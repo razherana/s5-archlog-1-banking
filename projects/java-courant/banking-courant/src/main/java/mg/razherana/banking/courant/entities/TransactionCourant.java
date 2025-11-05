@@ -62,7 +62,9 @@ public class TransactionCourant implements Serializable {
     /** Represents withdrawal transactions to external destinations */
     WITHDRAWAL("withdrawal"),
     /** Represents tax payment transactions */
-    TAXE("taxe");
+    TAXE("taxe"),
+    /** Represents frais */
+    FRAIS("frais");
 
     /** The database representation of this special action */
     private String databaseName;
@@ -136,6 +138,16 @@ public class TransactionCourant implements Serializable {
    */
   @Column(nullable = false, precision = 15, scale = 2)
   private BigDecimal montant;
+
+  /**
+   * Additional JSON data associated with the transaction.
+   * Stored as TEXT in the database to accommodate large JSON strings.
+   * 
+   * Eg: Used to store id of the transaction related to the special action
+   * "FRAIS".
+   */
+  @Column(name = "json_data", nullable = true, columnDefinition = "TEXT")
+  private String jsonData = null;
 
   /**
    * Validation date. When validated, a transaction can be used for solde
@@ -269,6 +281,14 @@ public class TransactionCourant implements Serializable {
    */
   public String getChange() {
     return change;
+  }
+
+  public String getJsonData() {
+    return jsonData;
+  }
+
+  public void setJsonData(String jsonData) {
+    this.jsonData = jsonData;
   }
 
   /**

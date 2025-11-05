@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transactions du Compte</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="user-info">
+      <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
+      <a href="../logout" class="logout-link">Logout</a>
+      <div style="clear: both"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="text-center">Transactions du Compte</h2>
+      <p class="text-center" style="margin-bottom: 2rem">
+        <a th:href="'detail?id=' + ${account.id}"
+          >← Retour au détail du compte</a
+        >
+      </p>
+
+      <div class="account-info-section">
+        <h3>Compte n° <span th:text="${account.id}">ID</span></h3>
+        <div class="account-details">
+          <div class="detail-row">
+            <span class="label">Solde actuel:</span>
+            <span
+              class="value"
+              th:text="${#numbers.formatDecimal(currentBalance, 1, 2)} + ' MGA'"
+              >0.00 MGA</span
+            >
+          </div>
+          <div class="detail-row">
+            <span class="label">Taxe mensuelle:</span>
+            <span
+              class="value"
+              th:text="${account.taxe != null ? #numbers.formatDecimal(account.taxe, 1, 2) + ' MGA' : '—'}"
+              >0.00 MGA</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive" style="margin-top: 2rem">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Montant</th>
+              <th>Devise</th>
+              <th>Émetteur</th>
+              <th>Bénéficiaire</th>
+              <th>Spécial</th>
+              <th>Validation</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="transaction : ${transactions}">
+              <td th:text="${transaction.id}">1</td>
+              <td
+                th:text="${#temporals.format(transaction.date, 'dd/MM/yyyy HH:mm')}"
+              >
+                01/01/2024
+              </td>
+              <td
+                th:text="${#numbers.formatDecimal(transaction.montant, 1, 2)}"
+              >
+                0.00
+              </td>
+              <td
+                th:text="${transaction.change != null ? transaction.change : 'MGA'}"
+              >
+                MGA
+              </td>
+              <td
+                th:text="${transaction.sender != null ? transaction.sender.id : 'Système'}"
+              >
+                Système
+              </td>
+              <td
+                th:text="${transaction.receiver != null ? transaction.receiver.id : 'Système'}"
+              >
+                Système
+              </td>
+              <td
+                th:text="${transaction.specialAction != null ? transaction.specialAction : '-'}"
+              >
+                -
+              </td>
+              <td
+                th:text="${transaction.validationDate != null ? #temporals.format(transaction.validationDate, 'dd/MM/yyyy HH:mm') : 'En attente'}"
+              >
+                En attente
+              </td>
+              <td>
+                <a
+                  class="btn btn-info"
+                  th:href="'transaction-etats?transactionId=' + ${transaction.id} + '&accountId=' + ${account.id}"
+                >
+                  Etats
+                </a>
+              </td>
+            </tr>
+            <tr th:if="${transactions == null || transactions.isEmpty()}">
+              <td colspan="999" class="text-center">
+                Aucune transaction disponible.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

@@ -8,12 +8,16 @@ import mg.razherana.banking.interfaces.application.remoteServices.EJBLookupServi
 import mg.razherana.banking.interfaces.tests.JNDITreeLister;
 import mg.razherana.banking.courant.application.compteCourantService.CompteCourantRemoteService;
 import mg.razherana.banking.courant.application.transactionService.TransactionRemoteService;
+import mg.razherana.banking.courant.application.virementService.VirementRemoteService;
 import mg.razherana.banking.courant.entities.CompteCourant;
 import mg.razherana.banking.courant.entities.TransactionCourant;
+import mg.razherana.banking.courant.entities.TransactionEtat;
+import mg.razherana.banking.courant.entities.TransactionEtat.TransactionEtatEnum;
 
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
@@ -38,6 +42,7 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   private EJBLookupService remoteCourant;
   private CompteCourantRemoteService compteCourantRemoteService = null;
   private TransactionRemoteService transactionRemoteService = null;
+  private VirementRemoteService virementRemoteService = null;
 
   public CompteCourantServiceImpl() {
     try {
@@ -50,6 +55,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       this.transactionRemoteService = remoteCourant.lookupStatefulBean(
           "global/TransactionRemoteServiceImpl!mg.razherana.banking.courant.application.transactionService.TransactionRemoteService",
           TransactionRemoteService.class);
+    this.virementRemoteService = remoteCourant.lookupStatefulBean(
+      "global/VirementRemoteServiceImpl!mg.razherana.banking.courant.application.virementService.VirementRemoteService",
+      VirementRemoteService.class);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Failed to initialize remote services", e);
       throw new RuntimeException("Failed to initialize remote services", e);
@@ -310,9 +318,21 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         return false;
       }
 
-      transactionRemoteService.transfert(compteSource, compteDestination, convertedAmount, description, actionDateTime,
-          currency);
-      return true;
+      if (actionDateTime == null) {
+        actionDateTime = LocalDateTime.now();
+      }
+
+      String montantStr = convertedAmount.setScale(2, RoundingMode.HALF_UP).toPlainString();
+
+    var virement = virementRemoteService.createVirement(
+      userAdmin.getId(),
+          sourceAccountId,
+          destinationAccountId,
+          montantStr,
+          currency,
+          actionDateTime);
+
+      return virement != null;
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error making transfer from " + sourceAccountId + " to " + destinationAccountId, e);
       throw e;
@@ -385,7 +405,17 @@ public class CompteCourantServiceImpl implements CompteCourantService {
         throw new IllegalStateException("Unauthorized access: User does not have permission to validate transactions");
       }
 
-      return transactionRemoteService.validerVirement(transactionId, validationDate);
+      TransactionEtatEnum targetEtat = validationDate != null
+          ? TransactionEtatEnum.VALIDEE
+          : TransactionEtatEnum.EN_ATTENTE;
+
+      LocalDateTime actionDateTime = validationDate != null ? validationDate : LocalDateTime.now();
+
+    return virementRemoteService.validateVirement(
+      userAdmin.getId(),
+          transactionId,
+          targetEtat.getCode(),
+          actionDateTime);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error validating transaction " + transactionId, e);
       throw e;
@@ -429,5 +459,54 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     }
 
     return transactionRemoteService.updateTransaction(idTransaction, newMontant, change);
+  }
+
+  @Override
+  public TransactionCourant getTransactionById(UserAdmin userAdmin, Integer transactionId) {
+    if (!compteCourantRemoteService.hasAuthorization(userAdmin, "READ", "transaction_courants")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read transactions");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read transactions");
+    }
+
+    return transactionRemoteService.findById(transactionId);
+  }
+
+  @Override
+  public List<TransactionEtat> getTransactionEtats(UserAdmin userAdmin, Integer transactionId) {
+    if (!compteCourantRemoteService.hasAuthorization(userAdmin, "READ", "transaction_courants")) {
+      LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to read transactions");
+      throw new IllegalStateException("Unauthorized access: User does not have permission to read transactions");
+    }
+
+    return virementRemoteService.getEtatsByTransaction(transactionId);
+  }
+
+  @Override
+  public TransactionCourant updateTransactionEtat(UserAdmin userAdmin, Integer transactionId,
+      TransactionEtatEnum newEtat, LocalDateTime actionDateTime) {
+    try {
+      if (!compteCourantRemoteService.hasAuthorization(userAdmin, "VALIDATE", "transaction_courants")) {
+        LOG.warning("User " + userAdmin.getEmail() + " does not have authorization to update transaction states");
+        throw new IllegalStateException(
+            "Unauthorized access: User does not have permission to update transaction states");
+      }
+
+      // TODO: Add more validation for each newEtat if needed
+
+      if (newEtat == null) {
+        throw new IllegalArgumentException("Le nouvel état ne peut pas être nul");
+      }
+
+      LocalDateTime effectiveDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
+      return virementRemoteService.validateVirement(
+          userAdmin.getId(),
+          transactionId,
+          newEtat.getCode(),
+          effectiveDateTime);
+    } catch (Exception e) {
+      LOG.log(Level.SEVERE, "Error updating transaction state for transaction " + transactionId, e);
+      throw e;
+    }
   }
 }
