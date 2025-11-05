@@ -7,7 +7,6 @@ import mg.razherana.banking.common.services.userServices.UserService;
 import mg.razherana.banking.interfaces.application.compteCourantServices.CompteCourantService;
 import mg.razherana.banking.interfaces.application.comptePretServices.ComptePretService;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateful;
 import jakarta.ejb.StatefulTimeout;
@@ -64,11 +63,6 @@ public class UserServiceImpl implements UserService {
   @PostConstruct
   public void init() {
     adminInfos = getAllUserAdminsWithDepAndRoles(null);
-  }
-
-  @PreDestroy
-  public void cleanup() {
-    System.out.println("Stateful EJB destroyed: " + this);
   }
 
   @Override

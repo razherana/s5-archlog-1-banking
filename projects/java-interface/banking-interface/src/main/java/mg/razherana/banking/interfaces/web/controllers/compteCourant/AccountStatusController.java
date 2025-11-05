@@ -66,7 +66,7 @@ public class AccountStatusController extends HttpServlet {
     }
 
     try {
-      Integer accountId = Integer.parseInt(accountIdStr);
+      int accountId = Integer.parseInt(accountIdStr);
       CompteCourant account = compteCourantService.getAccountById(userAdmin, accountId);
 
       if (account == null) {

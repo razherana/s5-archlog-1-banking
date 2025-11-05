@@ -117,7 +117,7 @@ public class CreateComptePretController extends HttpServlet {
       return;
     }
 
-    Integer userId;
+    int userId;
     try {
       userId = Integer.parseInt(userIdParam);
     } catch (NumberFormatException e) {
@@ -145,9 +145,9 @@ public class CreateComptePretController extends HttpServlet {
       }
 
       // Parse and validate fields
-      Integer typeComptePretId = Integer.parseInt(typeComptePretIdParam);
+      int typeComptePretId = Integer.parseInt(typeComptePretIdParam);
       BigDecimal montant = new BigDecimal(montantParam);
-      Integer compteCourantId = Integer.parseInt(compteCourantIdParam);
+      int compteCourantId = Integer.parseInt(compteCourantIdParam);
 
       if (montant.compareTo(BigDecimal.ZERO) <= 0) {
         response.sendRedirect("create?error=invalid_amount");

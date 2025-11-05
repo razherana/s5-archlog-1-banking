@@ -63,7 +63,7 @@ public class CompteCourantController extends HttpServlet {
     // If userId is provided, fetch accounts for that user
     if (userIdParam != null && !userIdParam.trim().isEmpty()) {
       try {
-        Integer userId = Integer.parseInt(userIdParam);
+        int userId = Integer.parseInt(userIdParam);
         LOG.info("Fetching current accounts for user: " + userId);
 
         List<CompteCourant> accounts = compteCourantService.getAccountsByUserId(userAdmin, userId);

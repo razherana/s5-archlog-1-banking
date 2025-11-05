@@ -7,7 +7,7 @@
     <!-- Configure IllegalStateException as application exception -->
     <application-exception>
       <exception-class>java.lang.IllegalStateException</exception-class>
-      <rollback>false</rollback>      <!-- or false -->
+      <rollback>false</rollback>
       <inherited>false</inherited>      <!-- affects subclasses too -->
     </application-exception>
 

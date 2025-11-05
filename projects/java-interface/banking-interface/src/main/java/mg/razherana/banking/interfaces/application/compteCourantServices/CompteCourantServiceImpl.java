@@ -55,9 +55,9 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       this.transactionRemoteService = remoteCourant.lookupStatefulBean(
           "global/TransactionRemoteServiceImpl!mg.razherana.banking.courant.application.transactionService.TransactionRemoteService",
           TransactionRemoteService.class);
-    this.virementRemoteService = remoteCourant.lookupStatefulBean(
-      "global/VirementRemoteServiceImpl!mg.razherana.banking.courant.application.virementService.VirementRemoteService",
-      VirementRemoteService.class);
+      this.virementRemoteService = remoteCourant.lookupStatefulBean(
+          "global/VirementRemoteServiceImpl!mg.razherana.banking.courant.application.virementService.VirementRemoteService",
+          VirementRemoteService.class);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Failed to initialize remote services", e);
       throw new RuntimeException("Failed to initialize remote services", e);
@@ -283,9 +283,11 @@ public class CompteCourantServiceImpl implements CompteCourantService {
   }
 
   @Override
-  public boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId,
+  public boolean makeTransfer(UserAdmin userAdmin,
+      Integer sourceAccountId,
+      Integer destinationAccountId,
       BigDecimal amount,
-      String description, LocalDateTime actionDateTime,
+      LocalDateTime actionDateTime,
       String currency) {
     try {
       if (!compteCourantRemoteService.hasAuthorization(userAdmin, "CREATE", "transaction_courants")) {
@@ -324,8 +326,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
       String montantStr = convertedAmount.setScale(2, RoundingMode.HALF_UP).toPlainString();
 
-    var virement = virementRemoteService.createVirement(
-      userAdmin.getId(),
+      var virement = virementRemoteService.createVirement(
+          userAdmin.getId(),
           sourceAccountId,
           destinationAccountId,
           montantStr,
@@ -411,8 +413,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
       LocalDateTime actionDateTime = validationDate != null ? validationDate : LocalDateTime.now();
 
-    return virementRemoteService.validateVirement(
-      userAdmin.getId(),
+      return virementRemoteService.validateVirement(
+          userAdmin.getId(),
           transactionId,
           targetEtat.getCode(),
           actionDateTime);
@@ -451,7 +453,6 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
       LOG.info("Original Change: " + ogChange + ", New Change: " + newChange);
       LOG.info("Original Montant: " + newMontant);
-
 
       newMontant = newMontant.divide(ogChange).multiply(newChange);
 

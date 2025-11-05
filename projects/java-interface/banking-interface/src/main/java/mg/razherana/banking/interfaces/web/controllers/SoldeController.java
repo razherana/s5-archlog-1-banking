@@ -52,7 +52,7 @@ public class SoldeController extends HttpServlet {
     }
 
     try {
-      Integer userId = Integer.parseInt(userIdParam);
+      int userId = Integer.parseInt(userIdParam);
       User user = userService.findUserById(userAdmin, userId);
 
       // Get individual module balances and total

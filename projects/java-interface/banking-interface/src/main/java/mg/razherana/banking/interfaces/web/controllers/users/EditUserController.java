@@ -105,7 +105,7 @@ public class EditUserController extends HttpServlet {
     }
 
     try {
-      Integer userId = Integer.parseInt(userIdStr);
+      int userId = Integer.parseInt(userIdStr);
 
       // Update the user (User entity for data, not for auth)
       userService.updateUser(

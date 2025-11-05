@@ -50,7 +50,7 @@ public class UpdateTransactionController extends HttpServlet {
     }
 
     try {
-      Integer idTransaction = Integer.parseInt(idTransactionStr);
+      int idTransaction = Integer.parseInt(idTransactionStr);
       BigDecimal montant = new BigDecimal(montantStr);
 
       // Update the transaction

@@ -92,7 +92,7 @@ public class CreateCompteCourantController extends HttpServlet {
       return;
     }
     
-    Integer userId;
+    int userId;
     try {
       userId = Integer.parseInt(userIdParam);
     } catch (NumberFormatException e) {

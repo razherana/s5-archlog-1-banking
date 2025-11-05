@@ -63,7 +63,7 @@ public class ComptePretController extends HttpServlet {
     // If userId is provided, fetch loans for that user
     if (userIdParam != null && !userIdParam.trim().isEmpty()) {
       try {
-        Integer userId = Integer.parseInt(userIdParam);
+        int userId = Integer.parseInt(userIdParam);
         LOG.info("Fetching loan accounts for user: " + userId);
 
         List<ComptePretDTO> loans = comptePretService.getLoansByUserId(userAdmin, userId);

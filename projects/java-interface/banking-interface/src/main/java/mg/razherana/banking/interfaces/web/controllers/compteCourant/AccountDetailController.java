@@ -154,7 +154,7 @@ public class AccountDetailController extends HttpServlet {
     }
 
     try {
-      Integer accountId = Integer.parseInt(accountIdStr);
+      int accountId = Integer.parseInt(accountIdStr);
       CompteCourant account = compteCourantService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
@@ -350,7 +350,6 @@ public class AccountDetailController extends HttpServlet {
     try {
       String destinationAccountIdStr = request.getParameter("destinationAccountId");
       String amountStr = request.getParameter("amount");
-      String description = request.getParameter("description");
       String actionDateTimeStr = request.getParameter("actionDateTime");
       String currency = request.getParameter("currency");
 
@@ -362,14 +361,14 @@ public class AccountDetailController extends HttpServlet {
         return "Montant requis";
       }
 
-      Integer destinationAccountId = Integer.parseInt(destinationAccountIdStr);
+      int destinationAccountId = Integer.parseInt(destinationAccountIdStr);
       BigDecimal amount = new BigDecimal(amountStr);
 
       if (amount.compareTo(BigDecimal.ZERO) <= 0) {
         return "Le montant doit être positif";
       }
 
-      if (destinationAccountId.equals(account.getId())) {
+      if (destinationAccountId == account.getId()) {
         return "Vous ne pouvez pas effectuer un transfert vers le même compte";
       }
 
@@ -390,7 +389,6 @@ public class AccountDetailController extends HttpServlet {
           account.getId(),
           destinationAccountId,
           amount,
-          description != null && !description.trim().isEmpty() ? description : "Transfer via interface",
           actionDateTime,
           validatedCurrency);
 

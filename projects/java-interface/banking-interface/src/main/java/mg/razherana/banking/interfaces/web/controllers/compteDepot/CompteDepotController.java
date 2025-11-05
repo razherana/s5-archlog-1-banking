@@ -65,7 +65,7 @@ public class CompteDepotController extends HttpServlet {
     // If userId is provided, fetch accounts for that user
     if (userIdParam != null && !userIdParam.trim().isEmpty()) {
       try {
-        Integer userId = Integer.parseInt(userIdParam);
+        int userId = Integer.parseInt(userIdParam);
         LOG.info("Fetching deposit accounts for user: " + userId);
 
         List<CompteDepotDTO> comptes = compteDepotService.getAccountsByUserId(userAdmin, userId);

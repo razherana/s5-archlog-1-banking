@@ -68,7 +68,7 @@ public class PaymentStatusController extends HttpServlet {
     }
 
     try {
-      Integer loanId = Integer.parseInt(loanIdStr);
+      int loanId = Integer.parseInt(loanIdStr);
       ComptePretDTO loan = comptePretService.getLoanById(userAdmin, loanId);
 
       if (loan == null) {

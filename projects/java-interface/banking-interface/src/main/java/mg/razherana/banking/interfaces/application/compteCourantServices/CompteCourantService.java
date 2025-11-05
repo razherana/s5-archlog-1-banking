@@ -124,8 +124,7 @@ public interface CompteCourantService {
    *                             if null)
    * @return True if successful, false if failed
    */
-  boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId, BigDecimal amount,
-      String description, LocalDateTime actionDateTime, String currency);
+  boolean makeTransfer(UserAdmin userAdmin, Integer sourceAccountId, Integer destinationAccountId, BigDecimal amount, LocalDateTime actionDateTime, String currency);
 
   /**
    * Helper method to get all accounts from the banking-courant service.

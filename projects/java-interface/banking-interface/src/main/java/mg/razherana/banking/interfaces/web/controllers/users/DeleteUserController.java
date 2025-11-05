@@ -45,7 +45,7 @@ public class DeleteUserController extends HttpServlet {
     }
 
     try {
-      Integer userId = Integer.parseInt(userIdStr);
+      int userId = Integer.parseInt(userIdStr);
 
       // No need to prevent self-deletion since we're now using UserAdmin for auth
       // and deleting User entities for data

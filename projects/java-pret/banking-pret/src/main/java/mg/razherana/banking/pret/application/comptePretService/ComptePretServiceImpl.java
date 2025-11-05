@@ -485,7 +485,7 @@ public class ComptePretServiceImpl implements ComptePretService {
 
   @PostConstruct
   protected void init() {
-    LOG.info("CompteCourantServiceImpl initialized");
+    LOG.info("ComptePretServiceImpl initialized");
   }
 
   @Override

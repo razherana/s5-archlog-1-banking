@@ -128,7 +128,7 @@ public class AccountDepotDetailController extends HttpServlet {
     }
 
     try {
-      Integer accountId = Integer.parseInt(accountIdStr);
+      int accountId = Integer.parseInt(accountIdStr);
       CompteDepotDTO account = compteDepotService.getAccountById(userAdmin, accountId);
 
       if (account == null) {
