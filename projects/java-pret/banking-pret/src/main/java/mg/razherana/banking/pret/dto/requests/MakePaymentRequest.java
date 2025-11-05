@@ -1,12 +1,13 @@
 package mg.razherana.banking.pret.dto.requests;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * Request DTO for making a loan payment.
  */
-public class MakePaymentRequest {
+public class MakePaymentRequest implements Serializable {
 
   private Integer compteId;
   private BigDecimal montant;

@@ -1,5 +1,7 @@
 package mg.razherana.banking.pret.dto;
 
+import java.io.Serializable;
+
 /**
  * Error Data Transfer Object for API error responses.
  * 
@@ -8,7 +10,7 @@ package mg.razherana.banking.pret.dto;
  * endpoints.
  * </p>
  */
-public class ErrorDTO {
+public class ErrorDTO implements Serializable {
 
   private String message;
   private int status;

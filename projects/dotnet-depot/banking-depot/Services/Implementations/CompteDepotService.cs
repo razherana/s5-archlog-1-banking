@@ -52,6 +52,47 @@ namespace BankingDepot.Services.Implementations
           .ToListAsync();
     }
 
+    public async Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId, DateTime? actionDateTime = null)
+    {
+      _logger.LogInformation("Calculating total balance for user: {UserId} at {ActionDateTime}", userId, actionDateTime);
+
+      // Validate user exists via Java service
+      var userExists = await _userValidationService.ValidateUserExistsAsync(userId);
+      if (!userExists)
+      {
+        throw new ArgumentException($"L'utilisateur avec l'ID {userId} n'existe pas");
+      }
+
+      // Get all user's deposit accounts
+      var comptes = await GetByUserIdAsync(userId);
+      comptes = [.. comptes.Where(c => c.TypeCompteDepot != null).Where(c => c.DateOuverture <= actionDateTime!.Value)];
+
+      decimal totalBalance = 0;
+      foreach (var compte in comptes)
+      {
+        decimal accountBalance;
+        if (compte.EstRetire == 1)
+        {
+          // For withdrawn accounts, balance is 0 as money was already withdrawn
+          accountBalance = 0;
+        }
+        else
+        {
+          // For active accounts, balance = original amount + calculated interest
+          var interest = CalculateInterest(compte, actionDateTime);
+          accountBalance = compte.Montant + interest;
+        }
+
+        totalBalance += accountBalance;
+        _logger.LogInformation("Account {AccountId} balance: {Balance} (Original: {Original}, Interest: {Interest}) at {ActionDateTime}",
+          compte.Id, accountBalance, compte.Montant,
+          compte.EstRetire == 1 ? 0 : CalculateInterest(compte, actionDateTime), actionDateTime);
+      }
+
+      _logger.LogInformation("Total balance for user {UserId} at {ActionDateTime}: {TotalBalance}", userId, actionDateTime, totalBalance);
+      return totalBalance;
+    }
+
     public async Task<CompteDepot> CreateAsync(int typeCompteDepotId, int userId, DateTime dateEcheance, decimal montant, DateTime? actionDateTime = null)
     {
       _logger.LogInformation("Creating CompteDepot for user {UserId}, type {TypeId}, amount {Montant}", userId, typeCompteDepotId, montant);
@@ -104,7 +145,7 @@ namespace BankingDepot.Services.Implementations
 
       var compte = (await GetByIdAsync(id))
         ?? throw new ArgumentException($"Le compte avec l'ID {id} n'existe pas");
-      
+
       var referenceDateTime = actionDateTime ?? DateTime.Now;
 
       // Check if account is already withdrawn
@@ -145,7 +186,14 @@ namespace BankingDepot.Services.Implementations
       }
 
       // Calculate time period from opening to maturity date
-      var timeSpan = compte.DateEcheance - compte.DateOuverture;
+      TimeSpan timeSpan = compte.DateEcheance - compte.DateOuverture;
+
+      // If actionDateTime is before maturity, calculate interest only up to actionDateTime
+      if (actionDateTime != null && actionDateTime < compte.DateEcheance)
+      {
+        timeSpan = actionDateTime.Value - compte.DateOuverture;
+      }
+
       var timeInYears = (decimal)timeSpan.TotalDays / 365.25m; // Using 365.25 to account for leap years
 
       // Simple Interest = Principal × Rate × Time

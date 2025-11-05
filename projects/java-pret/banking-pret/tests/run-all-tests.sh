@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-BASE_URL="http://127.0.0.3:8080/api"
+BASE_URL="http://localhost:8083/api"
 TEST_DIR="$(dirname "$0")"
 PASSED=0
 FAILED=0

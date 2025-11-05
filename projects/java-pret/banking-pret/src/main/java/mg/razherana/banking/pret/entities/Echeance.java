@@ -1,6 +1,8 @@
 package mg.razherana.banking.pret.entities;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -18,7 +20,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "echeances")
-public class Echeance {
+public class Echeance implements Serializable {
 
   /**
    * Unique identifier for the payment.

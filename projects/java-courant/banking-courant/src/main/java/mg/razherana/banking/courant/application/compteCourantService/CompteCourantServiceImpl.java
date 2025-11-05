@@ -1,28 +1,29 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
-import jakarta.ejb.Stateless;
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
+import jakarta.ejb.Stateful;
+import jakarta.ejb.StatefulTimeout;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import java.io.StringReader;
-
+import mg.razherana.banking.common.entities.ActionRole;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.courant.application.remoteServices.UserServiceWrapper;
+import mg.razherana.banking.courant.application.transactionService.TransactionService;
 import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.User;
 import mg.razherana.banking.courant.entities.TransactionCourant.SpecialAction;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -60,15 +61,19 @@ import java.util.logging.Logger;
  * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
-@Stateless
+@Stateful
+@StatefulTimeout(unit = TimeUnit.MINUTES, value = 30)
 public class CompteCourantServiceImpl implements CompteCourantService {
   private static final Logger LOG = Logger.getLogger(CompteCourantService.class.getName());
 
-  // Hardcoded URL for java-interface REST API
-  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
-
   @PersistenceContext(unitName = "userPU")
   private EntityManager entityManager;
+
+  @EJB
+  private UserServiceWrapper userServiceWrapper;
+
+  @EJB
+  private TransactionService transactionService;
 
   /**
    * Find a user by ID using REST API call to java-interface.
@@ -79,51 +84,23 @@ public class CompteCourantServiceImpl implements CompteCourantService {
    */
   @Override
   public User findUser(Integer userId) {
-    LOG.info("Finding user by ID: " + userId);
-    if (userId == null) {
-      throw new IllegalArgumentException("User ID cannot be null");
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(null, userId);
+
+    if (ogUser == null) {
+      throw new IllegalArgumentException("User with ID " + userId + " not found");
     }
 
-    Client client = ClientBuilder.newClient();
-    try {
-      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
-      Response response = target.request(MediaType.APPLICATION_JSON).get();
+    var user = new User();
 
-      if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User
-        // entity
-        String jsonResponse = response.readEntity(String.class);
-        LOG.info("Received JSON response: " + jsonResponse);
+    user.setId(ogUser.getId());
+    user.setName(ogUser.getName());
 
-        // Parse the UserDTO JSON response
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
-        JsonObject userDto = jsonReader.readObject();
-        jsonReader.close();
-
-        // Map UserDTO fields to User entity
-        User user = new User();
-        user.setId(userDto.getInt("id"));
-        user.setName(userDto.getString("name"));
-        user.setEmail(userDto.getString("email"));
-        user.setPassword(""); // Password not returned by UserDTO for security
-
-        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
-        return user;
-      } else {
-        LOG.warning("User with ID " + userId + " not found. Response status: " + response.getStatus());
-        throw new IllegalArgumentException("User with ID " + userId + " not found");
-      }
-    } catch (Exception e) {
-      LOG.severe("Error calling REST UserService: " + e.getMessage());
-      throw new IllegalArgumentException(e.getMessage());
-    } finally {
-      client.close();
-    }
+    return user;
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public CompteCourant create(User user, BigDecimal taxe) {
+  public CompteCourant create(User user, BigDecimal taxe, LocalDateTime actionDateTime) {
     LOG.info("Creating compte courant for user: " + user);
     if (user == null) {
       throw new IllegalArgumentException("User cannot be null");
@@ -131,8 +108,10 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     CompteCourant compte = new CompteCourant();
     compte.setUser(user);
-    compte.setTaxe(taxe); // Default taxe, can be updated later
-    compte.setCreatedAt(LocalDateTime.now());
+    compte.setUserId(user.getId());
+    compte.setTaxe(taxe);
+    compte.setCreatedAt(
+        actionDateTime != null ? actionDateTime : LocalDateTime.now()); // Use provided datetime or current time
 
     entityManager.persist(compte);
     entityManager.flush();
@@ -156,7 +135,22 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     if (id == null) {
       throw new IllegalArgumentException("Compte ID cannot be null");
     }
-    return entityManager.find(CompteCourant.class, id);
+
+    CompteCourant compte = entityManager.find(CompteCourant.class, id);
+
+    if (compte != null) {
+      // Fetch complete user information from the user service
+      try {
+        User completeUser = findUser(compte.getUserId());
+        compte.setUser(completeUser);
+        LOG.info("Successfully enriched compte with complete user information");
+      } catch (Exception e) {
+        LOG.warning("Could not fetch complete user information for compte " + id + ": " + e.getMessage());
+        // Continue with the existing user information from the entity
+      }
+    }
+
+    return compte;
   }
 
   @Override
@@ -164,8 +158,8 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     LOG.info("Finding comptes for user: " + user.getId());
 
     TypedQuery<CompteCourant> query = entityManager.createQuery(
-        "SELECT c FROM CompteCourant c WHERE c.user = :user", CompteCourant.class);
-    query.setParameter("user", user);
+        "SELECT c FROM CompteCourant c WHERE c.userId = :userId", CompteCourant.class);
+    query.setParameter("userId", user.getId());
 
     return query.getResultList();
   }
@@ -182,31 +176,75 @@ public class CompteCourantServiceImpl implements CompteCourantService {
     return getComptesByUser(user);
   }
 
+  @Override
+  public BigDecimal calculateSolde(CompteCourant compte) {
+    return calculateSolde(compte, null);
+  }
+
   /**
    * Calculate the balance (solde) of a compte courant by summing transactions
    * Balance = (sum of received amounts) - (sum of sent amounts)
    */
   @Override
-  public BigDecimal calculateSolde(CompteCourant compte) {
+  public BigDecimal calculateSolde(CompteCourant compte, LocalDateTime actionDateTime) {
     LOG.info("Calculating solde for compte ID: " + compte.getId());
 
-    // Sum of incoming transactions (where this compte is receiver)
-    TypedQuery<BigDecimal> incomingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.receiver = :compte",
-        BigDecimal.class);
-    incomingQuery.setParameter("compte", compte);
-    BigDecimal incoming = incomingQuery.getSingleResult();
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
 
-    // Sum of outgoing transactions (where this compte is sender)
-    TypedQuery<BigDecimal> outgoingQuery = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte",
-        BigDecimal.class);
-    outgoingQuery.setParameter("compte", compte);
-    BigDecimal outgoing = outgoingQuery.getSingleResult();
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
+
+    BigDecimal incoming = listValid.stream()
+        .filter(t -> t.getReceiver() != null && t.getReceiver().getId().equals(compte.getId()))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO,
+            (t1, t2) -> t1.add(t2));
+
+    BigDecimal outgoing = listValid.stream()
+        .filter(t -> t.getSender() != null && t.getSender().getId().equals(compte.getId()))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO,
+            (t1, t2) -> t1.add(t2));
 
     BigDecimal solde = incoming.subtract(outgoing);
     LOG.info("Calculated solde: " + solde + " (incoming: " + incoming + ", outgoing: " + outgoing + ")");
+
     return solde;
+  }
+
+  /**
+   * Calculate the total balance for all accounts of a user.
+   * 
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
+   * @return total balance across all user's current accounts
+   */
+  @Override
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime) {
+    LOG.info("Calculating total solde for userId: " + userId + " at " + actionDateTime);
+
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists (will throw exception if not found)
+    findUser(userId);
+
+    // Get all user's accounts
+    List<CompteCourant> comptes = getComptesByUserId(userId);
+
+    // Calculate total balance
+    BigDecimal totalSolde = BigDecimal.ZERO;
+    for (CompteCourant compte : comptes) {
+      BigDecimal compteSolde = calculateSolde(compte, actionDateTime);
+      System.out.println("Compte : " + compte + " - " + compteSolde);
+      totalSolde = totalSolde.add(compteSolde);
+      LOG.info("Account " + compte.getId() + " balance: " + compteSolde);
+    }
+
+    LOG.info("Total solde for user " + userId + " at " + actionDateTime + ": " + totalSolde);
+    return totalSolde;
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -250,14 +288,20 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       throw new IllegalArgumentException("Compte cannot be null");
     }
 
-    TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.specialAction = :action",
-        BigDecimal.class);
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
-    query.setParameter("compte", compte);
-    query.setParameter("action", SpecialAction.TAXE.getDatabaseName());
+    var result = listValid.stream()
+        .filter(t -> SpecialAction.TAXE.equals(t.getSpecialActionEnum()))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
-    return query.getSingleResult();
+    return result;
+  }
+
+  private List<TransactionCourant> getListValid(List<TransactionCourant> list) {
+    return list.stream()
+        .filter(t -> t.isValid())
+        .toList();
   }
 
   @Override
@@ -270,15 +314,15 @@ public class CompteCourantServiceImpl implements CompteCourantService {
       throw new IllegalArgumentException("Action date cannot be null");
     }
 
-    TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(t.montant), 0) FROM TransactionCourant t WHERE t.sender = :compte AND t.specialAction = :action AND t.date <= :actionDateTime",
-        BigDecimal.class);
+    var listValid = getListValid(transactionService.getTransactionsByCompte(compte));
 
-    query.setParameter("compte", compte);
-    query.setParameter("action", SpecialAction.TAXE.getDatabaseName());
-    query.setParameter("actionDateTime", actionDateTime);
+    var result = listValid.stream()
+        .filter(t -> SpecialAction.TAXE.equals(t.getSpecialActionEnum()))
+        .filter(t -> !t.getDate().isAfter(actionDateTime))
+        .map(t -> t.getMontant())
+        .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
-    return query.getSingleResult();
+    return result;
   }
 
   @Override
@@ -316,4 +360,49 @@ public class CompteCourantServiceImpl implements CompteCourantService {
 
     return totalTaxToPay.subtract(taxPaid).max(BigDecimal.ZERO);
   }
+
+  @Override
+  public List<TransactionCourant> getVirementToday(CompteCourant compte, LocalDate actionDate) {
+    if (actionDate == null)
+      return getVirementToday(compte);
+
+    var result = getListValid(transactionService.getTransactionsByCompte(compte));
+
+    return result.stream()
+        .filter(t -> t.getDate().toLocalDate().isEqual(actionDate))
+        .toList();
+  }
+
+  private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;
+
+  @PostConstruct
+  protected void init() {
+    LOG.info("CompteCourantServiceImpl initialized");
+  }
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    if (adminInfos == null) {
+      LOG.info("Loading admin infos for authorization checks");
+      adminInfos = userServiceWrapper.getUserRemoteService().getAllUserAdminsWithDepAndRoles(null);
+    }
+
+    var actionRoles = adminInfos.get(userAdmin);
+
+    System.out.println(actionRoles);
+
+    if (actionRoles == null) {
+      LOG.warning("No action roles found for user admin: " + userAdmin.getId());
+      return false;
+    }
+
+    for (ActionRole actionRole : actionRoles) {
+      if (actionRole.getAction().equals(operationType)
+          && actionRole.getTableName().equals(tableName))
+        return true;
+    }
+
+    return false;
+  }
+
 }

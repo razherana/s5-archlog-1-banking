@@ -1,0 +1,13 @@
+services:
+  dotnet:
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    container_name: dotnet-depot
+    ports:
+      - "127.0.0.1:8084:8084"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./banking-depot:/usr/local/banking-depot
+    working_dir: /usr/local/banking-depot
+    command: ["dotnet", "run"]
+    restart: unless-stopped

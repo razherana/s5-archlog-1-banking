@@ -45,6 +45,9 @@ public class TransactionCourantDTO {
   /** Monetary amount of the transaction */
   private BigDecimal montant;
 
+  /** Validation date */
+  private LocalDateTime validationDate;
+
   /** Timestamp when the transaction occurred */
   private LocalDateTime date;
 
@@ -68,6 +71,7 @@ public class TransactionCourantDTO {
     this.receiverId = transaction.getReceiver() != null ? transaction.getReceiver().getId() : null;
     this.montant = transaction.getMontant();
     this.date = transaction.getDate();
+    this.validationDate = transaction.getValidationDate();
     this.specialAction = transaction.getSpecialAction();
   }
 
@@ -118,5 +122,13 @@ public class TransactionCourantDTO {
 
   public void setSpecialAction(String specialAction) {
     this.specialAction = specialAction;
+  }
+
+  public LocalDateTime getValidationDate() {
+    return validationDate;
+  }
+
+  public void setValidationDate(LocalDateTime validationDate) {
+    this.validationDate = validationDate;
   }
 }

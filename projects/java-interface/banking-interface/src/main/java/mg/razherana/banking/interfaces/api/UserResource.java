@@ -1,11 +1,10 @@
 package mg.razherana.banking.interfaces.api;
 
-import mg.razherana.banking.interfaces.application.userServices.UserService;
 import mg.razherana.banking.interfaces.dto.UserDTO;
 import mg.razherana.banking.interfaces.dto.ErrorDTO;
 import mg.razherana.banking.interfaces.dto.requests.RegisterRequest;
-import mg.razherana.banking.interfaces.entities.User;
-
+import mg.razherana.banking.common.entities.User;
+import mg.razherana.banking.common.services.userServices.UserService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
 import jakarta.ws.rs.*;
@@ -61,7 +60,7 @@ public class UserResource {
   @GET
   public Response getAllUsers() {
     try {
-      List<User> users = userService.getAllUsers();
+      List<User> users = userService.getAllUsers(null);
       List<UserDTO> userDTOs = users.stream()
           .map(UserDTO::new)
           .collect(Collectors.toList());
@@ -90,7 +89,7 @@ public class UserResource {
   @Path("/{id}")
   public Response getUserById(@PathParam("id") Integer id) {
     try {
-      User user = userService.findUserById(id);
+      User user = userService.findUserById(null, id);
       if (user == null) {
         ErrorDTO error = new ErrorDTO("User not found", 404, "Not Found", "/users/" + id);
         return Response.status(Response.Status.NOT_FOUND)
@@ -119,39 +118,6 @@ public class UserResource {
     }
   }
 
-  @GET
-  @Path("/email/{email}")
-  public Response getUserByEmail(@PathParam("email") String email) {
-    try {
-      User user = userService.findUserByEmail(email);
-      if (user == null) {
-        ErrorDTO error = new ErrorDTO("User not found", 404, "Not Found", "/users/email/" + email);
-        return Response.status(Response.Status.NOT_FOUND)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
-      }
-
-      UserDTO userDTO = new UserDTO(user);
-      return Response.ok(userDTO)
-          .type(MediaType.APPLICATION_JSON)
-          .build();
-    } catch (EJBException e) {
-      if (isClientError(e)) {
-        LOG.warning("Client error getting user by email: " + getErrorMessage(e));
-        ErrorDTO error = new ErrorDTO(getErrorMessage(e), 400, "Bad Request", "/users/email/" + email);
-        return Response.status(Response.Status.BAD_REQUEST)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
-      } else {
-        LOG.severe("EJB error getting user by email: " + e.getMessage());
-        ErrorDTO error = new ErrorDTO("Internal server error", 500, "Internal Server Error", "/users/email/" + email);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .type(MediaType.APPLICATION_JSON)
-            .entity(error).build();
-      }
-    }
-  }
-
   @POST
   public Response createUser(RegisterRequest request) {
     try {
@@ -162,7 +128,7 @@ public class UserResource {
             .entity(error).build();
       }
 
-      User user = userService.createUser(request.getName(), request.getEmail(), request.getPassword());
+      User user = userService.createUser(null, request.getName());
       UserDTO userDTO = new UserDTO(user);
 
       return Response.status(Response.Status.CREATED)
@@ -196,7 +162,7 @@ public class UserResource {
             .entity(error).build();
       }
 
-      User user = userService.updateUser(id, request.getName(), request.getEmail(), request.getPassword());
+      User user = userService.updateUser(null, id, request.getName());
       UserDTO userDTO = new UserDTO(user);
 
       return Response.ok(userDTO)
@@ -223,7 +189,7 @@ public class UserResource {
   @Path("/{id}")
   public Response deleteUser(@PathParam("id") Integer id) {
     try {
-      userService.deleteUser(id);
+      userService.deleteUser(null, id);
       return Response.noContent().build();
     } catch (EJBException e) {
       if (isClientError(e)) {

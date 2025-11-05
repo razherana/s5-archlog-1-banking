@@ -51,7 +51,7 @@
     </p>
     <p>
       <strong>Base URL:</strong>
-      <span class="url">http://localhost:8080/api</span>
+      <span class="url">http://localhost:8081/api</span>
     </p>
 
     <h2>Account Management (Compte Courant)</h2>
@@ -66,12 +66,6 @@
       <div class="method">GET</div>
       <div class="url">/api/comptes/{id}</div>
       <div class="description">Get account by ID</div>
-    </div>
-
-    <div class="endpoint">
-      <div class="method">GET</div>
-      <div class="url">/api/comptes/numero/{numeroCompte}</div>
-      <div class="description">Get account by account number</div>
     </div>
 
     <div class="endpoint">
@@ -120,7 +114,7 @@
         <strong>Request Body:</strong>
         <pre>
 {
-  "numeroCompte": "1234567890",
+  "compteId": 1,
   "montant": 100.00,
   "description": "Salary deposit"
 }</pre
@@ -136,7 +130,7 @@
         <strong>Request Body:</strong>
         <pre>
 {
-  "numeroCompte": "1234567890",
+  "compteId": 1,
   "montant": 50.00,
   "description": "ATM withdrawal"
 }</pre
@@ -152,8 +146,8 @@
         <strong>Request Body:</strong>
         <pre>
 {
-  "numeroCompteSource": "1234567890",
-  "numeroCompteDestination": "0987654321",
+  "compteSourceId": 1,
+  "compteDestinationId": 2,
   "montant": 25.00,
   "description": "Transfer to friend"
 }</pre

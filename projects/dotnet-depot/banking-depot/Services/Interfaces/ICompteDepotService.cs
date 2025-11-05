@@ -28,6 +28,15 @@ namespace BankingDepot.Services.Interfaces
     Task<List<CompteDepot>> GetByUserIdAsync(int userId);
 
     /// <summary>
+    /// Calculates the total balance for all deposit accounts of a user.
+    /// Balance = Sum of (deposit amount + calculated interest) for non-withdrawn accounts
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="actionDateTime">Optional action date time for calculation (defaults to now)</param>
+    /// <returns>Total balance across all user's deposit accounts</returns>
+    Task<decimal> CalculateTotalSoldeByUserIdAsync(int userId, DateTime? actionDateTime = null);
+
+    /// <summary>
     /// Creates a new deposit account.
     /// </summary>
     /// <param name="typeCompteDepotId">The account type ID</param>

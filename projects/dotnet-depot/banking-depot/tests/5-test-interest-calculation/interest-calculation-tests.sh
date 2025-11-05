@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Interest Calculation API Tests
-BASE_URL="http://127.0.0.4:8080/api"
+BASE_URL="http://0.0.0.0:8084/api"
 TEST_NAME="Interest Calculation Tests"
 
 echo "=== $TEST_NAME ==="

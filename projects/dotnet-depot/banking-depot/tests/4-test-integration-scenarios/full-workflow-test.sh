@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Integration Scenarios API Tests
-BASE_URL="http://127.0.0.4:8080/api"
-JAVA_SERVICE_URL="http://127.0.0.2:8080/api"
+BASE_URL="http://0.0.0.0:8084/api"
+JAVA_SERVICE_URL="http://localhost:8082/api"
 TEST_NAME="Integration Scenarios Tests"
 
 echo "=== $TEST_NAME ==="

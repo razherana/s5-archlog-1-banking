@@ -1,31 +1,29 @@
 package mg.razherana.banking.pret.application.comptePretService;
 
-import jakarta.ejb.Stateless;
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
+import jakarta.ejb.Stateful;
+import jakarta.ejb.StatefulTimeout;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import java.io.StringReader;
 import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.common.entities.ActionRole;
+import mg.razherana.banking.common.entities.UserAdmin;
+import mg.razherana.banking.pret.application.remoteServices.UserServiceWrapper;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -40,18 +38,19 @@ import java.util.logging.Logger;
  * @version 1.0
  * @since 1.0
  */
-@Stateless
+@Stateful
+@StatefulTimeout(unit = TimeUnit.MINUTES, value = 30)
 public class ComptePretServiceImpl implements ComptePretService {
   private static final Logger LOG = Logger.getLogger(ComptePretServiceImpl.class.getName());
-
-  // Hardcoded URL for java-interface REST API
-  private static final String USER_SERVICE_BASE_URL = "http://127.0.0.2:8080/api";
 
   @PersistenceContext(unitName = "pretPU")
   private EntityManager entityManager;
 
+  @EJB
+  private UserServiceWrapper userServiceWrapper;
+
   /**
-   * Find a user by ID using REST API call to java-interface.
+   * Find a user by ID using remote EJB call to java-interface.
    * 
    * @param userId the user ID
    * @return User object with the specified ID or null if not found
@@ -59,45 +58,22 @@ public class ComptePretServiceImpl implements ComptePretService {
    */
   @Override
   public User findUser(Integer userId) {
-    LOG.info("Finding user by ID: " + userId);
     if (userId == null) {
       throw new IllegalArgumentException("User ID cannot be null");
     }
 
-    Client client = ClientBuilder.newClient();
-    try {
-      WebTarget target = client.target(USER_SERVICE_BASE_URL + "/users/" + userId);
-      Response response = target.request(MediaType.APPLICATION_JSON).get();
+    var ogUser = userServiceWrapper.getUserRemoteService().findUserById(null, userId);
 
-      if (response.getStatus() == 200) {
-        // java-interface returns UserDTO, so we need to parse it and map to our User
-        // entity
-        String jsonResponse = response.readEntity(String.class);
-        LOG.info("Received JSON response: " + jsonResponse);
-
-        // Parse the UserDTO JSON response
-        JsonReader jsonReader = Json.createReader(new StringReader(jsonResponse));
-        JsonObject userDto = jsonReader.readObject();
-        jsonReader.close();
-
-        // Map UserDTO fields to User entity
-        User user = new User();
-        user.setId(userDto.getInt("id"));
-        user.setName(userDto.getString("name"));
-        user.setEmail(userDto.getString("email"));
-        user.setPassword(""); // Password not returned by UserDTO for security
-
-        LOG.info("Successfully retrieved and mapped user from REST API: " + user.getId());
-        return user;
-      }
-
-      return null; // User not found
-    } catch (Exception e) {
-      LOG.severe("Error calling REST UserService: " + e.getMessage());
-      throw new IllegalArgumentException(e.getMessage());
-    } finally {
-      client.close();
+    if (ogUser == null) {
+      throw new IllegalArgumentException("User with ID " + userId + " not found");
     }
+
+    var user = new User();
+
+    user.setId(ogUser.getId());
+    user.setName(ogUser.getName());
+
+    return user;
   }
 
   /**
@@ -221,6 +197,52 @@ public class ComptePretServiceImpl implements ComptePretService {
   }
 
   /**
+   * Calculate the total remaining balance for all loans of a user.
+   * Balance = Sum of (original loan amount - total payments made)
+   * 
+   * @param userId         the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
+   * @return total remaining balance across all user's loans
+   */
+  @Override
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime) {
+    LOG.info("Calculating total loan balance for userId: " + userId + " at " + actionDateTime);
+
+    if (userId == null) {
+      throw new IllegalArgumentException("User ID cannot be null");
+    }
+
+    // Verify user exists (will throw exception if not found)
+    findUser(userId);
+
+    // Get all user's loans
+    List<ComptePret> loans = getLoansByUserId(userId)
+        .stream()
+        .filter(e -> !e.getDateDebut().isAfter(actionDateTime))
+        .toList();
+
+    // Calculate total remaining balance
+    BigDecimal totalBalance = BigDecimal.ZERO;
+    for (ComptePret loan : loans) {
+      BigDecimal originalAmount = loan.getMontant();
+      BigDecimal totalPaid = calculateTotalPaidAtDate(loan.getId(), actionDateTime);
+
+      BigDecimal remainingBalance = originalAmount.subtract(totalPaid);
+
+      // Only add positive balances (loans not overpaid)
+      if (remainingBalance.compareTo(BigDecimal.ZERO) > 0) {
+        totalBalance = totalBalance.add(remainingBalance);
+      }
+
+      LOG.info("Loan " + loan.getId() + " - Original: " + originalAmount +
+          ", Paid: " + totalPaid + ", Remaining: " + remainingBalance);
+    }
+
+    LOG.info("Total loan balance for user " + userId + " at " + actionDateTime + ": " + totalBalance);
+    return totalBalance;
+  }
+
+  /**
    * Calculates the monthly payment for a loan using the standard amortization
    * formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
@@ -243,7 +265,7 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     // Calculate number of months between start and end date
     // Add 1 to include the starting month
-    long totalMonths = loan.getDateDebut().until(loan.getDateFin(), ChronoUnit.MONTHS) + 1;
+    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
     if (totalMonths <= 0) {
       throw new IllegalArgumentException("Invalid loan duration");
     }
@@ -268,7 +290,7 @@ public class ComptePretServiceImpl implements ComptePretService {
     BigDecimal numerator = principal.multiply(monthlyRate);
 
     System.out.println("-------------- Variables calculateMonthlyPayment: -----------------------");
-    
+
     System.out.println("Principal (C): " + principal);
     System.out.println("Annual Rate: " + annualRate);
     System.out.println("Monthly Rate (i): " + monthlyRate);
@@ -313,14 +335,27 @@ public class ComptePretServiceImpl implements ComptePretService {
    */
   @Override
   public BigDecimal calculateTotalPaid(Integer compteId) {
+    return calculateTotalPaidAtDate(compteId, null);
+  }
+
+  /**
+   * Calculates total amount paid for a loan up to a specific date.
+   */
+  @Override
+  public BigDecimal calculateTotalPaidAtDate(Integer compteId, LocalDateTime actionDateTime) {
     if (compteId == null) {
       throw new IllegalArgumentException("Loan account ID cannot be null");
     }
 
+    if (actionDateTime == null) {
+      actionDateTime = LocalDateTime.now();
+    }
+
     TypedQuery<BigDecimal> query = entityManager.createQuery(
-        "SELECT COALESCE(SUM(e.montant), 0) FROM Echeance e WHERE e.compteId = :compteId",
+        "SELECT COALESCE(SUM(e.montant), 0) FROM Echeance e WHERE e.compteId = :compteId AND e.dateEcheance <= :actionDateTime",
         BigDecimal.class);
     query.setParameter("compteId", compteId);
+    query.setParameter("actionDateTime", actionDateTime);
 
     BigDecimal result = query.getSingleResult();
     return result != null ? result : BigDecimal.ZERO;
@@ -342,11 +377,11 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     // If action date is after loan end, full loan amount is expected
     if (actionDateTime.isAfter(loan.getDateFin())) {
-      return loan.getMontant();
+      return getExpectedTotal(loan);
     }
 
     // Calculate months elapsed since loan start
-    long monthsElapsed = ChronoUnit.MONTHS.between(loan.getDateDebut(), actionDateTime);
+    long monthsElapsed = monthPassed(loan.getDateDebut(), actionDateTime) + 1;
     if (monthsElapsed < 0) {
       monthsElapsed = 0;
     }
@@ -394,25 +429,47 @@ public class ComptePretServiceImpl implements ComptePretService {
   @Override
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public Echeance makePayment(Integer compteId, BigDecimal amount, LocalDateTime actionDateTime) {
-    if (compteId == null) {
+    if (compteId == null)
       throw new IllegalArgumentException("Loan account ID cannot be null");
-    }
-    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
       throw new IllegalArgumentException("Payment amount must be positive");
-    }
-    if (actionDateTime == null) {
+    if (actionDateTime == null)
       actionDateTime = LocalDateTime.now();
-    }
 
     ComptePret loan = findById(compteId);
     if (loan == null) {
       throw new IllegalArgumentException("Loan account not found: " + compteId);
     }
 
-    // Check if loan is already fully paid
+    // Get current payment status
     PaymentStatusDTO status = getPaymentStatus(compteId, actionDateTime);
+
+    // Check if loan is already fully paid
     if (status.isFullyPaid()) {
       throw new IllegalArgumentException("Loan is already fully paid");
+    }
+
+    // Calculate total amount that would be paid after this payment
+    BigDecimal currentTotalPaid = calculateTotalPaid(compteId);
+    BigDecimal totalAfterPayment = currentTotalPaid.add(amount);
+    BigDecimal loanAmount = getExpectedTotal(loan);
+
+    // Check for overpayment
+    if (totalAfterPayment.compareTo(loanAmount) > 0) {
+      BigDecimal maxPossiblePayment = loanAmount.subtract(currentTotalPaid);
+      BigDecimal excessAmount = amount.subtract(maxPossiblePayment);
+
+      String errorMessage = String.format(
+          "Payment exceeds remaining loan balance. " +
+              "Reason: Overpayment detected. " +
+              "Amount attempted: %s MGA. " +
+              "Maximum possible payment: %s MGA. " +
+              "Excess amount: %s MGA.",
+          amount.toString(),
+          maxPossiblePayment.toString(),
+          excessAmount.toString());
+
+      throw new IllegalArgumentException(errorMessage);
     }
 
     // Create payment record
@@ -422,5 +479,72 @@ public class ComptePretServiceImpl implements ComptePretService {
 
     LOG.info("Payment of " + amount + " made for loan " + compteId);
     return payment;
+  }
+
+  private HashMap<UserAdmin, List<ActionRole>> adminInfos = null;
+
+  @PostConstruct
+  protected void init() {
+    LOG.info("ComptePretServiceImpl initialized");
+  }
+
+  @Override
+  public boolean hasAuthorization(UserAdmin userAdmin, String operationType, String tableName) {
+    if(userAdmin == null)
+      return true;
+
+    if (adminInfos == null) {
+      adminInfos = userServiceWrapper.getUserRemoteService().getAllUserAdminsWithDepAndRoles(null);
+    }
+
+    var actionRoles = adminInfos.get(userAdmin);
+
+    if (actionRoles == null) {
+      LOG.warning("No action roles found for user admin: " + userAdmin.getId());
+      return false;
+    }
+
+    for (ActionRole actionRole : actionRoles) {
+      if (actionRole.getAction().equals(operationType)
+          && actionRole.getTableName().equals(tableName))
+        return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculates the total expected amount to be paid over the life of the loan.
+   */
+  private BigDecimal getExpectedTotal(ComptePret loan) {
+    if (loan == null) {
+      throw new IllegalArgumentException("Loan cannot be null");
+    }
+
+    // Calculate number of months between start and end date
+    // Add 1 to include the starting month
+    long totalMonths = monthPassed(loan.getDateDebut(), loan.getDateFin()) + 1;
+    if (totalMonths <= 0) {
+      throw new IllegalArgumentException("Invalid loan duration");
+    }
+
+    BigDecimal monthlyPayment = calculateMonthlyPayment(loan);
+    return monthlyPayment.multiply(BigDecimal.valueOf(totalMonths));
+  }
+
+  private long monthPassed(LocalDateTime start, LocalDateTime end) {
+    if (start == null || end == null) {
+      throw new IllegalArgumentException("Start and end date cannot be null");
+    }
+
+    // If end date is before start, return 0
+    if (end.isBefore(start)) {
+      return 0;
+    }
+
+    // Calculate months elapsed since start
+    long calendarMonths = (end.getYear() - start.getYear()) * 12 +
+        (end.getMonthValue() - start.getMonthValue());
+    return calendarMonths < 0 ? 0 : calendarMonths;
   }
 }

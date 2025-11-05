@@ -48,11 +48,19 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Banking Courant classes for remote EJB access -->
+    <dependency>
+      <groupId>mg.razherana.banking</groupId>
+      <artifactId>banking-common</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- MySQL Connector -->
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>8.0.33</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Hibernate for JPA implementation -->
@@ -62,54 +70,29 @@
       <version>6.1.7.Final</version>
     </dependency>
 
-    <!-- to test with TomEE and Arquillian
+    <!-- Lombok -->
     <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-tomee-remote</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.42</version>
     </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
-
-    <!-- to test with OpenEJB embedded and Arquillian
-    <dependency>
-      <groupId>org.apache.tomee</groupId>
-      <artifactId>arquillian-openejb-embedded</artifactId>
-      <version>10.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <version>1.1.10.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    -->
   </dependencies>
+
 
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.42</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
         <version>3.12.1</version>
       </plugin>
       <plugin>
@@ -126,6 +109,33 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <id>make-a-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>classes</classifier>
+              <includes>
+                <!-- Include only entities and remote interfaces -->
+                <include>**/entities/**</include>
+                <include>**/compteCourantService/CompteCourantService.class</include>
+                <include>**/compteCourantService/CompteCourantRemoteService.class</include>
+                <include>**/transactionService/TransactionService.class</include>
+                <include>**/transactionService/TransactionRemoteService.class</include>
+                <include>**/virementService/VirementService.class</include>
+                <include>**/virementService/VirementRemoteService.class</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.tomee.maven</groupId>
         <artifactId>tomee-maven-plugin</artifactId>
         <version>10.1.0</version>
@@ -133,6 +143,31 @@
           <config>src/main/tomee/conf</config>
           <context>ROOT</context>
           <args>-Xmx512m</args>
+
+          <!-- Auto-reload configuration -->
+          <libs>
+            <lib>com.mysql:mysql-connector-j:8.0.33</lib>
+          </libs>
+
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <deployOpenEjbApplication>true</deployOpenEjbApplication>
+          <tomeeClassifier>plume</tomeeClassifier>
+          <synchronization>
+            <extensions>
+              <extension>.class</extension>
+            </extensions>
+          </synchronization>
+          <reloadOnUpdate>true</reloadOnUpdate>
+
+          <systemVariables>
+            <!-- Debug: Auto reload -->
+            <openejb.system.apps>true</openejb.system.apps>
+
+            <tomee.remote.support>true</tomee.remote.support>
+            <openejb.cdi.activated>true</openejb.cdi.activated>
+            <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>

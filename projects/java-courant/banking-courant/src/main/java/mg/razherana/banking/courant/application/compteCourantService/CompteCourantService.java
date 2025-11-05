@@ -1,8 +1,11 @@
 package mg.razherana.banking.courant.application.compteCourantService;
 
+import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.courant.entities.CompteCourant;
+import mg.razherana.banking.courant.entities.TransactionCourant;
 import mg.razherana.banking.courant.entities.User;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,7 +44,7 @@ import java.util.List;
  * @see mg.razherana.banking.courant.application.transactionService.TransactionService
  * @see mg.razherana.banking.courant.api.CompteCourantResource
  */
-public interface CompteCourantService {
+public interface CompteCourantService extends AuthorizationService {
   /**
    * Find a user by ID using REST API call to java-interface.
    * 
@@ -51,7 +54,7 @@ public interface CompteCourantService {
    */
   public User findUser(Integer userId);
 
-  public CompteCourant create(User user, BigDecimal taxe);
+  public CompteCourant create(User user, BigDecimal taxe, LocalDateTime actionDateTime);
 
   public List<CompteCourant> getComptes();
 
@@ -67,9 +70,29 @@ public interface CompteCourantService {
    */
   public BigDecimal calculateSolde(CompteCourant compte);
 
+  /**
+   * Calculate the balance (solde) of a compte courant by summing transactions
+   * Balance = (sum of received amounts) - (sum of sent amounts)
+   */
+  public BigDecimal calculateSolde(CompteCourant compte, LocalDateTime actionDateTime);
+  /**
+   * Calculate the total balance for all accounts of a user.
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
+   * @return total balance across all user's current accounts
+   */
+  public BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime);
+
   public void updateTaxe(CompteCourant compte, BigDecimal nouvelleTaxe);
 
   public void delete(Integer id);
+
+  public List<TransactionCourant> getVirementToday(CompteCourant compte, LocalDate actionDate);
+
+  default public List<TransactionCourant> getVirementToday(CompteCourant compte) {
+    return getVirementToday(compte, LocalDate.now());
+  }
 
   // Taxes application logic
 

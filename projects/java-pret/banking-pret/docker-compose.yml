@@ -1,0 +1,15 @@
+services:
+  tomee:
+    image: openjdk:17
+    container_name: java-pret
+    ports:
+      - "127.0.0.1:8083:8083"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./target/apache-tomee:/usr/local/tomee
+    working_dir: /usr/local/tomee
+    command: ["bin/catalina.sh", "run"]
+    environment:
+      - JAVA_OPTS=-Xmx512m
+    restart: unless-stopped

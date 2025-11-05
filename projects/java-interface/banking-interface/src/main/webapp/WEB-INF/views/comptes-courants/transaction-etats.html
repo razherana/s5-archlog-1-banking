@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historique des États</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="user-info">
+      <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
+      <a href="../logout" class="logout-link">Logout</a>
+      <div style="clear: both"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="text-center">Historique des États du Virement</h2>
+      <div
+        th:if="${successMessage}"
+        class="alert alert-success"
+        style="margin: 1rem 0; padding: 0.75rem; border-radius: 4px; background-color: #e6ffed; color: #216e39"
+        th:text="${successMessage}"
+      ></div>
+      <div
+        th:if="${errorMessage}"
+        class="alert alert-error"
+        style="margin: 1rem 0; padding: 0.75rem; border-radius: 4px; background-color: #ffe7e6; color: #a12622"
+        th:text="${errorMessage}"
+      ></div>
+      <p class="text-center" style="margin-bottom: 2rem">
+        <a
+          th:if="${accountId != null}"
+          th:href="'transactions?accountId=' + ${accountId}"
+          >← Retour aux transactions</a
+        >
+        <span th:if="${accountId == null}"
+          ><a href="/comptes-courants">← Retour aux comptes</a></span
+        >
+      </p>
+
+      <div class="account-info-section">
+        <h3>Transaction n° <span th:text="${transaction.id}">ID</span></h3>
+        <div class="account-details">
+          <div class="detail-row">
+            <span class="label">Montant:</span>
+            <span
+              class="value"
+              th:text="${#numbers.formatDecimal(transaction.montant, 1, 2)}"
+            >
+              0.00
+            </span>
+            <span th:text="${transaction.change}">MGA</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Date:</span>
+            <span
+              class="value"
+              th:text="${#temporals.format(transaction.date, 'dd/MM/yyyy HH:mm')}"
+              >01/01/2024</span
+            >
+          </div>
+          <div class="detail-row">
+            <span class="label">Action spéciale:</span>
+            <span
+              class="value"
+              th:text="${transaction.specialAction != null ? transaction.specialAction : '-'}"
+              >-</span
+            >
+          </div>
+          <div class="detail-row">
+            <span class="label">Émetteur:</span>
+            <span
+              class="value"
+              th:text="${transaction.sender != null ? transaction.sender.id : 'Système'}"
+              >Système</span
+            >
+          </div>
+          <div class="detail-row">
+            <span class="label">Bénéficiaire:</span>
+            <span
+              class="value"
+              th:text="${transaction.receiver != null ? transaction.receiver.id : 'Système'}"
+              >Système</span
+            >
+          </div>
+          <div class="detail-row" th:if="${transaction.jsonData != null}">
+            <span class="label">Données associées:</span>
+            <span class="value" th:text="${transaction.jsonData}">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 2rem">
+        <h3>Mettre à jour l'état du virement</h3>
+        <form method="post" action="transaction-etats" class="form-grid" style="display: grid; gap: 1rem">
+          <input type="hidden" name="transactionId" th:value="${transaction.id}" />
+          <input
+            type="hidden"
+            name="accountId"
+            th:if="${accountId != null}"
+            th:value="${accountId}"
+          />
+
+          <label for="etat"><strong>Nouvel état</strong></label>
+          <select id="etat" name="etat" class="form-input" required>
+            <option value="" disabled selected>Sélectionnez un état</option>
+            <option
+              th:each="etatOption : ${etatOptions}"
+              th:value="${etatOption.name()}"
+              th:text="${etatOption.name()} + ' (' + etatOption.code + ')'"
+            ></option>
+          </select>
+
+          <label for="actionDateTime"><strong>Date d'effet (optionnelle)</strong></label>
+          <input type="datetime-local" class="form-input" id="actionDateTime" name="actionDateTime" />
+          <small>Si aucune date n'est fournie, l'heure actuelle sera utilisée.</small>
+
+          <button type="submit" class="btn btn-primary" style="justify-self: flex-start">
+            Mettre à jour l'état
+          </button>
+        </form>
+      </div>
+
+      <div class="table-responsive" style="margin-top: 2rem">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>État</th>
+              <th>Code</th>
+              <th>User Admin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="etat : ${etats}">
+              <td th:text="${#temporals.format(etat.date, 'dd/MM/yyyy HH:mm')}">
+                01/01/2024
+              </td>
+              <td th:text="${etat.etatLabel}">EN_ATTENTE</td>
+              <td th:text="${etat.etat}">0</td>
+              <td th:text="${etat.userAdminId}">1</td>
+            </tr>
+            <tr th:if="${etats == null || etats.isEmpty()}">
+              <td colspan="4" class="text-center">
+                Aucun historique disponible pour cette transaction.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

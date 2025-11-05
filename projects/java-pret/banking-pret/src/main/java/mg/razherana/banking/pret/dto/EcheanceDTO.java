@@ -1,12 +1,13 @@
 package mg.razherana.banking.pret.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * DTO for echeance (payment record) data.
  */
-public class EcheanceDTO {
+public class EcheanceDTO implements Serializable {
 
   private Integer id;
   private Integer compteId;

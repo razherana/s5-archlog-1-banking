@@ -1,6 +1,8 @@
 package mg.razherana.banking.pret.entities;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
@@ -16,7 +18,7 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "type_compte_prets")
-public class TypeComptePret {
+public class TypeComptePret implements Serializable{
 
   /**
    * Unique identifier for the loan type.

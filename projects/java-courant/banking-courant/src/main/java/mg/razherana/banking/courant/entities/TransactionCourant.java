@@ -1,6 +1,10 @@
 package mg.razherana.banking.courant.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -35,21 +39,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "transaction_courants")
-public class TransactionCourant {
-  /**
-   * Enumeration defining special transaction types for the banking system.
-   * 
-   * <p>
-   * This enum helps categorize transactions beyond the basic sender/receiver
-   * pattern:
-   * </p>
-   * <ul>
-   * <li><strong>DEPOSIT:</strong> External money coming into an account</li>
-   * <li><strong>WITHDRAWAL:</strong> Money leaving an account to external
-   * destination</li>
-   * <li><strong>TAXE:</strong> Tax payment transactions</li>
-   * </ul>
-   */
+@AllArgsConstructor
+@NoArgsConstructor
+public class TransactionCourant implements Serializable {
   /**
    * Enumeration defining special transaction types for the banking system.
    * 
@@ -70,7 +62,9 @@ public class TransactionCourant {
     /** Represents withdrawal transactions to external destinations */
     WITHDRAWAL("withdrawal"),
     /** Represents tax payment transactions */
-    TAXE("taxe");
+    TAXE("taxe"),
+    /** Represents frais */
+    FRAIS("frais");
 
     /** The database representation of this special action */
     private String databaseName;
@@ -113,11 +107,18 @@ public class TransactionCourant {
   private String specialAction;
 
   /**
+   * Currency change identifier for this transaction (e.g., 'MGA', 'USD').
+   * Stored as a string in the database column named `change`.
+   */
+  @Column(name = "devise", nullable = true)
+  private String change;
+
+  /**
    * The account sending money in this transaction.
    * Can be null for deposit transactions (external source).
    * Lazy fetched for performance optimization.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne
   @JoinColumn(name = "sender_id", nullable = true)
   private CompteCourant sender;
 
@@ -126,7 +127,7 @@ public class TransactionCourant {
    * Can be null for withdrawal transactions (external destination).
    * Lazy fetched for performance optimization.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne
   @JoinColumn(name = "receiver_id", nullable = true)
   private CompteCourant receiver;
 
@@ -137,6 +138,23 @@ public class TransactionCourant {
    */
   @Column(nullable = false, precision = 15, scale = 2)
   private BigDecimal montant;
+
+  /**
+   * Additional JSON data associated with the transaction.
+   * Stored as TEXT in the database to accommodate large JSON strings.
+   * 
+   * Eg: Used to store id of the transaction related to the special action
+   * "FRAIS".
+   */
+  @Column(name = "json_data", nullable = true, columnDefinition = "TEXT")
+  private String jsonData = null;
+
+  /**
+   * Validation date. When validated, a transaction can be used for solde
+   * calculations.
+   */
+  @Column(name = "validation_date", nullable = true)
+  private LocalDateTime validationDate = null;
 
   /**
    * The timestamp when this transaction occurred.
@@ -257,6 +275,34 @@ public class TransactionCourant {
   }
 
   /**
+   * Gets the currency change identifier associated with this transaction.
+   *
+   * @return the change currency code (e.g., "MGA", "USD"), or null if not set
+   */
+  public String getChange() {
+    return change;
+  }
+
+  public String getJsonData() {
+    return jsonData;
+  }
+
+  public void setJsonData(String jsonData) {
+    this.jsonData = jsonData;
+  }
+
+  /**
+   * Sets the currency change identifier for this transaction.
+   *
+   * @param change the currency code to set
+   */
+  public void setChange(String change) {
+    if (change == null || change.isBlank())
+      change = "MGA";
+    this.change = change;
+  }
+
+  /**
    * Gets the special action type of this transaction as an enum.
    * 
    * @return the SpecialAction enum value, or null if not a special transaction
@@ -274,18 +320,48 @@ public class TransactionCourant {
     return null;
   }
 
-  /**
-   * Returns a string representation of the transaction.
-   * Excludes sender/receiver details to prevent circular references.
-   * 
-   * @return a string representation containing id, amount, and date
-   */
+  public LocalDateTime getValidationDate() {
+    return validationDate;
+  }
+
+  public void setValidationDate(LocalDateTime validationDate) {
+    this.validationDate = validationDate;
+  }
+
   @Override
   public String toString() {
-    return "TransactionCourant{" +
-        "id=" + id +
-        ", montant=" + montant +
-        ", date=" + date +
-        '}';
+    return "TransactionCourant [id=" + id + ", specialAction=" + specialAction + ", change=" + change + ", sender="
+        + sender + ", receiver="
+        + receiver + ", montant=" + montant + ", validationDate=" + validationDate + ", date=" + date + "]";
   }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((id == null) ? 0 : id.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    TransactionCourant other = (TransactionCourant) obj;
+    if (id == null) {
+      if (other.id != null)
+        return false;
+    } else if (!id.equals(other.id))
+      return false;
+    return true;
+  }
+
+  public boolean isValid() {
+    return validationDate != null;
+  }
+
 }

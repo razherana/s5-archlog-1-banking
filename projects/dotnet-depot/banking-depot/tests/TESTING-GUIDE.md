@@ -15,7 +15,7 @@ This guide provides detailed instructions for running the Banking Depot API test
 ### 2. Services Required
 
 1. **ASP.NET Core Deposit Service**: Must be running on `http://localhost:5000`
-2. **Java Current Account Service**: Must be running on `http://127.0.0.2:8080`
+2. **Java Current Account Service**: Must be running on `http://localhost:8082`
 3. **MySQL Database**: Accessible with configured credentials
 
 ### 3. Test Users
@@ -62,7 +62,7 @@ dotnet run
 **Verify Java Service is Running:**
 
 ```bash
-curl http://127.0.0.2:8080/api/users/1
+curl http://localhost:8082/api/users/1
 # Should return user information
 ```
 
@@ -92,7 +92,7 @@ curl http://localhost:5000/api/typecomptesdepots
 **Test Java integration:**
 
 ```bash
-curl http://127.0.0.2:8080/api/users/1
+curl http://localhost:8082/api/users/1
 # Should return user information
 ```
 
@@ -232,7 +232,7 @@ You can modify `sample_data.sql` to include additional test scenarios:
 # Error: "Connection refused"
 # Solution: Ensure services are running
 curl http://localhost:5000/api/typecomptesdepots
-curl http://127.0.0.2:8080/api/users/1
+curl http://localhost:8082/api/users/1
 ```
 
 #### Database Issues
@@ -249,9 +249,9 @@ mysql -u root -p s5_archlog_1_banking_depot -e "SHOW TABLES;"
 ```bash
 # Error: "User does not exist"
 # Solution: Verify test users exist in Java service
-curl http://127.0.0.2:8080/api/users/1
-curl http://127.0.0.2:8080/api/users/2
-curl http://127.0.0.2:8080/api/users/3
+curl http://localhost:8082/api/users/1
+curl http://localhost:8082/api/users/2
+curl http://localhost:8082/api/users/3
 ```
 
 ## Test Customization

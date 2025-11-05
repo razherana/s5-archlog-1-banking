@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comptes Prêts - Banking Interface</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Banking Interface System</h1>
+    </div>
+
+    <div class="container">
+      <div class="user-info">
+        <span>Welcome, <strong th:text="${userAdminName}">Admin</strong></span>
+        <a href="logout" class="logout-link">Logout</a>
+        <div style="clear: both"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-center">Comptes Prêts</h2>
+
+        <p class="text-center" style="margin-bottom: 2rem">
+          <a href="menu.html">← Retour au menu</a>
+        </p>
+
+        <!-- User Selection Form -->
+        <form action="comptes-prets" method="get" style="margin-bottom: 2rem">
+          <div style="margin-bottom: 1rem">
+            <label for="userId">Sélectionner un utilisateur:</label>
+            <select id="userId" name="userId" class="form-input" onchange="this.form.submit()">
+              <option value="">Choisir un utilisateur...</option>
+              <option
+                th:each="userEntry : ${usersForDropdown}"
+                th:value="${userEntry.key}"
+                th:text="${userEntry.value}"
+                th:selected="${userEntry.key.toString() == selectedUserId}"
+              >
+                1 : John Doe
+              </option>
+            </select>
+          </div>
+        </form>
+
+        <!-- Success Messages -->
+        <div th:if="${param.success}" class="alert alert-success">
+          <p th:if="${param.success[0] == 'loan_created'}">
+            Prêt créé avec succès!
+          </p>
+        </div>
+
+        <!-- Error Messages -->
+        <div th:if="${param.error}" class="alert alert-error">
+          <p th:if="${param.error[0] == 'missing_loan_id'}">
+            ID de prêt manquant.
+          </p>
+          <p th:if="${param.error[0] == 'loan_not_found'}">Prêt non trouvé.</p>
+          <p th:if="${param.error[0] == 'unauthorized_access'}">
+            Accès non autorisé.
+          </p>
+          <p th:if="${param.error[0] == 'invalid_loan_id'}">
+            ID de prêt invalide.
+          </p>
+          <p
+            th:text="${param.error[0]}"
+            th:if="${param.error[0] != 'missing_loan_id' and param.error[0] != 'loan_not_found' and param.error[0] != 'unauthorized_access' and param.error[0] != 'invalid_loan_id'}"
+          >
+            Erreur
+          </p>
+        </div>
+
+        <!-- Create Loan Button -->
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty()}"
+          class="text-center"
+          style="margin-bottom: 2rem"
+        >
+          <a
+            th:href="@{comptes-prets/create(userId=${selectedUserId})}"
+            class="btn btn-primary"
+          >
+            + Créer un Nouveau Prêt
+          </a>
+        </div>
+
+        <div
+          th:if="${selectedUserId == null or selectedUserId.isEmpty()}"
+          class="alert alert-info"
+        >
+          <p>Veuillez sélectionner un utilisateur pour voir ses prêts.</p>
+        </div>
+
+        <div
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and (loans == null or #lists.isEmpty(loans))}"
+          class="alert alert-info"
+        >
+          <p>Aucun prêt trouvé pour cet utilisateur.</p>
+          <p class="text-center" style="margin-top: 1rem">
+            <a
+              th:href="@{comptes-prets/create(userId=${selectedUserId})}"
+              class="btn btn-primary"
+              >Créer le premier prêt</a
+            >
+          </p>
+        </div>
+
+        <table
+          th:if="${selectedUserId != null and !selectedUserId.isEmpty() and loans != null and !#lists.isEmpty(loans)}"
+          class="accounts-table"
+        >
+          <thead>
+            <tr>
+              <th>ID Prêt</th>
+              <th>Type de Prêt</th>
+              <th>Montant</th>
+              <th>Mensualité</th>
+              <th>Date Début</th>
+              <th>Date Fin</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="loan : ${loans}">
+              <td th:text="${loan.id}">1</td>
+              <td
+                th:text="${loan.typeNom != null ? loan.typeNom : 'Type ' + loan.typeComptePretId}"
+              >
+                Personal Loan
+              </td>
+              <td th:text="${loan.formattedMontant}">10000.00 MGA</td>
+              <td th:text="${loan.formattedMonthlyPayment}">850.00 MGA</td>
+              <td
+                th:text="${loan.dateDebut != null} ? ${#temporals.format(loan.dateDebut, 'dd/MM/yyyy')} : 'N/A'"
+              >
+                01/01/2025
+              </td>
+              <td
+                th:text="${loan.dateFin != null} ? ${#temporals.format(loan.dateFin, 'dd/MM/yyyy')} : 'N/A'"
+              >
+                31/12/2025
+              </td>
+              <td>
+                <a
+                  th:href="@{comptes-prets/detail(id=${loan.id})}"
+                  class="btn btn-primary btn-small"
+                >
+                  Gérer
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

@@ -17,6 +17,8 @@
 package mg.razherana.banking.courant.entities;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -46,7 +48,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "compte_courants")
-public class CompteCourant {
+public class CompteCourant implements Serializable {
+  private final static BigDecimal limiteVirementJournalier = new BigDecimal("1000000");
+
   /**
    * Unique identifier for the current account.
    * Auto-generated using database identity strategy.
@@ -63,14 +67,14 @@ public class CompteCourant {
   @Column(name = "taxe", nullable = false, precision = 10, scale = 2)
   private BigDecimal taxe;
 
+  @Column(name = "user_id")
+  private Integer userId;
+
   /**
    * The user who owns this current account.
-   * Many-to-one relationship - one user can have multiple accounts.
-   * Lazy fetched for performance optimization.
+   * User is not in the database so no foreign key constraint is enforced.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  private transient User user;
 
   /**
    * Timestamp when this account was created.
@@ -78,6 +82,10 @@ public class CompteCourant {
    */
   @Column(name = "created_at")
   private LocalDateTime createdAt;
+
+  public BigDecimal getLimiteVirementJournalier() {
+    return limiteVirementJournalier;
+  }
 
   /**
    * Gets the unique identifier of the current account.
@@ -166,5 +174,13 @@ public class CompteCourant {
         ", taxe=" + taxe +
         ", createdAt=" + createdAt +
         '}';
+  }
+
+  public Integer getUserId() {
+    return userId;
+  }
+
+  public void setUserId(Integer userId) {
+    this.userId = userId;
   }
 }

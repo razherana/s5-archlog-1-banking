@@ -9,6 +9,7 @@ public class TransfertRequest {
   private BigDecimal montant;
   private String description;
   private LocalDateTime actionDateTime;
+  private String devise;
 
   public Integer getCompteSourceId() {
     return compteSourceId;
@@ -48,5 +49,13 @@ public class TransfertRequest {
 
   public void setActionDateTime(LocalDateTime actionDateTime) {
     this.actionDateTime = actionDateTime;
+  }
+
+  public String getDevise() {
+    return devise;
+  }
+
+  public void setDevise(String devise) {
+    this.devise = devise;
   }
 }

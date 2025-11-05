@@ -1,0 +1,11 @@
+- User misy direction
+- Direction misy niveau
+- User misy role (int)
+
+- Actionrole : 
+  - nom_table
+  - action (insert/delete/etc)
+  - role (int)
+
+- Login maka session direction, actionrole
+- Verifiena hoe manana autorisation

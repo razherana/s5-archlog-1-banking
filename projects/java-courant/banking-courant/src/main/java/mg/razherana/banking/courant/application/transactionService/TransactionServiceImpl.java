@@ -4,6 +4,7 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -27,43 +28,38 @@ public class TransactionServiceImpl implements TransactionService {
   @EJB
   private CompteCourantService compteCourantService;
 
-  private void checkTaxesAndThrow(CompteCourant compte, LocalDateTime actionDateTime) {
-    if (!compteCourantService.isTaxPaid(compte, actionDateTime)) {
-      var amount = compteCourantService.getTaxToPay(compte, actionDateTime);
-
-      LOG.warning("Compte " + compte.getId() + " has unpaid taxes, amount: " + amount);
-
-      throw new IllegalArgumentException("Taxes must be paid before making a transaction, please pay the amount of "
-          + amount + " MGA");
-    }
-  }
-
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
-  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description) {
+  public TransactionCourant depot(CompteCourant compte, BigDecimal montant, String description,
+      LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing depot of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
       throw new IllegalArgumentException("Montant must be positive");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(null); // System/external source
     transaction.setSpecialAction(SpecialAction.DEPOSIT.getDatabaseName());
     transaction.setReceiver(compte);
+    transaction.setChange(devise);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
-    LOG.info("Depot processed successfully");
+    LOG.info("Depot processed successfully with date: " + transactionDateTime);
     return transaction;
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public TransactionCourant retrait(CompteCourant compte, BigDecimal montant, String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing retrait of " + montant + " for compte " + compte.getId());
 
     if (montant == null || montant.compareTo(BigDecimal.ZERO) <= 0) {
@@ -79,13 +75,18 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // For retrait, money goes to "system" (external destination)
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.WITHDRAWAL.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
+    transaction.setChange(devise);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -96,7 +97,7 @@ public class TransactionServiceImpl implements TransactionService {
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public TransactionCourant payTax(CompteCourant compte, String description,
-      LocalDateTime actionDateTime) {
+      LocalDateTime actionDateTime, String devise) {
     BigDecimal montant = compteCourantService.getTaxToPay(compte, actionDateTime);
 
     LOG.info("Processing tax payment of " + montant + " for compte " + compte.getId());
@@ -116,13 +117,18 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // For retrait, money goes to "system" (external destination)
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compte);
     transaction.setSpecialAction(SpecialAction.TAXE.getDatabaseName());
     transaction.setReceiver(null); // System/external destination
+    transaction.setChange(devise);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(transactionDateTime);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -133,7 +139,7 @@ public class TransactionServiceImpl implements TransactionService {
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   @Override
   public void transfert(CompteCourant compteSource, CompteCourant compteDestination,
-      BigDecimal montant, String description, LocalDateTime actionDateTime) {
+      BigDecimal montant, String description, LocalDateTime actionDateTime, String devise) {
     LOG.info("Processing transfert of " + montant + " from compte " + compteSource.getId()
         + " to compte " + compteDestination.getId());
 
@@ -153,12 +159,25 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Solde insuffisant");
     }
 
+    // Check if source and destination comptes are different
+    if (compteSource.getId().equals(compteDestination.getId())) {
+      throw new IllegalArgumentException("Source and destination comptes must be different");
+    }
+
+    // Check daily transfer limit
+    checkVirementJournalierAndThrow(compteSource, montant, actionDateTime);
+
+    // Use provided actionDateTime or current time if not specified
+    LocalDateTime transactionDateTime = actionDateTime != null ? actionDateTime : LocalDateTime.now();
+
     // Create transfer transaction directly
     TransactionCourant transaction = new TransactionCourant();
     transaction.setSender(compteSource);
     transaction.setReceiver(compteDestination);
+    transaction.setChange(devise);
     transaction.setMontant(montant);
-    transaction.setDate(LocalDateTime.now());
+    transaction.setDate(transactionDateTime);
+    transaction.setValidationDate(null);
 
     entityManager.persist(transaction);
     entityManager.flush();
@@ -168,19 +187,91 @@ public class TransactionServiceImpl implements TransactionService {
   @Override
   public List<TransactionCourant> getTransactionsByCompte(CompteCourant compte) {
     LOG.info("Getting transactions for compte " + compte.getId());
+
+    EntityGraph<TransactionCourant> graph = entityManager.createEntityGraph(TransactionCourant.class);
+    graph.addSubgraph("sender");
+    graph.addSubgraph("receiver");
+
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
-        "SELECT t FROM TransactionCourant t WHERE t.sender = :compte OR t.receiver = :compte ORDER BY t.date DESC",
+        "SELECT t FROM TransactionCourant t " +
+            "WHERE t.sender = :compte OR t.receiver = :compte " +
+            "ORDER BY t.date DESC",
         TransactionCourant.class);
     query.setParameter("compte", compte);
+    query.setHint("jakarta.persistence.loadgraph", graph);
 
     return query.getResultList();
+  }
+
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
+  public TransactionCourant validerVirement(int virementId, LocalDateTime date) {
+    TransactionCourant virement = entityManager.find(TransactionCourant.class, virementId);
+
+    if (virement == null) {
+      throw new IllegalArgumentException("Le virement n'existe pas");
+    }
+
+    if (virement.getValidationDate() != null && date != null)
+      throw new IllegalArgumentException("Le virement a déjà été validé");
+
+    if (date == null && virement.getValidationDate() == null)
+      throw new IllegalArgumentException("Le virement a déjà été non validé");
+
+    // Check daily transfer limit of the virement to validate
+    checkVirementJournalierAndThrow(virement.getSender(), virement.getMontant(), virement.getDate());
+
+    virement.setValidationDate(date);
+
+    entityManager.merge(virement);
+    entityManager.flush();
+
+    LOG.info("Virement validated/invalidated succesfully");
+
+    return virement;
+  }
+
+  @TransactionAttribute(TransactionAttributeType.REQUIRED)
+  @Override
+  public TransactionCourant updateTransaction(Integer idTransaction, BigDecimal montant, String change) {
+    TransactionCourant virement = entityManager.find(TransactionCourant.class, idTransaction);
+    if (virement == null) {
+      throw new IllegalArgumentException("Le virement n'existe pas");
+    }
+
+    if (montant != null) {
+      if (montant.compareTo(BigDecimal.ZERO) <= 0)
+        throw new IllegalArgumentException("Le montant doit etre positif");
+
+      virement.setMontant(montant);
+    }
+
+    if (change != null) {
+      if (change.isBlank())
+        throw new IllegalArgumentException("La devise n'existe pas");
+
+      virement.setChange(change);
+    }
+
+    // Reset validation date to null on update
+    virement.setValidationDate(null);
+
+    entityManager.merge(virement);
+    entityManager.flush();
+
+    LOG.info("Virement updated succesfully");
+
+    return virement;
   }
 
   @Override
   public List<TransactionCourant> getAllTransactions() {
     LOG.info("Getting all transactions");
     TypedQuery<TransactionCourant> query = entityManager.createQuery(
-        "SELECT t FROM TransactionCourant t ORDER BY t.date DESC",
+        "SELECT t FROM TransactionCourant t " +
+            "LEFT JOIN FETCH t.sender " +
+            "LEFT JOIN FETCH t.receiver " +
+            "ORDER BY t.date DESC",
         TransactionCourant.class);
 
     return query.getResultList();
@@ -193,5 +284,36 @@ public class TransactionServiceImpl implements TransactionService {
       throw new IllegalArgumentException("Transaction ID cannot be null");
     }
     return entityManager.find(TransactionCourant.class, id);
+  }
+
+  private void checkTaxesAndThrow(CompteCourant compte, LocalDateTime actionDateTime) {
+    if (!compteCourantService.isTaxPaid(compte, actionDateTime)) {
+      var amount = compteCourantService.getTaxToPay(compte, actionDateTime);
+
+      LOG.warning("Compte " + compte.getId() + " has unpaid taxes, amount: " + amount);
+
+      throw new IllegalArgumentException("Taxes must be paid before making a transaction, please pay the amount of "
+          + amount + " MGA");
+    }
+  }
+
+  private void checkVirementJournalierAndThrow(CompteCourant compteSource, BigDecimal montant,
+      LocalDateTime actionDateTime) {
+    // Get all transfers made today
+    var virementsToday = compteCourantService.getVirementToday(compteSource, actionDateTime.toLocalDate());
+
+    // Calculate total amount transferred today
+    BigDecimal totalVirementsToday = virementsToday.stream()
+        .map(TransactionCourant::getMontant)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // Add current montant to total
+    totalVirementsToday = totalVirementsToday.add(montant);
+
+    // Check if virement journalier limit is not exceeded
+    if (totalVirementsToday.compareTo(compteSource.getLimiteVirementJournalier()) > 0) {
+      throw new IllegalArgumentException("Limite de virement journalier dépassée de " +
+          compteSource.getLimiteVirementJournalier() + " MGA");
+    }
   }
 }

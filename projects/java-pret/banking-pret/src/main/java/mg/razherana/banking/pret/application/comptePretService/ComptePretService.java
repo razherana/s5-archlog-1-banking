@@ -4,6 +4,7 @@ import mg.razherana.banking.pret.entities.ComptePret;
 import mg.razherana.banking.pret.entities.TypeComptePret;
 import mg.razherana.banking.pret.entities.Echeance;
 import mg.razherana.banking.pret.entities.User;
+import mg.razherana.banking.common.services.authorizationServices.AuthorizationService;
 import mg.razherana.banking.pret.dto.PaymentStatusDTO;
 
 import java.math.BigDecimal;
@@ -22,7 +23,7 @@ import java.util.List;
  * @version 1.0
  * @since 1.0
  */
-public interface ComptePretService {
+public interface ComptePretService extends AuthorizationService {
 
   /**
    * Find a user by ID using REST API call to java-interface.
@@ -85,6 +86,16 @@ public interface ComptePretService {
   List<ComptePret> getLoansByUserId(Integer userId);
 
   /**
+   * Calculate the total remaining balance for all loans of a user.
+   * Balance = Sum of (original loan amount - total payments made)
+   * 
+   * @param userId the user ID
+   * @param actionDateTime optional date time for calculation (defaults to now)
+   * @return total remaining balance across all user's loans
+   */
+  BigDecimal calculateTotalSoldeByUserId(Integer userId, LocalDateTime actionDateTime);
+
+  /**
    * Calculates the monthly payment for a loan using amortization formula.
    * Formula: M = [C × i] / [1 - (1 + i)^(-n)]
    * 
@@ -108,6 +119,15 @@ public interface ComptePretService {
    * @return total amount paid
    */
   BigDecimal calculateTotalPaid(Integer compteId);
+
+  /**
+   * Calculates total amount paid for a loan up to a specific date.
+   * 
+   * @param compteId the loan account ID
+   * @param actionDateTime the date/time to calculate payments up to
+   * @return total amount paid up to the specified date
+   */
+  BigDecimal calculateTotalPaidAtDate(Integer compteId, LocalDateTime actionDateTime);
 
   /**
    * Calculates the expected amount to be paid by a specific date.

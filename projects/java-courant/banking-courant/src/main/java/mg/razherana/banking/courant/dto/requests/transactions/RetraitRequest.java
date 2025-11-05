@@ -8,6 +8,7 @@ public class RetraitRequest {
   private BigDecimal montant;
   private String description;
   private LocalDateTime actionDateTime;
+  private String devise;
 
   public Integer getCompteId() {
     return compteId;
@@ -39,5 +40,13 @@ public class RetraitRequest {
 
   public void setActionDateTime(LocalDateTime actionDateTime) {
     this.actionDateTime = actionDateTime;
+  }
+
+  public String getDevise() {
+    return devise;
+  }
+
+  public void setDevise(String devise) {
+    this.devise = devise;
   }
 }

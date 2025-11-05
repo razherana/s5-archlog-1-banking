@@ -1,11 +1,12 @@
 package mg.razherana.banking.pret.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
  * DTO for loan payment status information.
  */
-public class PaymentStatusDTO {
+public class PaymentStatusDTO implements Serializable {
 
   private BigDecimal totalPaid;
   private BigDecimal totalExpected;

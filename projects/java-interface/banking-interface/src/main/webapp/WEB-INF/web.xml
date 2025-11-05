@@ -22,11 +22,4 @@
             <secure>false</secure>
         </cookie-config>
     </session-config>
-
-    <!-- Error pages -->
-    <error-page>
-        <error-code>500</error-code>
-        <location>/login.html?error=system</location>
-    </error-page>
-
 </web-app>

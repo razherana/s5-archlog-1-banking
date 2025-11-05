@@ -1,10 +1,11 @@
 package mg.razherana.banking.courant.api;
 
 import jakarta.ejb.EJB;
-import jakarta.ejb.EJBException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import mg.razherana.banking.common.utils.ExceptionUtils;
 import mg.razherana.banking.courant.application.compteCourantService.CompteCourantService;
 import mg.razherana.banking.courant.application.transactionService.TransactionService;
 import mg.razherana.banking.courant.dto.ErrorDTO;
@@ -39,16 +40,18 @@ public class TransactionResource {
    * Returns true if the exception should be treated as a 400 Bad Request,
    * false if it should be treated as a 500 Internal Server Error.
    */
-  private boolean isClientError(EJBException ejbException) {
-    return ejbException.getCausedByException() instanceof IllegalArgumentException;
+  private boolean isClientError(Exception exc) {
+    return exc instanceof IllegalArgumentException
+        || exc instanceof IllegalStateException
+        || exc instanceof ConstraintViolationException;
   }
 
   /**
    * Helper method to extract error message from EJBException.
    */
-  private String getErrorMessage(EJBException ejbException) {
-    if (isClientError(ejbException)) {
-      return "Invalid data: " + ejbException.getCausedByException().getMessage();
+  private String getErrorMessage(Exception ex) {
+    if (isClientError(ex)) {
+      return "Invalid data: " + ex.getMessage();
     } else {
       return "Internal server error";
     }
@@ -64,25 +67,20 @@ public class TransactionResource {
       return Response.ok(transactionDTOs)
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
       if (isClientError(e)) {
-        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+        LOG.warning("Invalid data from EJB: " + errorMessage);
       } else {
         LOG.severe("EJB error getting all transactions: " + e.getMessage());
       }
 
       ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions");
       return Response.status(statusCode)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Error getting all transactions: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions");
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
           .type(MediaType.APPLICATION_JSON)
           .entity(error).build();
     }
@@ -103,25 +101,20 @@ public class TransactionResource {
       return Response.ok(transactionDTO)
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
       if (isClientError(e)) {
-        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+        LOG.warning("Invalid data from EJB: " + errorMessage);
       } else {
         LOG.severe("EJB error getting transaction by ID: " + e.getMessage());
       }
 
       ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions/" + id);
       return Response.status(statusCode)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Error getting transaction by ID: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/" + id);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
           .type(MediaType.APPLICATION_JSON)
           .entity(error).build();
     }
@@ -146,25 +139,20 @@ public class TransactionResource {
       return Response.ok(transactionDTOs)
           .type(MediaType.APPLICATION_JSON)
           .build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
       if (isClientError(e)) {
-        LOG.warning("Invalid data from EJB: " + e.getCausedByException().getMessage());
+        LOG.warning("Invalid data from EJB: " + errorMessage);
       } else {
         LOG.severe("EJB error getting transactions by compte: " + e.getMessage());
       }
 
       ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions/compte/" + compteId);
       return Response.status(statusCode)
-          .type(MediaType.APPLICATION_JSON)
-          .entity(error).build();
-    } catch (Exception e) {
-      LOG.severe("Error getting transactions by compte: " + e.getMessage());
-      ErrorDTO error = new ErrorDTO(e.getMessage(), 500, "Internal Server Error", "/transactions/compte/" + compteId);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
           .type(MediaType.APPLICATION_JSON)
           .entity(error).build();
     }
@@ -190,19 +178,21 @@ public class TransactionResource {
       }
 
       TransactionCourant transaction = transactionService.depot(
-          compte, request.getMontant(), request.getDescription());
+          compte, request.getMontant(), request.getDescription(), request.getActionDateTime(), request.getDevise());
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)
           .entity(transactionDTO).build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
       if (isClientError(e)) {
-        LOG.warning("Invalid depot data from EJB: " + e.getCausedByException().getMessage());
+        LOG.warning("Invalid depot data from EJB: " + e.getMessage());
       } else {
         LOG.severe("EJB error processing depot: " + e.getMessage());
       }
@@ -239,19 +229,21 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       TransactionCourant transaction = transactionService.retrait(
-          compte, request.getMontant(), request.getDescription(), actionDateTime);
+          compte, request.getMontant(), request.getDescription(), actionDateTime, request.getDevise());
 
       TransactionCourantDTO transactionDTO = new TransactionCourantDTO(transaction);
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)
           .entity(transactionDTO).build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
       if (isClientError(e)) {
-        LOG.warning("Invalid retrait data from EJB: " + e.getCausedByException().getMessage());
+        LOG.warning("Invalid retrait data from EJB: " + e.getMessage());
       } else {
         LOG.severe("EJB error processing retrait: " + e.getMessage());
       }
@@ -298,22 +290,19 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       transactionService.transfert(compteSource, compteDestination,
-          request.getMontant(), request.getDescription(), actionDateTime);
+          request.getMontant(), request.getDescription(), actionDateTime, request.getDevise());
 
       MessageDTO message = new MessageDTO("Transfer completed successfully");
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)
           .entity(message).build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
-      if (isClientError(e)) {
-        LOG.warning("Invalid transfert data from EJB: " + e.getCausedByException().getMessage());
-      } else {
-        LOG.severe("EJB error processing transfert: " + e.getMessage());
-      }
+      LOG.severe("EJB error processing transfert: " + e.getMessage());
 
       ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions/transfert");
       return Response.status(statusCode)
@@ -346,7 +335,7 @@ public class TransactionResource {
           : LocalDateTime.now();
 
       TransactionCourant transaction = transactionService.payTax(
-          compte, request.getDescription(), actionDateTime);
+          compte, request.getDescription(), actionDateTime, request.getDevise());
 
       if (transaction == null) {
         MessageDTO message = new MessageDTO("No tax to pay");
@@ -359,16 +348,14 @@ public class TransactionResource {
       return Response.status(Response.Status.CREATED)
           .type(MediaType.APPLICATION_JSON)
           .entity(transactionDTO).build();
-    } catch (EJBException e) {
+    } catch (Exception e) {
+      e = ExceptionUtils.root(e);
+
       int statusCode = isClientError(e) ? 400 : 500;
       String statusText = isClientError(e) ? "Bad Request" : "Internal Server Error";
       String errorMessage = getErrorMessage(e);
 
-      if (isClientError(e)) {
-        LOG.warning("Invalid pay tax data from EJB: " + e.getCausedByException().getMessage());
-      } else {
-        LOG.severe("EJB error processing tax payment: " + e.getMessage());
-      }
+      LOG.severe("EJB error processing tax payment: " + e.getMessage());
 
       ErrorDTO error = new ErrorDTO(errorMessage, statusCode, statusText, "/transactions/pay-tax");
       return Response.status(statusCode)

@@ -3,7 +3,7 @@
 # Loan Management CRUD Tests
 echo "=== Loan Management Tests ==="
 
-BASE_URL="http://127.0.0.3:8080/api"
+BASE_URL="http://localhost:8083/api"
 
 # Colors for output
 RED='\033[0;31m'

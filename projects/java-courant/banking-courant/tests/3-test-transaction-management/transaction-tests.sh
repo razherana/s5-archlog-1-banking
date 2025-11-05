@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Transaction Management API Tests
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://localhost:8081/api"
 TEST_NAME="Transaction Management Tests"
 
 echo "=== $TEST_NAME ==="

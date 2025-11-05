@@ -6,18 +6,14 @@ package mg.razherana.banking.interfaces.dto.requests;
 public class RegisterRequest {
 
   private String name;
-  private String email;
-  private String password;
 
   // Default constructor
   public RegisterRequest() {
   }
 
   // Constructor with parameters
-  public RegisterRequest(String name, String email, String password) {
+  public RegisterRequest(String name) {
     this.name = name;
-    this.email = email;
-    this.password = password;
   }
 
   // Getters and setters
@@ -27,21 +23,5 @@ public class RegisterRequest {
 
   public void setName(String name) {
     this.name = name;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
   }
 }
